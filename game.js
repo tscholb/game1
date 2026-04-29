@@ -1001,6 +1001,287 @@ function drawEnemy(ctx, type, cx, footY, hpRatio, t) {
 }
 
 // ============================================================
+// 가호(Boon) 정의 (Step 5)
+// 등급: common, rare, epic, legendary
+// kind: 'global'(모든 타워/전역), 'tower-mod'(특정 타워 변형), 'instant'(즉시 효과)
+// 효과는 boons[].id별 구현체에서 처리 (modifyTowerStats / onProjectileFire / onEnemyKill 등 훅)
+// ============================================================
+const BOONS = [
+  // ---- common: 즉시/스탯 ----
+  { id: 'gold-rush', name: '골드러시', desc: '시작 즉시 +60 골드', rarity: 'common', kind: 'instant',
+    apply: () => { game.gold += 60; } },
+  { id: 'wall-mend', name: '성벽 보강', desc: '생명 +5 (즉시)', rarity: 'common', kind: 'instant',
+    apply: () => { game.hp += 5; } },
+  { id: 'sharp-arrow', name: '날카로운 화살', desc: '모든 타워 데미지 +10%', rarity: 'common', kind: 'global' },
+  { id: 'eagle-eye', name: '매의 눈', desc: '모든 타워 사거리 +12%', rarity: 'common', kind: 'global' },
+  { id: 'quick-fire', name: '쾌속 사격', desc: '모든 타워 발사주기 -10%', rarity: 'common', kind: 'global' },
+  { id: 'frugal', name: '검소한 손', desc: '타워 비용 -10%', rarity: 'common', kind: 'global' },
+
+  // ---- rare: 더 강한 일반 효과 ----
+  { id: 'bountiful', name: '풍요의 손', desc: '적 처치 골드 +2', rarity: 'rare', kind: 'global' },
+  { id: 'wave-tribute', name: '웨이브 공물', desc: '웨이브 클리어 시 추가 +25 골드', rarity: 'rare', kind: 'global' },
+  { id: 'magic-focus', name: '마력 집중', desc: '마법/얼음 타워 데미지 +25%', rarity: 'rare', kind: 'global' },
+  { id: 'iron-bowstring', name: '강철 시위', desc: '궁수/저격 데미지 +25%', rarity: 'rare', kind: 'global' },
+  { id: 'big-boom', name: '큰 폭발', desc: '대포/얼음 광역 반경 +40%', rarity: 'rare', kind: 'global' },
+
+  // ---- epic: 타워 변형 ----
+  { id: 'archer-chain', name: '사슬 화살', desc: '궁수 화살이 적중 후 1명에게 튕김', rarity: 'epic', kind: 'tower-mod', tower: 'archer' },
+  { id: 'archer-pierce', name: '꿰뚫는 화살', desc: '궁수 화살이 적 2명을 관통', rarity: 'epic', kind: 'tower-mod', tower: 'archer' },
+  { id: 'cannon-air', name: '비행 사격', desc: '대포가 공중 적도 공격', rarity: 'epic', kind: 'tower-mod', tower: 'cannon' },
+  { id: 'cannon-burn', name: '화염 잔류', desc: '대포 폭발 위치에 잔불 (1.6초간 도트 데미지)', rarity: 'epic', kind: 'tower-mod', tower: 'cannon' },
+  { id: 'mage-mark', name: '약화 표식', desc: '마법에 맞은 적은 이후 받는 데미지 +30%', rarity: 'epic', kind: 'tower-mod', tower: 'mage' },
+  { id: 'frost-shatter', name: '빙결 파열', desc: '슬로우 상태 적이 죽으면 폭발', rarity: 'epic', kind: 'tower-mod', tower: 'frost' },
+  { id: 'sniper-execute', name: '처형', desc: '저격 — 체력 25% 이하 적 즉시 처치', rarity: 'epic', kind: 'tower-mod', tower: 'sniper' },
+
+  // ---- legendary: 강력한 변형 ----
+  { id: 'archer-multi', name: '폭우 사격', desc: '궁수가 매 발사마다 화살 2발 동시 발사', rarity: 'legendary', kind: 'tower-mod', tower: 'archer' },
+  { id: 'mage-chain', name: '연쇄 번개', desc: '마법이 추가로 2명에게 연쇄 (감쇠 -30%)', rarity: 'legendary', kind: 'tower-mod', tower: 'mage' },
+  { id: 'frost-perma', name: '영원한 한기', desc: '얼음 슬로우 100% (정지)', rarity: 'legendary', kind: 'tower-mod', tower: 'frost' },
+  { id: 'sniper-double', name: '쌍기관총', desc: '저격이 발사마다 두 발', rarity: 'legendary', kind: 'tower-mod', tower: 'sniper' },
+  { id: 'tower-resonance', name: '타워 공명', desc: '인접한 같은 타입의 타워끼리 데미지 +15% (누적)', rarity: 'legendary', kind: 'global' },
+];
+
+const RARITY_WEIGHT = { common: 60, rare: 28, epic: 10, legendary: 2 };
+
+function rollBoonChoices(count = 3) {
+  const owned = new Set(game.boons.map(b => b.id));
+  const pool = BOONS.filter(b => !owned.has(b.id));
+  // common 보장 1개, 나머지 가중치
+  const result = [];
+  const tries = pool.slice();
+  function pickRarity() {
+    const total = Object.values(RARITY_WEIGHT).reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (const [k, w] of Object.entries(RARITY_WEIGHT)) {
+      r -= w;
+      if (r <= 0) return k;
+    }
+    return 'common';
+  }
+  while (result.length < count && tries.length > 0) {
+    const r = pickRarity();
+    const sub = tries.filter(b => b.rarity === r);
+    const pick = sub.length ? sub[Math.floor(Math.random() * sub.length)]
+                            : tries[Math.floor(Math.random() * tries.length)];
+    result.push(pick);
+    const idx = tries.indexOf(pick);
+    if (idx >= 0) tries.splice(idx, 1);
+  }
+  return result;
+}
+
+function hasBoon(id) {
+  return game.boons.some(b => b.id === id);
+}
+
+function addBoon(b) {
+  if (hasBoon(b.id)) return;
+  game.boons.push(b);
+  if (b.apply) b.apply();
+  renderBoonList();
+  renderTowerShop();
+  if (game.selectedTower) renderTowerInfo();
+  updateHud();
+}
+
+// 가호의 effective stat 보정 — getTowerStat 사용 시 추가 호출
+function applyBoonStats(tw, def, stat) {
+  // global 보정
+  if (hasBoon('sharp-arrow')) stat.dmg *= 1.10;
+  if (hasBoon('eagle-eye')) stat.range *= 1.12;
+  if (hasBoon('quick-fire')) stat.fireRate *= 0.9;
+  if (hasBoon('big-boom') && (tw.type === 'cannon' || tw.type === 'frost')) stat.splash *= 1.4;
+  if (hasBoon('magic-focus') && (tw.type === 'mage' || tw.type === 'frost')) stat.dmg *= 1.25;
+  if (hasBoon('iron-bowstring') && (tw.type === 'archer' || tw.type === 'sniper')) stat.dmg *= 1.25;
+  // 타워 공명: 인접한 같은 타입 수만큼 +15%
+  if (hasBoon('tower-resonance')) {
+    let neighbors = 0;
+    for (const o of game.towers) {
+      if (o === tw || o.type !== tw.type) continue;
+      const dx = Math.abs(o.tileX - tw.tileX);
+      const dy = Math.abs(o.tileY - tw.tileY);
+      if (dx <= 1 && dy <= 1) neighbors++;
+    }
+    stat.dmg *= 1 + 0.15 * neighbors;
+  }
+  return stat;
+}
+
+function effectiveTowerCostBoon(id) {
+  let cost = TOWERS[id].cost;
+  if (hasBoon('frugal')) cost = Math.round(cost * 0.9);
+  return cost;
+}
+
+// 가호의 화살 변형 — 발사 시 추가 발사체 생성
+function onProjectileSpawn(tw, target, basePList) {
+  const def = TOWERS[tw.type];
+  if (tw.type === 'archer' && hasBoon('archer-multi')) {
+    // 추가 한 발 (같은 타겟)
+    basePList.push({ duplicate: true });
+  }
+  if (tw.type === 'sniper' && hasBoon('sniper-double')) {
+    basePList.push({ duplicate: true });
+  }
+}
+
+// 가호 효과: 적중 처리 (관통/체인/처형 등)
+function onAfterHit(p, enemy) {
+  if (p._chained || p._pierced) return; // 한 번만
+  // 사슬 화살
+  if (p.fromType === 'archer' && hasBoon('archer-chain') && !p._chained) {
+    // 가까운 다른 적 찾기
+    let next = null;
+    let bd = 200;
+    for (const e of game.enemies) {
+      if (e === enemy || e.dead) continue;
+      const d = Math.hypot(e.x - enemy.x, e.y - enemy.y);
+      if (d < bd) { bd = d; next = e; }
+    }
+    if (next) {
+      const np = makeArrowFollow(p, next, enemy.x, enemy.y, 0.7);
+      np._chained = true;
+      game.projectiles.push(np);
+    }
+  }
+  // 관통 화살
+  if (p.fromType === 'archer' && hasBoon('archer-pierce') && !p._pierced) {
+    let next = null;
+    let bd = 220;
+    for (const e of game.enemies) {
+      if (e === enemy || e.dead) continue;
+      const d = Math.hypot(e.x - enemy.x, e.y - enemy.y);
+      if (d < bd) { bd = d; next = e; }
+    }
+    if (next) {
+      const np = makeArrowFollow(p, next, enemy.x, enemy.y, 1.0);
+      np._pierced = true;
+      game.projectiles.push(np);
+    }
+  }
+  // 마법 표식
+  if (p.fromType === 'mage' && hasBoon('mage-mark')) {
+    enemy.markedT = 5;
+  }
+  // 마법 연쇄
+  if (p.fromType === 'mage' && hasBoon('mage-chain') && !p._chained) {
+    let count = 2;
+    let cur = enemy;
+    let dmg = p.dmg * 0.7;
+    while (count > 0) {
+      let next = null;
+      let bd = 160;
+      for (const e of game.enemies) {
+        if (e === cur || e.dead) continue;
+        const d = Math.hypot(e.x - cur.x, e.y - cur.y);
+        if (d < bd) { bd = d; next = e; }
+      }
+      if (!next) break;
+      const np = {
+        x: cur.x, y: cur.y - 8,
+        target: next, type: 'orb',
+        speed: 700,
+        dmg, splash: 0,
+        magic: true, arc: false, arcT: 0, arcDur: 0,
+        startX: cur.x, startY: cur.y - 8,
+        targetX: next.x, targetY: next.y,
+        slow: 0, slowDur: 0,
+        dead: false,
+        fromType: 'mage',
+        _chained: true,
+      };
+      game.projectiles.push(np);
+      cur = next;
+      dmg *= 0.7;
+      count--;
+    }
+  }
+  // 저격 처형
+  if (p.fromType === 'sniper' && hasBoon('sniper-execute')) {
+    if (!enemy.dead && enemy.hp / enemy.maxHp <= 0.25 && !enemy.boss) {
+      enemy.hp = 0;
+      enemy.dead = true;
+    }
+  }
+}
+
+function makeArrowFollow(p, target, fromX, fromY, dmgMul) {
+  return {
+    x: fromX, y: fromY - 8,
+    target,
+    type: 'arrow', speed: 480,
+    dmg: p.dmg * dmgMul, splash: 0,
+    magic: false, arc: false, arcT: 0, arcDur: 0,
+    startX: fromX, startY: fromY - 8,
+    targetX: target.x, targetY: target.y,
+    slow: 0, slowDur: 0,
+    dead: false,
+    fromType: 'archer',
+  };
+}
+
+// 빙결 파열, 화염 잔류 등 사후 효과
+function onSplashHit(p, x, y) {
+  if (p.fromType === 'cannon' && hasBoon('cannon-burn')) {
+    game.effects.push({ kind: 'burn', x, y, r: p.splash, t: 0, dur: 1.6, color: '#ff8844', dps: p.dmg * 0.4, lastTick: 0 });
+  }
+}
+
+function onEnemyKilled(e) {
+  if (hasBoon('frost-shatter') && e.slowT > 0 && !e._shattered) {
+    e._shattered = true;
+    game.effects.push({ kind: 'splash', x: e.x, y: e.y, r: 60, t: 0, dur: 0.3, color: '#7dd3fc' });
+    for (const o of game.enemies) {
+      if (o === e || o.dead) continue;
+      if (Math.hypot(o.x - e.x, o.y - e.y) < 60) {
+        o.hp -= 15;
+        if (o.hp <= 0) o.dead = true;
+      }
+    }
+  }
+}
+
+function renderBoonList() {
+  const list = $('boon-list');
+  list.innerHTML = '';
+  if (game.boons.length === 0) {
+    list.innerHTML = '<p class="empty">아직 없음</p>';
+    return;
+  }
+  for (const b of game.boons) {
+    const el = document.createElement('div');
+    el.className = `boon-item ${b.rarity}`;
+    el.innerHTML = `<div class="name">${b.name}</div><div class="desc">${b.desc}</div>`;
+    list.appendChild(el);
+  }
+}
+
+function showBoonOverlay() {
+  const overlay = $('boon-overlay');
+  $('boon-wave').textContent = game.wave;
+  const choices = rollBoonChoices(3);
+  const wrap = $('boon-choices');
+  wrap.innerHTML = '';
+  for (const b of choices) {
+    const el = document.createElement('div');
+    el.className = `boon-choice ${b.rarity}`;
+    const rarityLabel = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[b.rarity] || b.rarity;
+    const target = b.tower ? `${TOWERS[b.tower].name} 전용` : (b.kind === 'instant' ? '즉시 효과' : '전체');
+    el.innerHTML = `
+      <div class="rarity">${rarityLabel}</div>
+      <div class="name">${b.name}</div>
+      <div class="desc">${b.desc}</div>
+      <div class="target">${target}</div>`;
+    el.addEventListener('click', () => {
+      addBoon(b);
+      overlay.classList.add('hidden');
+    });
+    wrap.appendChild(el);
+  }
+  overlay.classList.remove('hidden');
+}
+
+// ============================================================
 // 메타 진행 (Step 6에서 확장)
 // ============================================================
 const META_KEY = 'boon-defense-meta-v1';
@@ -1152,6 +1433,8 @@ function startRun() {
   showScreen('game');
   renderTowerShop();
   renderTowerInfo();
+  renderBoonList();
+  $('boon-overlay').classList.add('hidden');
   updateHud();
 }
 
@@ -1320,9 +1603,11 @@ function update(dt) {
     const e = game.enemies[i];
     updateEnemy(e, dt);
     if (e.dead) {
+      onEnemyKilled(e);
       game.kills += 1;
       let drop = e.goldDrop;
       if (game.hero && game.hero.id === 'merchant') drop += 1;
+      if (hasBoon('bountiful')) drop += 2;
       game.gold += drop;
       game.enemies.splice(i, 1);
       game._dirtyShop = true;
@@ -1346,6 +1631,19 @@ function update(dt) {
   for (let i = game.effects.length - 1; i >= 0; i--) {
     const fx = game.effects[i];
     fx.t += dt;
+    if (fx.kind === 'burn') {
+      fx.lastTick = (fx.lastTick || 0) + dt;
+      if (fx.lastTick >= 0.2) {
+        fx.lastTick = 0;
+        for (const e of game.enemies) {
+          if (e.dead) continue;
+          if (Math.hypot(e.x - fx.x, e.y - fx.y) <= fx.r) {
+            e.hp -= fx.dps * 0.2;
+            if (e.hp <= 0) e.dead = true;
+          }
+        }
+      }
+    }
     if (fx.t >= fx.dur) game.effects.splice(i, 1);
   }
 
@@ -1388,12 +1686,18 @@ function makeTower(type, tileX, tileY) {
 function getTowerStat(tw) {
   const def = TOWERS[tw.type];
   const m = TOWER_LEVEL_MULT[tw.level];
-  return {
+  const stat = {
     range: def.range * m.range,
     dmg: def.dmg * m.dmg,
     fireRate: def.fireRate * m.fireRate,
     splash: def.splash,
   };
+  // 영웅 패시브
+  if (game.hero) {
+    if (game.hero.id === 'archer' && tw.type === 'archer') stat.dmg *= 1.10;
+    if (game.hero.id === 'mage' && tw.type === 'mage') stat.dmg *= 1.10;
+  }
+  return applyBoonStats(tw, def, stat);
 }
 
 function tileHasTower(tx, ty) {
@@ -1406,12 +1710,14 @@ function updateTower(tw, dt) {
   tw.cooldown -= dt;
   if (tw.cooldown > 0) return;
 
+  const canHitAir = def.air || (tw.type === 'cannon' && hasBoon('cannon-air'));
+
   // 타겟 탐색: 가장 앞선 (path 진행도 높은) 적 우선
   let best = null;
   let bestT = -1;
   for (const e of game.enemies) {
     if (e.dead) continue;
-    if (e.air && !def.air) continue;
+    if (e.air && !canHitAir) continue;
     const dx = e.x - tw.cx;
     const dy = e.y - tw.cy;
     if (dx * dx + dy * dy > stat.range * stat.range) continue;
@@ -1430,27 +1736,35 @@ function updateTower(tw, dt) {
 function fireProjectile(tw, target) {
   const def = TOWERS[tw.type];
   const stat = getTowerStat(tw);
-  const p = {
-    x: tw.cx,
-    y: tw.cy - 16, // 손 높이
-    target,
-    type: def.projectile.type,
-    speed: def.projectile.speed,
-    dmg: stat.dmg,
-    splash: stat.splash,
-    magic: !!def.projectile.magic,
-    arc: !!def.projectile.arc,
-    arcT: 0,
-    arcDur: 0.5,
-    startX: tw.cx,
-    startY: tw.cy - 16,
-    targetX: target.x,
-    targetY: target.y,
-    slow: def.projectile.slow || 0,
-    slowDur: def.projectile.slowDur || 0,
-    dead: false,
-  };
-  game.projectiles.push(p);
+  const baseList = [{}];
+  onProjectileSpawn(tw, target, baseList);
+  for (let i = 0; i < baseList.length; i++) {
+    const offY = i * 8 - (baseList.length - 1) * 4; // 다중 발사 시 오프셋
+    let slow = def.projectile.slow || 0;
+    let slowDur = def.projectile.slowDur || 0;
+    if (tw.type === 'frost' && hasBoon('frost-perma')) { slow = 1.0; slowDur = 4; }
+    const p = {
+      x: tw.cx,
+      y: tw.cy - 16 + offY,
+      target,
+      type: def.projectile.type,
+      speed: def.projectile.speed,
+      dmg: stat.dmg,
+      splash: stat.splash,
+      magic: !!def.projectile.magic,
+      arc: !!def.projectile.arc,
+      arcT: 0,
+      arcDur: 0.5,
+      startX: tw.cx,
+      startY: tw.cy - 16 + offY,
+      targetX: target.x,
+      targetY: target.y,
+      slow, slowDur,
+      dead: false,
+      fromType: tw.type,
+    };
+    game.projectiles.push(p);
+  }
 }
 
 function updateProjectile(p, dt) {
@@ -1508,10 +1822,12 @@ function hitProjectile(p, hitX, hitY) {
     }
     // 폭발 이펙트
     game.effects.push({ kind: 'splash', x: hitX, y: hitY, r: p.splash, t: 0, dur: 0.35, color: p.type === 'frost' ? '#7dd3fc' : '#ffaa44' });
+    onSplashHit(p, hitX, hitY);
   } else {
     // 단일 (target 우선, 없으면 가까운 적)
     if (p.target && !p.target.dead) {
       applyHit(p.target, p);
+      onAfterHit(p, p.target);
     }
   }
 }
@@ -1523,6 +1839,8 @@ function applyHit(enemy, p) {
   if (def.armor && !p.magic) {
     dmg *= (1 - def.armor);
   }
+  // 마법 표식: +30% 받는 데미지
+  if ((enemy.markedT ?? 0) > 0) dmg *= 1.3;
   enemy.hp -= dmg;
   if (enemy.hp <= 0) enemy.dead = true;
   // 슬로우 적용
@@ -1565,6 +1883,7 @@ function updateEnemy(e, dt) {
     e.slowT -= dt;
     if (e.slowT <= 0) { e.slowMul = 1; }
   }
+  if (e.markedT > 0) e.markedT -= dt;
   const speed = e.speed * (e.slowMul ?? 1);
   let remain = speed * dt;
   while (remain > 0 && e.pathSeg < PATH.length - 1) {
@@ -1706,6 +2025,20 @@ function drawEffect(ctx, fx) {
     ctx.arc(fx.x, fx.y, 5 + k * 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (fx.kind === 'burn') {
+    ctx.fillStyle = `rgba(255,120,60,${0.25 * (1 - k)})`;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, fx.r, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + fx.t * 6;
+      const fx2 = fx.x + Math.cos(a) * fx.r * 0.6;
+      const fy2 = fx.y + Math.sin(a) * fx.r * 0.6;
+      ctx.fillStyle = i % 2 ? '#ff8844' : '#fde68a';
+      ctx.beginPath();
+      ctx.arc(fx2, fy2 - Math.abs(Math.sin(fx.t * 8 + i)) * 4, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -1751,7 +2084,13 @@ function renderTowerShop() {
 }
 
 function effectiveTowerCost(id) {
-  return TOWERS[id].cost;
+  let cost = effectiveTowerCostBoon(id);
+  // 영웅 패시브: 시작 비용 -20% (해당 타워)
+  if (game.hero) {
+    if (game.hero.id === 'archer' && id === 'archer') cost = Math.round(cost * 0.8);
+    if (game.hero.id === 'mage' && id === 'mage') cost = Math.round(cost * 0.8);
+  }
+  return cost;
 }
 
 function placeTowerAt(tx, ty) {
@@ -1877,7 +2216,9 @@ function onWaveEnd() {
   game.waveActive = false;
   game.spawnQueue = null;
   // 웨이브 보너스 골드
-  game.gold += 20 + game.wave * 2;
+  let bonus = 20 + game.wave * 2;
+  if (hasBoon('wave-tribute')) bonus += 25;
+  game.gold += bonus;
   updateHud();
   // 마지막 웨이브?
   if (game.wave >= game.waveMax) {
@@ -1885,8 +2226,9 @@ function onWaveEnd() {
     setTimeout(() => quitToMenu(), 1500);
     return;
   }
-  // Step 5에서 가호 선택 표시. 지금은 다음 웨이브 준비만.
   renderTowerShop();
+  // 가호 선택 표시
+  showBoonOverlay();
 }
 
 // ============================================================
@@ -1947,6 +2289,11 @@ function setupInput() {
     }
   });
   $('start-run').addEventListener('click', startRun);
+  $('boon-skip').addEventListener('click', () => {
+    game.gold += 30;
+    $('boon-overlay').classList.add('hidden');
+    updateHud();
+  });
   $('reset-meta').addEventListener('click', () => {
     if (confirm('메타 진행을 초기화하시겠습니까? 정수와 모든 강화가 사라집니다.')) {
       meta.essence = 0;
