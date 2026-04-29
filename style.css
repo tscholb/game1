@@ -49,6 +49,19 @@ html, body {
 .essence-counter #meta-essence { font-size: 22px; font-weight: 700; color: #d8b4fe; }
 .essence-counter .label { color: #8a90a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 
+.menu-stats {
+  position: absolute;
+  top: 32px;
+  left: 40px;
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #8a90a3;
+}
+.menu-stats .stat { display: flex; flex-direction: column; gap: 2px; }
+.menu-stats .stat .v { color: #c8cdd9; font-size: 16px; font-weight: 700; }
+.menu-stats .stat .k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+
 .menu-body {
   flex: 1;
   padding: 28px 60px 40px;

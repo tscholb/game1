@@ -1266,7 +1266,8 @@ function renderBoonList() {
     list.innerHTML = '<p class="empty">아직 없음</p>';
     return;
   }
-  for (const b of game.boons) {
+  for (let i = game.boons.length - 1; i >= 0; i--) {
+    const b = game.boons[i];
     const el = document.createElement('div');
     el.className = `boon-item ${b.rarity}`;
     el.innerHTML = `<div class="name">${b.name}</div><div class="desc">${b.desc}</div>`;
@@ -1411,6 +1412,11 @@ ctx.imageSmoothingEnabled = false;
 // ============================================================
 function renderMainMenu() {
   $('meta-essence').textContent = meta.essence;
+  const stats = meta.stats || { totalRuns: 0, bestWave: 0, totalKills: 0 };
+  $('menu-stats').innerHTML = `
+    <div class="stat"><span class="k">최고 웨이브</span><span class="v">${stats.bestWave}</span></div>
+    <div class="stat"><span class="k">총 출진</span><span class="v">${stats.totalRuns}</span></div>
+    <div class="stat"><span class="k">총 처치</span><span class="v">${stats.totalKills}</span></div>`;
 
   const heroList = $('hero-list');
   heroList.innerHTML = '';
@@ -1561,6 +1567,8 @@ function startRun() {
   renderTowerInfo();
   renderBoonList();
   $('boon-overlay').classList.add('hidden');
+  $('result-screen').classList.add('hidden');
+  saveRun();
   updateHud();
 }
 
@@ -2611,9 +2619,16 @@ function boot() {
   renderMainMenu();
   showScreen('menu');
   requestAnimationFrame(loop);
-  // 초기 캔버스 1회 렌더 (게임 진입 전에도 빈 캔버스로)
+  // 초기 캔버스 1회 렌더
   ctx.fillStyle = '#1a1d28';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // 창 닫기/새로고침 시에도 저장 (웨이브 도중이 아닐 때만)
+  window.addEventListener('beforeunload', () => {
+    if (game.state === 'playing' && !game.waveActive) {
+      saveRun();
+    }
+  });
 }
 
 boot();
