@@ -2,36 +2,111 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>Dungeon Crawler — Action Roguelike</title>
+  <title>Boon Defense — Roguelike Tower Defense</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="game-wrap">
-    <canvas id="game" width="960" height="640"></canvas>
-    <div id="hud">
-      <div id="hud-left">
-        <div id="hp-bar"><div id="hp-fill"></div><span id="hp-text">100 / 100</span></div>
-        <div id="stats">
-          <span>FLOOR <b id="floor-num">1</b></span>
-          <span>ROOMS <b id="room-cleared">0</b>/<b id="room-total">0</b></span>
-          <span>DMG <b id="stat-dmg">10</b></span>
-          <span>SPD <b id="stat-spd">3.0</b></span>
-          <span>RoF <b id="stat-rof">2.5</b></span>
+  <div id="app">
+    <!-- ===== 메인 메뉴 (영웅 선택 + 메타 강화) ===== -->
+    <div id="main-menu" class="screen">
+      <div class="menu-header">
+        <h1>BOON DEFENSE</h1>
+        <p class="subtitle">로그라이크 타워디펜스</p>
+        <div class="essence-counter">
+          <span class="essence-icon">◆</span>
+          <span id="meta-essence">0</span>
+          <span class="label">정수</span>
+        </div>
+      </div>
+      <div class="menu-body">
+        <h2>영웅 선택</h2>
+        <div id="hero-list"></div>
+        <div id="hero-detail" class="hidden">
+          <div class="hero-detail-header">
+            <h3 id="hd-name"></h3>
+            <p id="hd-flavor"></p>
+          </div>
+          <div class="hero-passive">
+            <h4>시작 패시브</h4>
+            <ul id="hd-passive"></ul>
+          </div>
+          <div class="hero-upgrades">
+            <h4>영구 강화</h4>
+            <div id="hd-upgrades"></div>
+          </div>
+          <div class="hero-actions">
+            <button id="start-run" class="big primary">출진</button>
+            <button id="reset-meta" class="small">메타 초기화</button>
+          </div>
         </div>
       </div>
     </div>
-    <div id="overlay" class="hidden">
-      <div id="overlay-inner">
-        <h1 id="overlay-title">DUNGEON CRAWLER</h1>
-        <p id="overlay-text">WASD 이동 · 마우스 조준 · 좌클릭 발사<br>방의 적을 모두 처치하면 문이 열립니다</p>
-        <button id="overlay-btn">시작</button>
+
+    <!-- ===== 인게임 ===== -->
+    <div id="game-screen" class="screen hidden">
+      <div id="game-area">
+        <canvas id="game" width="960" height="640"></canvas>
+        <div id="top-hud">
+          <div class="stat"><span class="label">생명</span><b id="hp">20</b></div>
+          <div class="stat"><span class="label">골드</span><b id="gold">150</b></div>
+          <div class="stat"><span class="label">웨이브</span><b id="wave">0</b>/<b id="wave-max">20</b></div>
+          <div class="stat"><span class="label">처치</span><b id="kills">0</b></div>
+          <button id="start-wave">웨이브 시작 (Space)</button>
+          <button id="speed-btn">속도 ×1 (F)</button>
+          <button id="quit-btn" class="small">포기</button>
+        </div>
+        <div id="tower-info" class="hidden">
+          <h3 id="ti-name"></h3>
+          <div id="ti-stats"></div>
+          <div id="ti-actions">
+            <button id="ti-upgrade"></button>
+            <button id="ti-sell" class="danger"></button>
+          </div>
+        </div>
+      </div>
+      <aside id="sidebar">
+        <div id="hero-banner">
+          <div class="hero-banner-icon" id="hb-icon"></div>
+          <div>
+            <div class="hero-banner-name" id="hb-name"></div>
+            <div class="hero-banner-sub">출진 중</div>
+          </div>
+        </div>
+        <h2>타워</h2>
+        <div id="tower-shop"></div>
+        <h2>획득한 가호</h2>
+        <div id="boon-list"><p class="empty">아직 없음</p></div>
+        <div id="help">
+          <p><b>조작</b></p>
+          <p>· 좌측 타워 선택 → 빈 칸 클릭으로 배치</p>
+          <p>· 타워 클릭으로 업그레이드/판매</p>
+          <p>· 우클릭/ESC로 선택 취소</p>
+          <p>· SPACE: 웨이브 시작 / F: 속도 토글</p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ===== 가호 선택 오버레이 ===== -->
+    <div id="boon-overlay" class="overlay hidden">
+      <div class="overlay-card wide">
+        <h1>가호를 선택하세요</h1>
+        <p class="subtitle">웨이브 <span id="boon-wave">1</span> 클리어!</p>
+        <div id="boon-choices"></div>
+        <button id="boon-skip" class="small skip-btn">건너뛰기 (+30 골드)</button>
       </div>
     </div>
-    <div id="pickup-popup" class="hidden">
-      <div id="pickup-inner">
-        <h2 id="pickup-name">아이템</h2>
-        <p id="pickup-desc">설명</p>
-        <p class="hint">아무 키나 눌러 계속</p>
+
+    <!-- ===== 결과 화면 ===== -->
+    <div id="result-screen" class="overlay hidden">
+      <div class="overlay-card">
+        <h1 id="result-title">VICTORY</h1>
+        <p id="result-text"></p>
+        <div class="result-stats">
+          <div><span class="label">도달 웨이브</span><b id="rs-wave">0</b></div>
+          <div><span class="label">처치</span><b id="rs-kills">0</b></div>
+          <div><span class="label">획득 정수</span><b class="gold" id="rs-essence">0</b></div>
+        </div>
+        <button id="result-btn">메인 메뉴로</button>
       </div>
     </div>
   </div>
