@@ -73,6 +73,12 @@ const HEROES = {
     cloth: '#2f5c2a',
     cloth2: '#7ed957',
     passives: ['궁수 타워 시작 비용 -20%', '궁수 타워 데미지 +10%'],
+    upgrades: [
+      { id: 'a-precision', name: '정밀 사격', desc: '궁수/저격 데미지 단계당 +5%', max: 3, cost: [3, 6, 10], per: 0.05 },
+      { id: 'a-quick',     name: '빠른 시위', desc: '궁수/저격 발사주기 단계당 -5%', max: 3, cost: [3, 6, 10], per: 0.05 },
+      { id: 'a-eyes',      name: '예리한 눈', desc: '모든 타워 사거리 단계당 +5%',   max: 3, cost: [4, 8, 12], per: 0.05 },
+      { id: 'a-bonus',     name: '시작 화살통', desc: '시작 시 궁수 타워 1개 무료 배치 (LV+1)', max: 1, cost: [12], per: 1 },
+    ],
   },
   mage: {
     id: 'mage',
@@ -85,6 +91,12 @@ const HEROES = {
     cloth: '#3a2a6a',
     cloth2: '#a78bfa',
     passives: ['마법 타워 시작 비용 -20%', '마법 타워 데미지 +10%'],
+    upgrades: [
+      { id: 'm-power',  name: '비전의 힘',   desc: '마법/얼음 타워 데미지 단계당 +6%', max: 3, cost: [3, 6, 10], per: 0.06 },
+      { id: 'm-sight',  name: '천리안',     desc: '모든 타워 사거리 단계당 +5%',     max: 3, cost: [4, 8, 12], per: 0.05 },
+      { id: 'm-mark',   name: '예언의 표식', desc: '가호 선택지 +1개 (4지선다)',       max: 1, cost: [15], per: 1 },
+      { id: 'm-bonus',  name: '별의 가호',   desc: '시작 시 마법 타워 1개 무료 배치 (LV+1)', max: 1, cost: [12], per: 1 },
+    ],
   },
   merchant: {
     id: 'merchant',
@@ -97,6 +109,12 @@ const HEROES = {
     cloth: '#7a4a14',
     cloth2: '#fbbf24',
     passives: ['시작 골드 +75', '적 처치 골드 +1'],
+    upgrades: [
+      { id: 'mer-purse',   name: '두둑한 지갑',  desc: '시작 골드 단계당 +25', max: 4, cost: [3, 5, 8, 12], per: 25 },
+      { id: 'mer-trade',   name: '교역로',     desc: '적 처치 골드 단계당 +1', max: 3, cost: [4, 8, 14], per: 1 },
+      { id: 'mer-discount',name: '대량구매',    desc: '타워 비용 단계당 -3%', max: 3, cost: [4, 8, 14], per: 0.03 },
+      { id: 'mer-tribute', name: '왕실 공물',   desc: '웨이브 종료 보너스 단계당 +15 골드', max: 2, cost: [6, 12], per: 15 },
+    ],
   },
 };
 
@@ -1259,7 +1277,8 @@ function renderBoonList() {
 function showBoonOverlay() {
   const overlay = $('boon-overlay');
   $('boon-wave').textContent = game.wave;
-  const choices = rollBoonChoices(3);
+  const numChoices = (game.meta && game.meta.boonChoices) || 3;
+  const choices = rollBoonChoices(numChoices);
   const wrap = $('boon-choices');
   wrap.innerHTML = '';
   for (const b of choices) {
@@ -1292,13 +1311,66 @@ function loadMeta() {
     const raw = localStorage.getItem(META_KEY);
     if (raw) return JSON.parse(raw);
   } catch (e) {}
-  return { essence: 0, upgrades: {} };
+  return { essence: 0, upgrades: {}, stats: { totalRuns: 0, bestWave: 0, totalKills: 0 } };
 }
 
 function saveMeta() {
   try {
     localStorage.setItem(META_KEY, JSON.stringify(meta));
   } catch (e) {}
+}
+
+function getUpgradeLevel(heroId, upId) {
+  return (meta.upgrades[heroId] && meta.upgrades[heroId][upId]) || 0;
+}
+
+function buyUpgrade(heroId, upId) {
+  const hero = HEROES[heroId];
+  const up = hero.upgrades.find(u => u.id === upId);
+  if (!up) return false;
+  const cur = getUpgradeLevel(heroId, upId);
+  if (cur >= up.max) return false;
+  const cost = up.cost[cur];
+  if (meta.essence < cost) return false;
+  meta.essence -= cost;
+  if (!meta.upgrades[heroId]) meta.upgrades[heroId] = {};
+  meta.upgrades[heroId][upId] = cur + 1;
+  saveMeta();
+  return true;
+}
+
+// 영웅별 메타 강화 합산 효과 (런 시작 시 적용)
+function metaBonus(heroId) {
+  const u = meta.upgrades[heroId] || {};
+  const hero = HEROES[heroId];
+  const acc = {
+    archerDmgMul: 1, archerFireMul: 1, sniperDmgMul: 1, sniperFireMul: 1,
+    mageDmgMul: 1, frostDmgMul: 1,
+    rangeMul: 1,
+    startGold: 0, killGold: 0, costMul: 1, waveBonus: 0,
+    boonChoices: 3,
+    freeTowers: [], // {type, level}
+  };
+  for (const up of hero.upgrades) {
+    const lvl = u[up.id] || 0;
+    if (!lvl) continue;
+    const v = lvl * up.per;
+    switch (up.id) {
+      case 'a-precision': acc.archerDmgMul *= 1 + v; acc.sniperDmgMul *= 1 + v; break;
+      case 'a-quick':     acc.archerFireMul *= 1 - v; acc.sniperFireMul *= 1 - v; break;
+      case 'a-eyes':
+      case 'm-sight':     acc.rangeMul *= 1 + v; break;
+      case 'a-bonus':     acc.freeTowers.push({ type: 'archer', level: 2 }); break;
+      case 'm-power':     acc.mageDmgMul *= 1 + v; acc.frostDmgMul *= 1 + v; break;
+      case 'm-mark':      acc.boonChoices = 4; break;
+      case 'm-bonus':     acc.freeTowers.push({ type: 'mage', level: 2 }); break;
+      case 'mer-purse':   acc.startGold += v; break;
+      case 'mer-trade':   acc.killGold += v; break;
+      case 'mer-discount':acc.costMul *= 1 - v; break;
+      case 'mer-tribute': acc.waveBonus += v; break;
+    }
+  }
+  return acc;
 }
 
 // ============================================================
@@ -1393,8 +1465,62 @@ function renderHeroDetail() {
     passive.appendChild(li);
   }
 
-  // Step 6에서 강화 트리 채움
-  $('hd-upgrades').innerHTML = '<p style="color:#6b7088;font-size:12px;font-style:italic;">강화 시스템은 다음 단계에서 추가됩니다</p>';
+  // 강화 트리
+  const wrap = $('hd-upgrades');
+  wrap.innerHTML = '';
+  for (const up of hero.upgrades) {
+    const lvl = getUpgradeLevel(hero.id, up.id);
+    const maxed = lvl >= up.max;
+    const cost = maxed ? null : up.cost[lvl];
+    const card = document.createElement('div');
+    card.className = 'upgrade-card';
+    let pips = '';
+    for (let i = 0; i < up.max; i++) {
+      pips += `<div class="pip ${i < lvl ? 'filled' : ''}"></div>`;
+    }
+    const can = !maxed && meta.essence >= cost;
+    card.innerHTML = `
+      <div class="name">${up.name}</div>
+      <div class="desc">${up.desc}</div>
+      <div class="pips">${pips}</div>
+      <div class="row">
+        ${maxed
+          ? '<span class="maxed">최대</span><span></span>'
+          : `<span class="cost ${can ? '' : 'unaffordable'}">◆ ${cost}</span>
+             <button data-up="${up.id}" ${can ? '' : 'disabled'}>강화</button>`}
+      </div>`;
+    wrap.appendChild(card);
+  }
+  wrap.querySelectorAll('button[data-up]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (buyUpgrade(hero.id, btn.dataset.up)) {
+        $('meta-essence').textContent = meta.essence;
+        renderHeroDetail();
+      }
+    });
+  });
+
+  // 이어하기 / 저장된 런 표시
+  const saved = loadRun();
+  const resumeBtn = $('resume-run');
+  const startBtn = $('start-run');
+  const runInfo = $('run-info');
+  if (saved && saved.heroId === hero.id) {
+    resumeBtn.classList.remove('hidden');
+    runInfo.classList.remove('hidden');
+    runInfo.innerHTML = `진행 중인 게임 — 웨이브 <b>${saved.wave}</b> · 생명 <b>${saved.hp}</b> · 골드 <b>${saved.gold}</b> · 타워 <b>${saved.towers.length}</b>개 · 가호 <b>${saved.boons.length}</b>개`;
+    startBtn.textContent = '새 게임 (저장 폐기)';
+  } else if (saved) {
+    resumeBtn.classList.add('hidden');
+    runInfo.classList.remove('hidden');
+    const sh = HEROES[saved.heroId];
+    runInfo.innerHTML = `다른 영웅(<b>${sh ? sh.name : saved.heroId}</b>)의 진행 중 게임이 있습니다. 그 영웅을 선택하면 이어할 수 있습니다.`;
+    startBtn.textContent = '출진';
+  } else {
+    resumeBtn.classList.add('hidden');
+    runInfo.classList.add('hidden');
+    startBtn.textContent = '출진';
+  }
 }
 
 // ============================================================
@@ -1439,9 +1565,30 @@ function startRun() {
 }
 
 function applyHeroPassives() {
-  // 시작 골드 보정
+  // 영웅 기본 패시브
   if (game.hero.id === 'merchant') game.gold += 75;
-  // (다른 패시브는 후속 단계에서 더 적용)
+  // 메타 강화
+  game.meta = metaBonus(game.hero.id);
+  game.gold += game.meta.startGold;
+  // 시작 무료 타워 (영웅 강화로 부여)
+  for (const ft of game.meta.freeTowers) {
+    placeStarterTower(ft.type, ft.level);
+  }
+}
+
+function placeStarterTower(type, level) {
+  // 좌상단부터 빈칸 찾아 자동 배치
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (isTileBlocked(x, y) || tileHasTower(x, y)) continue;
+      // 경로 가까운 칸 우선이 좋지만 단순화
+      const tw = makeTower(type, x, y);
+      tw.level = level;
+      tw.totalSpent = TOWERS[type].cost;
+      game.towers.push(tw);
+      return;
+    }
+  }
 }
 
 function quitToMenu() {
@@ -1607,6 +1754,7 @@ function update(dt) {
       game.kills += 1;
       let drop = e.goldDrop;
       if (game.hero && game.hero.id === 'merchant') drop += 1;
+      if (game.meta) drop += game.meta.killGold;
       if (hasBoon('bountiful')) drop += 2;
       game.gold += drop;
       game.enemies.splice(i, 1);
@@ -1647,11 +1795,11 @@ function update(dt) {
     if (fx.t >= fx.dur) game.effects.splice(i, 1);
   }
 
-  // 라이프 0 → 패배 (Step 4에서 결과 화면 연결)
+  // 라이프 0 → 패배 (결과 화면 연결)
   if (game.hp <= 0 && game.state === 'playing') {
     game.hp = 0;
     game.state = 'gameover';
-    setTimeout(() => quitToMenu(), 1500);
+    showResult(false);
   }
 
   // 웨이브 종료 체크
@@ -1696,6 +1844,14 @@ function getTowerStat(tw) {
   if (game.hero) {
     if (game.hero.id === 'archer' && tw.type === 'archer') stat.dmg *= 1.10;
     if (game.hero.id === 'mage' && tw.type === 'mage') stat.dmg *= 1.10;
+  }
+  // 메타 강화
+  if (game.meta) {
+    if (tw.type === 'archer') { stat.dmg *= game.meta.archerDmgMul; stat.fireRate *= game.meta.archerFireMul; }
+    if (tw.type === 'sniper') { stat.dmg *= game.meta.sniperDmgMul; stat.fireRate *= game.meta.sniperFireMul; }
+    if (tw.type === 'mage')   stat.dmg *= game.meta.mageDmgMul;
+    if (tw.type === 'frost')  stat.dmg *= game.meta.frostDmgMul;
+    stat.range *= game.meta.rangeMul;
   }
   return applyBoonStats(tw, def, stat);
 }
@@ -2090,6 +2246,8 @@ function effectiveTowerCost(id) {
     if (game.hero.id === 'archer' && id === 'archer') cost = Math.round(cost * 0.8);
     if (game.hero.id === 'mage' && id === 'mage') cost = Math.round(cost * 0.8);
   }
+  // 메타: 비용 할인
+  if (game.meta) cost = Math.round(cost * game.meta.costMul);
   return cost;
 }
 
@@ -2218,17 +2376,121 @@ function onWaveEnd() {
   // 웨이브 보너스 골드
   let bonus = 20 + game.wave * 2;
   if (hasBoon('wave-tribute')) bonus += 25;
+  if (game.meta) bonus += game.meta.waveBonus;
   game.gold += bonus;
   updateHud();
   // 마지막 웨이브?
   if (game.wave >= game.waveMax) {
     game.state = 'victory';
-    setTimeout(() => quitToMenu(), 1500);
+    showResult(true);
     return;
   }
+  // 자동 저장 (웨이브 사이)
+  saveRun();
   renderTowerShop();
   // 가호 선택 표시
   showBoonOverlay();
+}
+
+// ============================================================
+// 결과 화면 + 정수 지급
+// ============================================================
+function showResult(victory) {
+  // 정수 계산
+  let gain = 0;
+  if (victory) {
+    gain = 25 + Math.floor(game.kills / 20);
+  } else {
+    gain = Math.max(1, Math.floor(game.wave * 1.5));
+  }
+  // 보스 클리어 보너스
+  gain += Math.floor((game.wave - 1) / 5) * 3;
+  meta.essence += gain;
+  // 통계 업데이트
+  meta.stats = meta.stats || { totalRuns: 0, bestWave: 0, totalKills: 0 };
+  meta.stats.totalRuns += 1;
+  meta.stats.totalKills += game.kills;
+  if (game.wave > meta.stats.bestWave) meta.stats.bestWave = game.wave;
+  saveMeta();
+  clearSavedRun();
+  $('result-title').textContent = victory ? '승리!' : '패배';
+  $('result-text').textContent = victory
+    ? `${game.hero.name}, 던전을 정복했습니다.`
+    : `${game.hero.name}이(가) 쓰러졌습니다. 정수를 모아 다시 도전하세요.`;
+  $('rs-wave').textContent = game.wave;
+  $('rs-kills').textContent = game.kills;
+  $('rs-essence').textContent = '◆ +' + gain;
+  $('result-screen').classList.remove('hidden');
+}
+
+// ============================================================
+// 진행 중 자동 저장 / 이어하기 (Step 6.5)
+// ============================================================
+const RUN_KEY = 'boon-defense-run-v1';
+
+function saveRun() {
+  if (game.state !== 'playing') return;
+  const data = {
+    heroId: game.hero.id,
+    hp: game.hp,
+    gold: game.gold,
+    wave: game.wave,
+    kills: game.kills,
+    boons: game.boons.map(b => b.id),
+    towers: game.towers.map(t => ({ type: t.type, tx: t.tileX, ty: t.tileY, level: t.level, totalSpent: t.totalSpent })),
+  };
+  try { localStorage.setItem(RUN_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function loadRun() {
+  try {
+    const raw = localStorage.getItem(RUN_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+function clearSavedRun() {
+  try { localStorage.removeItem(RUN_KEY); } catch (e) {}
+}
+
+function resumeRun(data) {
+  game.hero = HEROES[data.heroId];
+  game.state = 'playing';
+  game.hp = data.hp;
+  game.gold = data.gold;
+  game.wave = data.wave;
+  game.kills = data.kills;
+  game.towers = data.towers.map(t => {
+    const tw = makeTower(t.type, t.tx, t.ty);
+    tw.level = t.level;
+    tw.totalSpent = t.totalSpent;
+    return tw;
+  });
+  game.enemies = [];
+  game.projectiles = [];
+  game.effects = [];
+  game.boons = data.boons.map(id => BOONS.find(b => b.id === id)).filter(Boolean);
+  game.waveActive = false;
+  game.spawnQueue = null;
+  game.placingTowerType = null;
+  game.selectedTower = null;
+  game.meta = metaBonus(game.hero.id);
+
+  const hbCanvas = $('hb-portrait');
+  const hbCtx = hbCanvas.getContext('2d');
+  hbCtx.imageSmoothingEnabled = false;
+  hbCtx.clearRect(0, 0, 48, 48);
+  drawHeroPortrait(hbCtx, game.hero.id, -8, -8, 48 / 64);
+  $('hb-name').textContent = game.hero.name;
+
+  showScreen('game');
+  renderTowerShop();
+  renderTowerInfo();
+  renderBoonList();
+  $('boon-overlay').classList.add('hidden');
+  $('result-screen').classList.add('hidden');
+  updateHud();
 }
 
 // ============================================================
@@ -2284,21 +2546,48 @@ function setupInput() {
   $('start-wave').addEventListener('click', onStartWave);
   $('speed-btn').addEventListener('click', toggleSpeed);
   $('quit-btn').addEventListener('click', () => {
-    if (confirm('정말 포기하시겠습니까? 현재 진행 상황은 잃습니다.')) {
-      quitToMenu();
+    if (!confirm('메뉴로 돌아가시겠습니까? 진행 중이라면 자동 저장되어 다시 이어할 수 있습니다.')) return;
+    if (game.state === 'playing' && !game.waveActive) {
+      saveRun();
+    } else if (game.state === 'playing' && game.waveActive) {
+      // 웨이브 도중 포기 — 정수만 일부 지급 후 저장 폐기
+      showResult(false);
+      return;
     }
+    quitToMenu();
   });
-  $('start-run').addEventListener('click', startRun);
+  $('start-run').addEventListener('click', () => {
+    const saved = loadRun();
+    if (saved && !confirm(saved.heroId === game.selectedHeroId
+        ? '진행 중인 게임이 있습니다. 새 게임으로 시작하면 저장이 사라집니다. 계속하시겠습니까?'
+        : '다른 영웅의 진행 중 게임 저장이 있습니다. 새 게임을 시작하시겠습니까?')) {
+      return;
+    }
+    clearSavedRun();
+    startRun();
+  });
+  $('resume-run').addEventListener('click', () => {
+    const saved = loadRun();
+    if (!saved) return;
+    resumeRun(saved);
+  });
   $('boon-skip').addEventListener('click', () => {
     game.gold += 30;
     $('boon-overlay').classList.add('hidden');
+    saveRun();
     updateHud();
   });
+  $('result-btn').addEventListener('click', () => {
+    $('result-screen').classList.add('hidden');
+    quitToMenu();
+  });
   $('reset-meta').addEventListener('click', () => {
-    if (confirm('메타 진행을 초기화하시겠습니까? 정수와 모든 강화가 사라집니다.')) {
+    if (confirm('메타 진행을 초기화하시겠습니까? 정수, 모든 강화, 진행 중 저장이 사라집니다.')) {
       meta.essence = 0;
       meta.upgrades = {};
+      meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
       saveMeta();
+      clearSavedRun();
       renderMainMenu();
     }
   });
