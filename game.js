@@ -68,6 +68,10 @@ const HEROES = {
     flavor: '숲의 정령과 계약한 명궁수. 화살은 결코 빗나가지 않는다.',
     color: '#7ed957',
     accent: '#4a8e3f',
+    hair: '#5db347',
+    skin: '#fde6c8',
+    cloth: '#2f5c2a',
+    cloth2: '#7ed957',
     passives: ['궁수 타워 시작 비용 -20%', '궁수 타워 데미지 +10%'],
   },
   mage: {
@@ -76,6 +80,10 @@ const HEROES = {
     flavor: '별의 마법을 다루는 대마법사. 그녀의 지팡이는 차원을 가른다.',
     color: '#a78bfa',
     accent: '#6d4ed1',
+    hair: '#c4b5fd',
+    skin: '#fbe1d3',
+    cloth: '#3a2a6a',
+    cloth2: '#a78bfa',
     passives: ['마법 타워 시작 비용 -20%', '마법 타워 데미지 +10%'],
   },
   merchant: {
@@ -84,6 +92,10 @@ const HEROES = {
     flavor: '대륙을 누비는 상인. 골드는 그가 휘두르는 또 다른 무기다.',
     color: '#fbbf24',
     accent: '#c8881b',
+    hair: '#5b3b1a',
+    skin: '#f4d2a8',
+    cloth: '#7a4a14',
+    cloth2: '#fbbf24',
     passives: ['시작 골드 +75', '적 처치 골드 +1'],
   },
 };
