@@ -830,10 +830,36 @@ function drawStar(ctx, cx, cy, rOuter, points) {
 
 // 영웅 ID로 일러스트 그리기
 function drawHeroPortrait(ctx, heroId, ox, oy, scale = 1) {
+  const img = HERO_IMG[heroId];
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, ox, oy, 64 * scale, 64 * scale);
+    return;
+  }
   if (heroId === 'archer') drawArcherHero(ctx, ox, oy, scale);
   else if (heroId === 'mage') drawMageHero(ctx, ox, oy, scale);
   else if (heroId === 'merchant') drawMerchantHero(ctx, ox, oy, scale);
 }
+
+// 영웅 일러스트 이미지 로드 (있으면 도형 대신 사용)
+const HERO_IMG = {};
+function loadHeroPortraits() {
+  const map = {
+    archer: 'assets/heroes/archer.png',
+    mage: 'assets/heroes/mage.png',
+    merchant: 'assets/heroes/merchant.png',
+  };
+  for (const [id, src] of Object.entries(map)) {
+    const img = new Image();
+    img.onload = () => {
+      HERO_IMG[id] = img;
+      // 메뉴가 표시 중이면 다시 그림
+      if (game.state === 'menu') renderMainMenu();
+    };
+    img.onerror = () => {}; // 파일 없어도 무시 (도형 fallback)
+    img.src = src;
+  }
+}
+loadHeroPortraits();
 
 // ============================================================
 // 타워 캐릭터 (인게임용, 32x40 박스, 발 기준 중앙 하단)
