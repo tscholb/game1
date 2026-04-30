@@ -589,8 +589,8 @@ function drawHeroEntity() {
   // 영웅 캐릭터 (스프라이트 있으면 사용, 없으면 도형)
   const sprite = HERO_SPRITE[he.type];
   if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    const size = 56;
-    ctx.drawImage(sprite, he.cx - size / 2, he.cy + bob - size + 6, size, size);
+    const size = 38;
+    ctx.drawImage(sprite, he.cx - size / 2, he.cy + bob - size + 4, size, size);
   } else {
     drawHeroPortrait(ctx, he.type, he.cx - 32, he.cy + bob - 28, 1);
   }
@@ -3326,7 +3326,9 @@ function placeTowerAt(tx, ty) {
   game.gold -= cost;
   const tw = makeTower(game.placingTowerType, tx, ty);
   game.towers.push(tw);
-  // 배치 시각 피드백 — 빛나는 링 + 작은 흔들림
+  // 방금 배치 — 취소 시 5초 안에 환불 가능
+  game.lastPlaced = { tw, cost, placedAt: performance.now() };
+  // 배치 시각 피드백 — 빛나는 링
   game.effects.push({
     kind: 'place-ring',
     x: tx * TILE + TILE / 2,
@@ -3665,6 +3667,18 @@ function setupInput() {
   }, { passive: false });
 
   function cancelSelection() {
+    // 방금 배치한 타워가 있으면 5초 이내에 한해 환불
+    if (game.lastPlaced) {
+      const elapsed = (performance.now() - game.lastPlaced.placedAt) / 1000;
+      if (elapsed < 5) {
+        const lp = game.lastPlaced;
+        game.towers = game.towers.filter(t => t !== lp.tw);
+        game.gold += lp.cost;
+        updateHud();
+        renderTowerShop();
+      }
+      game.lastPlaced = null;
+    }
     game.placingTowerType = null;
     game.selectedTower = null;
     renderTowerShop();
