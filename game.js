@@ -89,21 +89,21 @@ const HEROES = {
   },
   mage: {
     id: 'mage',
-    name: '아리엔',
-    flavor: '별의 마법을 다루는 대마법사. 그녀의 지팡이는 차원을 가른다.',
-    color: '#a78bfa',
-    accent: '#6d4ed1',
-    hair: '#c4b5fd',
+    name: '이그니아',
+    flavor: '검은 머리 위로 불꽃을 다스리는 매혹의 화염 대마법사. 그녀의 손끝에서 세상이 타오른다.',
+    color: '#dc2626',
+    accent: '#991b1b',
+    hair: '#1a1a1a',
     skin: '#fbe1d3',
-    cloth: '#3a2a6a',
-    cloth2: '#a78bfa',
+    cloth: '#3a0a0a',
+    cloth2: '#dc2626',
     passives: ['마법 타워 시작 비용 -20%', '마법 타워 데미지 +10%', '본인이 직접 전투에 참여'],
     combat: { dmg: 30, range: 150, fireRate: 0.7, projectile: 'orb', air: true, magic: true },
     skill: {
-      name: '별빛 폭발',
-      desc: '가장 앞선 적 위치에 거대한 마법 폭발',
+      name: '화염 폭풍',
+      desc: '가장 앞선 적 위치에 거대한 화염 폭발과 잔불',
       cooldown: 18,
-      kind: 'star-burst',
+      kind: 'fire-burst',
     },
     upgrades: [
       { id: 'm-power',  name: '비전의 힘',   desc: '마법/얼음 타워 데미지 단계당 +6%', max: 3, cost: [3, 6, 10], per: 0.06 },
@@ -335,6 +335,17 @@ function castHeroSkill() {
     const ty = target ? target.y : CANVAS_H / 2;
     starBurstAt(tx, ty);
     addCameraShake(0.8, 12);
+  } else if (skill.kind === 'fire-burst') {
+    // 가장 앞선 적 위치에 거대한 화염 폭발 + 잔불
+    let target = null; let bestT = -1;
+    for (const e of game.enemies) {
+      if (e.dead) continue;
+      if (e.pathT > bestT) { bestT = e.pathT; target = e; }
+    }
+    const tx = target ? target.x : CANVAS_W / 2;
+    const ty = target ? target.y : CANVAS_H / 2;
+    fireBurstAt(tx, ty);
+    addCameraShake(0.9, 14);
   } else if (skill.kind === 'gold-rain') {
     game.gold += 50;
     game.goldRainT = 5;
@@ -374,6 +385,33 @@ function spawnArrowRainBolt(tx, ty) {
     dead: false,
     fromType: 'hero-archer',
   });
+}
+
+function fireBurstAt(tx, ty) {
+  // 거대한 화염 폭발 + 잔불 (DoT)
+  game.effects.push({ kind: 'fireburst', x: tx, y: ty, r: 140, t: 0, dur: 0.7, color: '#ff4400' });
+  game.effects.push({ kind: 'burn', x: tx, y: ty, r: 100, t: 0, dur: 3.0, color: '#ff8844', dps: 30, lastTick: 0 });
+  for (const e of game.enemies) {
+    if (e.dead) continue;
+    if (Math.hypot(e.x - tx, e.y - ty) <= 140) {
+      e.hp -= 130;
+      if (e.hp <= 0) e.dead = true;
+    }
+  }
+  // 화염 파티클
+  for (let i = 0; i < 50; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 220 + Math.random() * 280;
+    game.particles = game.particles || [];
+    game.particles.push({
+      x: tx, y: ty,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      life: 0.5 + Math.random() * 0.6, maxLife: 1.1,
+      size: 2 + Math.random() * 3,
+      color: i % 3 === 0 ? '#fde68a' : (i % 2 ? '#ff8844' : '#dc2626'),
+      kind: 'shard', g: 80,
+    });
+  }
 }
 
 function starBurstAt(tx, ty) {
@@ -2792,6 +2830,28 @@ function drawEffect(ctx, fx) {
     ctx.arc(fx.x, fx.y, 5 + k * 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (fx.kind === 'fireburst') {
+    // 거대한 화염 폭발 + 빛 줄기
+    const rNow = fx.r * Math.min(1, k * 1.4);
+    ctx.fillStyle = `rgba(255,68,0,${0.55 * (1 - k)})`;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, rNow, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(253,230,138,${0.7 * (1 - k)})`;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, rNow * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+    // 흩날리는 불꽃
+    const rays = 10;
+    for (let i = 0; i < rays; i++) {
+      const a = (i / rays) * Math.PI * 2 + fx.t * 6;
+      ctx.strokeStyle = `rgba(255,140,40,${1 - k})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(fx.x, fx.y);
+      ctx.lineTo(fx.x + Math.cos(a) * rNow * 1.15, fx.y + Math.sin(a) * rNow * 1.15);
+      ctx.stroke();
+    }
   } else if (fx.kind === 'starburst') {
     // 보라색 거대 폭발 + 빛 줄기
     const rNow = fx.r * Math.min(1, k * 1.4);
