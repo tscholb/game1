@@ -1013,6 +1013,40 @@ function loadHeroPortraits() {
 loadHeroPortraits();
 
 // ============================================================
+// Kenney Tower Defense 타일셋 로드 (지형/경로/타워/적/발사체)
+// ============================================================
+const KENNEY = {};
+function loadKenney() {
+  // 사용할 타일 ID 목록 (지형은 즉시 로드, 그 외는 lazy 가능)
+  const ids = [
+    1, 24, 27, 67, 93, 96,        // 잔디/모래 + 변형
+    111, 123, 124, 130, 132, 144, // 잔디/모래 디테일 (꽃, 풀, 바위 등 추정)
+    181, 182, 183, 184, 187,      // 타워 기지 (추정)
+    189, 200, 207, 208, 209, 210, // 타워 포신 (추정)
+    245, 246, 247, 248, 271, 272, // 적 보병/유닛 (추정)
+    250, 251, 252, 253, 254,      // 적 추가
+    287, 288, 289, 290, 291, 292, // 발사체 (추정)
+  ];
+  for (const id of ids) {
+    const num = String(id).padStart(3, '0');
+    const img = new Image();
+    img.src = `assets/kenney/towerDefense_tile${num}.png`;
+    KENNEY[id] = img;
+  }
+}
+loadKenney();
+
+// 타일 그리기 헬퍼 — 캐싱되어 있으면 그림, 아니면 fallback 호출
+function kdraw(id, x, y, size) {
+  const img = KENNEY[id];
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, x, y, size, size);
+    return true;
+  }
+  return false;
+}
+
+// ============================================================
 // 타워 캐릭터 (인게임용, 32x40 박스, 발 기준 중앙 하단)
 // ============================================================
 
@@ -2248,21 +2282,32 @@ function render() {
   }
 
   // 배경
-  ctx.fillStyle = '#1a1d28';
+  ctx.fillStyle = '#2a8a3a';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // 잔디 패턴 (배치 가능 영역 표시용 약한 격자)
+  // 잔디 타일 (Kenney) — 캐싱된 이미지로 채움. 없으면 단색 fallback
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (!kdraw(24, x * TILE, y * TILE, TILE)) {
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#2f9a44' : '#2a8a3a';
+        ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      }
+    }
+  }
+  // 산발적 디테일 (꽃/돌 등) — 결정론적 패턴으로 분포
+  const decorIds = [111, 123, 124, 130, 132];
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       if (isTileBlocked(x, y)) continue;
-      const checker = (x + y) % 2 === 0;
-      ctx.fillStyle = checker ? '#1f2330' : '#1c1f2a';
-      ctx.fillRect(x * TILE, y * TILE, TILE, TILE);
+      const seed = (x * 73 + y * 131) % 23;
+      if (seed < 4) {
+        kdraw(decorIds[seed % decorIds.length], x * TILE, y * TILE, TILE);
+      }
     }
   }
 
-  // 경로 그리기 (둥근 흙길 느낌)
-  ctx.strokeStyle = '#3a2f24';
+  // 경로 그리기 (모래/흙길 — Kenney 잔디 타일에 어울리는 톤)
+  ctx.strokeStyle = '#7a5a32';
   ctx.lineWidth = 40;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -2271,8 +2316,8 @@ function render() {
   for (let i = 1; i < PATH.length; i++) ctx.lineTo(PATH[i].x, PATH[i].y);
   ctx.stroke();
 
-  // 경로 안쪽 밝은 색
-  ctx.strokeStyle = '#5a4836';
+  // 경로 안쪽 밝은 모래 (Kenney sand 색감과 매치)
+  ctx.strokeStyle = '#c89b5a';
   ctx.lineWidth = 32;
   ctx.beginPath();
   ctx.moveTo(PATH[0].x, PATH[0].y);
