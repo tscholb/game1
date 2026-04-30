@@ -2242,14 +2242,27 @@ function quitToMenu() {
 // 전체 초기화: 정수 + 강화 + 진행 중 저장 + Service Worker 캐시까지
 function hardResetAll() {
   if (!confirm('모든 데이터를 초기화합니다.\n\n· 정수 0\n· 영웅 강화 모두 해제\n· 진행 중 저장 삭제\n· 캐시 정리\n\n진행하시겠습니까?')) return;
+  // beforeunload에서 saveRun 막기
+  game._resetting = true;
+  game.state = 'menu';
   try {
     meta.essence = 0;
     meta.upgrades = {};
     meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
-    saveMeta();
-    clearSavedRun();
+    // localStorage 안의 게임 관련 키 모두 제거 (혹시 모를 잔여 데이터까지)
+    try {
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('boon-defense')) toRemove.push(k);
+      }
+      toRemove.forEach(k => localStorage.removeItem(k));
+    } catch (_) {}
+    // 명시적으로 두 키도 한 번 더 삭제 (보장)
+    try { localStorage.removeItem(RUN_KEY); } catch (_) {}
+    try { localStorage.removeItem(META_KEY); } catch (_) {}
   } catch (e) { console.warn(e); }
-  // Service Worker 캐시 비우기 (다음 새로고침 시 신선한 파일 받음)
+  // Service Worker 캐시 비우기 + 등록 해제
   try {
     if ('caches' in window) {
       caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
@@ -3791,8 +3804,9 @@ function boot() {
   ctx.fillStyle = '#1a1d28';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // 창 닫기/새로고침 시에도 저장 (웨이브 도중이 아닐 때만)
+  // 창 닫기/새로고침 시에도 저장 (웨이브 도중이 아닐 때, 그리고 리셋 중이 아닐 때만)
   window.addEventListener('beforeunload', () => {
+    if (game._resetting) return;
     if (game.state === 'playing' && !game.waveActive) {
       saveRun();
     }
