@@ -569,30 +569,50 @@ function drawHeroEntity() {
   ctx.arc(he.cx, he.cy, stat.range, 0, Math.PI * 2);
   ctx.stroke();
   ctx.setLineDash([]);
-  // 영웅 발 아래 빛나는 원
-  const bob = Math.sin(he.bobT * 3) * 1.5;
+  // 영웅 모션 — 호흡(상하), 사위(좌우), 공격 시 살짝 앞으로 기울기
+  const bob = Math.sin(he.bobT * 2.4) * 1.5;
+  const breath = Math.sin(he.bobT * 1.4) * 1.2;
+  const sway = Math.cos(he.bobT * 0.8) * 0.6;
   const heroColor = HEROES[he.type].color;
-  ctx.fillStyle = `${heroColor}33`;
+  // 발 아래 큰 빛나는 원 (위압감)
+  ctx.fillStyle = `${heroColor}26`;
   ctx.beginPath();
-  ctx.ellipse(he.cx, he.cy + 18, 18, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(he.cx, he.cy + 20, 24, 8, 0, 0, Math.PI * 2);
   ctx.fill();
-  // 발광 광선 (영웅 색상, 작게, 약하게)
+  ctx.fillStyle = `${heroColor}55`;
+  ctx.beginPath();
+  ctx.ellipse(he.cx, he.cy + 20, 14, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 발광 (영웅 색, 발사 시 약하게)
   if (he.flashT > 0) {
     const r = parseInt(heroColor.slice(1, 3), 16);
     const g = parseInt(heroColor.slice(3, 5), 16);
     const b = parseInt(heroColor.slice(5, 7), 16);
-    ctx.fillStyle = `rgba(${r},${g},${b},${he.flashT * 0.8})`;
+    ctx.fillStyle = `rgba(${r},${g},${b},${he.flashT * 0.6})`;
     ctx.beginPath();
-    ctx.arc(he.cx, he.cy - 8, 18, 0, Math.PI * 2);
+    ctx.arc(he.cx, he.cy - 12, 20, 0, Math.PI * 2);
     ctx.fill();
   }
-  // 영웅 캐릭터 (스프라이트 있으면 사용, 없으면 도형)
+  // 영웅 캐릭터 (위압적 크기 + 모션)
   const sprite = HERO_SPRITE[he.type];
   if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    const size = 38;
-    ctx.drawImage(sprite, he.cx - size / 2, he.cy + bob - size + 4, size, size);
+    const size = 60;
+    const dx = he.cx - size / 2 + sway;
+    const dy = he.cy + bob + breath - size + 12;
+    if (he.flashT > 0) {
+      // 공격 모션 — 살짝 앞으로 숙임
+      const tilt = he.flashT * 0.18;
+      ctx.save();
+      ctx.translate(he.cx, he.cy + 16);
+      ctx.rotate(tilt);
+      ctx.translate(-he.cx, -(he.cy + 16));
+      ctx.drawImage(sprite, dx, dy, size, size);
+      ctx.restore();
+    } else {
+      ctx.drawImage(sprite, dx, dy, size, size);
+    }
   } else {
-    drawHeroPortrait(ctx, he.type, he.cx - 32, he.cy + bob - 28, 1);
+    drawHeroPortrait(ctx, he.type, he.cx - 32, he.cy + bob + breath - 28, 1);
   }
   // 머리 위 작은 별 (HP 없음, 무적 표시)
   ctx.fillStyle = heroColor;
@@ -2296,7 +2316,7 @@ function updateCancelButton() {
   btn.classList.toggle('hidden', !show);
   if (game.placingTowerType) {
     const def = TOWERS[game.placingTowerType];
-    btn.textContent = `${def.name} 배치 중 — 빈칸 탭 / 취소`;
+    btn.textContent = `${def.name} 소환 중 — 빈칸 탭 / 취소`;
   } else if (game.selectedTower) {
     btn.textContent = '선택 해제';
   }
