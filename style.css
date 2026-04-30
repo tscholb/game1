@@ -86,6 +86,23 @@ html, body {
 .essence-counter #meta-essence { font-size: 22px; font-weight: 700; color: #d8b4fe; }
 .essence-counter .label { color: #8a90a3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 
+.hard-reset-btn {
+  position: absolute;
+  top: 32px;
+  right: 200px;
+  background: #2a1a1a;
+  border: 1px solid #7d3f3f;
+  color: #ff9090;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.hard-reset-btn:hover { background: #3a1a1a; border-color: #9d5050; color: #ffb0b0; }
+@media (max-width: 900px), (pointer: coarse) {
+  .hard-reset-btn { position: static; margin: 8px auto 0; display: inline-block; }
+}
+
 .menu-stats {
   position: absolute;
   top: 32px;
@@ -152,6 +169,16 @@ html, body {
   border: 1px solid #2a2f3f;
   border-radius: 10px;
   padding: 24px;
+}
+.hero-detail-portrait {
+  display: block;
+  width: 240px;
+  height: 240px;
+  border-radius: 12px;
+  margin: 0 auto 18px;
+  border: 2px solid #f3d878;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  image-rendering: pixelated;
 }
 .hero-detail-header { margin-bottom: 18px; }
 .hero-detail-header h3 { font-size: 22px; color: #f3d878; margin-bottom: 4px; }

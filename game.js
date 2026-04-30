@@ -492,8 +492,14 @@ function drawHeroEntity() {
     ctx.arc(he.cx, he.cy - 16, 30, 0, Math.PI * 2);
     ctx.fill();
   }
-  // 영웅 캐릭터 (드로잉)
-  drawHeroPortrait(ctx, he.type, he.cx - 32, he.cy + bob - 28, 1);
+  // 영웅 캐릭터 (스프라이트 있으면 사용, 없으면 도형)
+  const sprite = HERO_SPRITE[he.type];
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const size = 56;
+    ctx.drawImage(sprite, he.cx - size / 2, he.cy + bob - size + 6, size, size);
+  } else {
+    drawHeroPortrait(ctx, he.type, he.cx - 32, he.cy + bob - 28, 1);
+  }
   // 머리 위 작은 별 (HP 없음, 무적 표시)
   ctx.fillStyle = heroColor;
   drawStar(ctx, he.cx, he.cy - 38 + bob, 4, 5);
@@ -879,21 +885,34 @@ function drawHeroPortrait(ctx, heroId, ox, oy, scale = 1) {
 }
 
 // 영웅 일러스트 이미지 로드 (있으면 도형 대신 사용)
+// HERO_IMG: 메뉴/배너용 큰 일러스트 (배경 있어도 OK)
+// HERO_SPRITE: 인게임용 투명배경 스프라이트
 const HERO_IMG = {};
+const HERO_SPRITE = {};
 function loadHeroPortraits() {
-  const map = {
+  const portraits = {
     archer: 'assets/heroes/archer.png',
     mage: 'assets/heroes/mage.png',
     merchant: 'assets/heroes/merchant.png',
   };
-  for (const [id, src] of Object.entries(map)) {
+  const sprites = {
+    archer: 'assets/heroes/archer-sprite.png',
+    mage: 'assets/heroes/mage-sprite.png',
+    merchant: 'assets/heroes/merchant-sprite.png',
+  };
+  for (const [id, src] of Object.entries(portraits)) {
     const img = new Image();
     img.onload = () => {
       HERO_IMG[id] = img;
-      // 메뉴가 표시 중이면 다시 그림
       if (game.state === 'menu') renderMainMenu();
     };
-    img.onerror = () => {}; // 파일 없어도 무시 (도형 fallback)
+    img.onerror = () => {};
+    img.src = src;
+  }
+  for (const [id, src] of Object.entries(sprites)) {
+    const img = new Image();
+    img.onload = () => { HERO_SPRITE[id] = img; };
+    img.onerror = () => {};
     img.src = src;
   }
 }
@@ -1793,6 +1812,15 @@ function renderHeroDetail() {
   detail.classList.remove('hidden');
   $('hd-name').textContent = hero.name;
   $('hd-flavor').textContent = hero.flavor;
+  // 큰 일러스트 (있으면 표시)
+  const portrait = $('hd-portrait');
+  const img = HERO_IMG[hero.id];
+  if (img && img.complete && img.naturalWidth > 0) {
+    portrait.src = img.src;
+    portrait.classList.remove('hidden');
+  } else {
+    portrait.classList.add('hidden');
+  }
 
   const passive = $('hd-passive');
   passive.innerHTML = '';
@@ -1869,6 +1897,17 @@ function showScreen(name) {
 }
 
 function startRun() {
+  try {
+    return _startRun();
+  } catch (err) {
+    console.error('startRun failed:', err);
+    alert('게임 시작 중 오류가 발생했습니다.\n\n' + (err && err.message || err) + '\n\n메뉴의 "전체 초기화" 버튼을 눌러 데이터를 리셋해보세요.');
+    game.state = 'menu';
+    showScreen('menu');
+  }
+}
+
+function _startRun() {
   game.hero = HEROES[game.selectedHeroId];
   game.state = 'playing';
   game.hp = 20;
@@ -1943,6 +1982,29 @@ function quitToMenu() {
   game.state = 'menu';
   showScreen('menu');
   renderMainMenu();
+}
+
+// 전체 초기화: 정수 + 강화 + 진행 중 저장 + Service Worker 캐시까지
+function hardResetAll() {
+  if (!confirm('모든 데이터를 초기화합니다.\n\n· 정수 0\n· 영웅 강화 모두 해제\n· 진행 중 저장 삭제\n· 캐시 정리\n\n진행하시겠습니까?')) return;
+  try {
+    meta.essence = 0;
+    meta.upgrades = {};
+    meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
+    saveMeta();
+    clearSavedRun();
+  } catch (e) { console.warn(e); }
+  // Service Worker 캐시 비우기 (다음 새로고침 시 신선한 파일 받음)
+  try {
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    }
+  } catch (e) { console.warn(e); }
+  alert('초기화 완료. 페이지를 새로고침하면 깨끗한 상태로 시작합니다.');
+  setTimeout(() => location.reload(), 300);
 }
 
 // ============================================================
@@ -3143,8 +3205,21 @@ function loadRun() {
   try {
     const raw = localStorage.getItem(RUN_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) { return null; }
+    const data = JSON.parse(raw);
+    // 검증: hero ID가 알려진 영웅이고, 필수 필드가 있어야 함
+    if (!data || !data.heroId || !HEROES[data.heroId]) {
+      localStorage.removeItem(RUN_KEY);
+      return null;
+    }
+    if (typeof data.hp !== 'number' || typeof data.gold !== 'number' || !Array.isArray(data.towers) || !Array.isArray(data.boons)) {
+      localStorage.removeItem(RUN_KEY);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    try { localStorage.removeItem(RUN_KEY); } catch (_) {}
+    return null;
+  }
 }
 
 function clearSavedRun() {
@@ -3344,16 +3419,8 @@ function setupInput() {
     $('result-screen').classList.add('hidden');
     quitToMenu();
   });
-  $('reset-meta').addEventListener('click', () => {
-    if (confirm('메타 진행을 초기화하시겠습니까? 정수, 모든 강화, 진행 중 저장이 사라집니다.')) {
-      meta.essence = 0;
-      meta.upgrades = {};
-      meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
-      saveMeta();
-      clearSavedRun();
-      renderMainMenu();
-    }
-  });
+  $('reset-meta').addEventListener('click', hardResetAll);
+  $('hard-reset-btn').addEventListener('click', hardResetAll);
 }
 
 function onStartWave() {
