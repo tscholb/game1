@@ -64,8 +64,8 @@ function isTileBlocked(cx, cy) {
 const HEROES = {
   archer: {
     id: 'archer',
-    name: '실프린',
-    flavor: '달빛 아래 사냥하는 별의 명궁수. 그녀의 화살은 별빛을 머금는다.',
+    name: '루나',
+    flavor: '달빛 아래 사냥하는 별의 명궁수. 그녀의 화살은 달의 가호를 머금는다.',
     color: '#a78bfa',
     accent: '#7c3aed',
     hair: '#c4b5fd',
