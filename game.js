@@ -2507,24 +2507,41 @@ function render() {
   }
 
   // 배치 미리보기 (선택한 타워를 호버 타일에 표시)
-  if (game.placingTowerType && game.hoveredTile) {
-    const { x, y } = game.hoveredTile;
-    const blocked = isTileBlocked(x, y) || tileHasTower(x, y);
-    const cx = x * TILE + TILE / 2;
-    const cy = y * TILE + TILE;
-    const def = TOWERS[game.placingTowerType];
-    // 사거리 원
-    ctx.strokeStyle = blocked ? 'rgba(255,80,80,0.6)' : 'rgba(243,216,120,0.6)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.arc(cx, cy - TILE / 2, def.range, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    // 미리보기 캐릭터 (반투명)
-    ctx.globalAlpha = blocked ? 0.4 : 0.7;
-    drawTower(ctx, game.placingTowerType, cx, cy, 1);
-    ctx.globalAlpha = 1;
+  if (game.placingTowerType) {
+    // 영웅 차단 영역 항상 표시 (배치 불가 영역)
+    if (game.heroEntity) {
+      const he = game.heroEntity;
+      ctx.fillStyle = 'rgba(255, 80, 80, 0.18)';
+      ctx.strokeStyle = 'rgba(255, 80, 80, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      [0, -1].forEach(dy => {
+        const tx = he.tileX, ty = he.tileY + dy;
+        if (ty < 0) return;
+        ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+        ctx.strokeRect(tx * TILE + 1, ty * TILE + 1, TILE - 2, TILE - 2);
+      });
+      ctx.setLineDash([]);
+    }
+    if (game.hoveredTile) {
+      const { x, y } = game.hoveredTile;
+      const blocked = isTileBlocked(x, y) || tileHasTower(x, y);
+      const cx = x * TILE + TILE / 2;
+      const cy = y * TILE + TILE;
+      const def = TOWERS[game.placingTowerType];
+      // 사거리 원
+      ctx.strokeStyle = blocked ? 'rgba(255,80,80,0.6)' : 'rgba(243,216,120,0.6)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cx, cy - TILE / 2, def.range, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 미리보기 캐릭터 (반투명)
+      ctx.globalAlpha = blocked ? 0.4 : 0.7;
+      drawTower(ctx, game.placingTowerType, cx, cy, 1);
+      ctx.globalAlpha = 1;
+    }
   }
 
   ctx.restore();
@@ -2837,7 +2854,12 @@ function getTowerStat(tw) {
 }
 
 function tileHasTower(tx, ty) {
-  if (game.heroEntity && game.heroEntity.tileX === tx && game.heroEntity.tileY === ty) return true;
+  if (game.heroEntity) {
+    const he = game.heroEntity;
+    // 영웅 자리 본인 + 위쪽 1칸 (큰 sprite가 가리지 않도록)
+    if (he.tileX === tx && he.tileY === ty) return true;
+    if (he.tileX === tx && he.tileY - 1 === ty) return true;
+  }
   return game.towers.some(t => t.tileX === tx && t.tileY === ty);
 }
 
