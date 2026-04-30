@@ -1,5 +1,5 @@
 // Service Worker — 정적 자산 캐싱으로 오프라인 플레이 지원
-const CACHE = 'boon-defense-v3';
+const CACHE = 'boon-defense-v4-portrait';
 const ASSETS = [
   './',
   './index.html',

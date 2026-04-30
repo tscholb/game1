@@ -9,21 +9,21 @@
 // 상수
 // ============================================================
 const TILE = 32;
-const COLS = 30;
-const ROWS = 20;
-const CANVAS_W = COLS * TILE; // 960
-const CANVAS_H = ROWS * TILE; // 640
+const COLS = 20;
+const ROWS = 30;
+const CANVAS_W = COLS * TILE; // 640
+const CANVAS_H = ROWS * TILE; // 960
 
-// 적 경로 (픽셀 좌표). 좌측 외부에서 우측 외부까지 구불구불하게.
+// 적 경로 (픽셀 좌표). 상단 외부 → 하단 외부, S자 흐름.
 const PATH = [
-  { x: -32, y: 96 },
-  { x: 384, y: 96 },
-  { x: 384, y: 224 },
-  { x: 64, y: 224 },
-  { x: 64, y: 352 },
-  { x: 512, y: 352 },
-  { x: 512, y: 480 },
-  { x: 992, y: 480 },
+  { x: 96,  y: -32 },
+  { x: 96,  y: 224 },
+  { x: 544, y: 224 },
+  { x: 544, y: 480 },
+  { x: 96,  y: 480 },
+  { x: 96,  y: 736 },
+  { x: 544, y: 736 },
+  { x: 544, y: 992 },
 ];
 
 // 타일이 경로의 일부인지 (타워 배치 불가)
@@ -1728,128 +1728,130 @@ function render() {
   }
 }
 
-// 시작점: 동굴 입구 (어둠 + 바위)
+// 시작점: 동굴 입구 (상단, 아래로 향함)
 function drawCaveEntrance(x, y) {
-  const cx = Math.max(0, x);
+  const cx = x;
+  const cy = Math.max(0, y);
   // 바위 더미
   ctx.fillStyle = '#3a3a4a';
   ctx.beginPath();
-  ctx.ellipse(cx + 4, y + 18, 22, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy + 6, 32, 14, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = '#5a5a6a';
   ctx.beginPath();
-  ctx.arc(cx + 6, y - 4, 14, 0, Math.PI * 2);
+  ctx.arc(cx - 20, cy - 8, 14, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx + 18, y - 8, 10, 0, Math.PI * 2);
+  ctx.arc(cx + 20, cy - 6, 12, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(cx - 6, y + 2, 12, 0, Math.PI * 2);
+  ctx.arc(cx, cy - 16, 10, 0, Math.PI * 2);
   ctx.fill();
-  // 동굴 입구 (검은 아치)
+  // 동굴 입구 (검은 아치, 아래로 향함)
   ctx.fillStyle = '#0a0a14';
   ctx.beginPath();
-  ctx.moveTo(cx - 12, y + 14);
-  ctx.lineTo(cx - 12, y - 6);
-  ctx.quadraticCurveTo(cx + 4, y - 22, cx + 20, y - 6);
-  ctx.lineTo(cx + 20, y + 14);
+  ctx.moveTo(cx - 14, cy - 10);
+  ctx.quadraticCurveTo(cx, cy - 24, cx + 14, cy - 10);
+  ctx.lineTo(cx + 14, cy + 18);
+  ctx.lineTo(cx - 14, cy + 18);
   ctx.closePath();
   ctx.fill();
   // 동굴 안의 빨간 빛
-  ctx.fillStyle = 'rgba(255,80,40,0.4)';
+  ctx.fillStyle = 'rgba(255,80,40,0.35)';
   ctx.beginPath();
-  ctx.ellipse(cx + 4, y + 4, 8, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy - 2, 8, 6, 0, 0, Math.PI * 2);
   ctx.fill();
-  // 두 개의 작은 눈 (몬스터 둥지 느낌)
+  // 두 개의 작은 눈
   ctx.fillStyle = '#ff4040';
-  ctx.fillRect(cx - 2, y, 2, 2);
-  ctx.fillRect(cx + 6, y, 2, 2);
+  ctx.fillRect(cx - 5, cy - 6, 2, 2);
+  ctx.fillRect(cx + 3, cy - 6, 2, 2);
   // 바위 디테일
   ctx.fillStyle = '#7a7a8a';
-  ctx.fillRect(cx - 8, y - 8, 3, 2);
-  ctx.fillRect(cx + 14, y - 12, 3, 2);
+  ctx.fillRect(cx - 28, cy - 14, 3, 2);
+  ctx.fillRect(cx + 24, cy - 16, 3, 2);
 }
 
-// 끝점: 성 (탑, 깃발, 문)
+// 끝점: 성 (하단, 정면)
 function drawCastleGate(x, y) {
-  const cx = Math.min(CANVAS_W, x);
+  const cx = x;
+  const cy = Math.min(CANVAS_H, y);
   // 성 베이스 (회색 돌)
   ctx.fillStyle = '#6a6a7a';
-  ctx.fillRect(cx - 30, y - 28, 60, 40);
+  ctx.fillRect(cx - 30, cy - 36, 60, 40);
   // 흙 그림자
   ctx.fillStyle = '#2a2a3a';
-  ctx.fillRect(cx - 30, y + 10, 60, 4);
+  ctx.fillRect(cx - 30, cy + 4, 60, 4);
   // 돌 텍스처 라인
   ctx.fillStyle = '#5a5a6a';
   for (let i = 0; i < 3; i++) {
-    ctx.fillRect(cx - 30, y - 24 + i * 12, 60, 1);
+    ctx.fillRect(cx - 30, cy - 32 + i * 12, 60, 1);
   }
   for (let i = 0; i < 4; i++) {
-    ctx.fillRect(cx - 22 + i * 14, y - 28, 1, 12);
+    ctx.fillRect(cx - 22 + i * 14, cy - 36, 1, 12);
   }
-  // 성벽 위 톱니 (battlements)
+  // 성벽 위 톱니
   ctx.fillStyle = '#6a6a7a';
   for (let i = 0; i < 5; i++) {
-    ctx.fillRect(cx - 30 + i * 14, y - 34, 8, 8);
+    ctx.fillRect(cx - 30 + i * 14, cy - 42, 8, 8);
   }
   // 좌우 탑
   ctx.fillStyle = '#5a5a7a';
-  ctx.fillRect(cx - 38, y - 36, 12, 48);
-  ctx.fillRect(cx + 26, y - 36, 12, 48);
+  ctx.fillRect(cx - 38, cy - 44, 12, 48);
+  ctx.fillRect(cx + 26, cy - 44, 12, 48);
   // 탑 지붕 (삼각형)
   ctx.fillStyle = '#7d3f3f';
   ctx.beginPath();
-  ctx.moveTo(cx - 38, y - 36);
-  ctx.lineTo(cx - 32, y - 50);
-  ctx.lineTo(cx - 26, y - 36);
+  ctx.moveTo(cx - 38, cy - 44);
+  ctx.lineTo(cx - 32, cy - 58);
+  ctx.lineTo(cx - 26, cy - 44);
   ctx.closePath();
   ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(cx + 26, y - 36);
-  ctx.lineTo(cx + 32, y - 50);
-  ctx.lineTo(cx + 38, y - 36);
+  ctx.moveTo(cx + 26, cy - 44);
+  ctx.lineTo(cx + 32, cy - 58);
+  ctx.lineTo(cx + 38, cy - 44);
   ctx.closePath();
   ctx.fill();
   // 탑 창문
   ctx.fillStyle = '#fde68a';
-  ctx.fillRect(cx - 35, y - 22, 4, 6);
-  ctx.fillRect(cx + 31, y - 22, 4, 6);
-  ctx.fillRect(cx - 35, y - 8, 4, 6);
-  ctx.fillRect(cx + 31, y - 8, 4, 6);
+  ctx.fillRect(cx - 35, cy - 30, 4, 6);
+  ctx.fillRect(cx + 31, cy - 30, 4, 6);
+  ctx.fillRect(cx - 35, cy - 16, 4, 6);
+  ctx.fillRect(cx + 31, cy - 16, 4, 6);
   // 깃발 (좌)
   ctx.strokeStyle = '#3a2a1a';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cx - 32, y - 50);
-  ctx.lineTo(cx - 32, y - 60);
+  ctx.moveTo(cx - 32, cy - 58);
+  ctx.lineTo(cx - 32, cy - 68);
   ctx.stroke();
   ctx.fillStyle = '#f3d878';
   ctx.beginPath();
-  ctx.moveTo(cx - 32, y - 60);
-  ctx.lineTo(cx - 22, y - 56);
-  ctx.lineTo(cx - 32, y - 52);
+  ctx.moveTo(cx - 32, cy - 68);
+  ctx.lineTo(cx - 22, cy - 64);
+  ctx.lineTo(cx - 32, cy - 60);
   ctx.closePath();
   ctx.fill();
   // 깃발 (우)
   ctx.strokeStyle = '#3a2a1a';
   ctx.beginPath();
-  ctx.moveTo(cx + 32, y - 50);
-  ctx.lineTo(cx + 32, y - 60);
+  ctx.moveTo(cx + 32, cy - 58);
+  ctx.lineTo(cx + 32, cy - 68);
   ctx.stroke();
   ctx.fillStyle = '#f3d878';
   ctx.beginPath();
-  ctx.moveTo(cx + 32, y - 60);
-  ctx.lineTo(cx + 42, y - 56);
-  ctx.lineTo(cx + 32, y - 52);
+  ctx.moveTo(cx + 32, cy - 68);
+  ctx.lineTo(cx + 42, cy - 64);
+  ctx.lineTo(cx + 32, cy - 60);
   ctx.closePath();
   ctx.fill();
-  // 정문 (어두운 아치)
+  // 정문 (어두운 아치, 위로 향함)
   ctx.fillStyle = '#1a1018';
   ctx.beginPath();
-  ctx.moveTo(cx - 12, y + 12);
-  ctx.lineTo(cx - 12, y - 6);
-  ctx.quadraticCurveTo(cx, y - 18, cx + 12, y - 6);
-  ctx.lineTo(cx + 12, y + 12);
+  ctx.moveTo(cx - 12, cy + 4);
+  ctx.lineTo(cx - 12, cy - 14);
+  ctx.quadraticCurveTo(cx, cy - 26, cx + 12, cy - 14);
+  ctx.lineTo(cx + 12, cy + 4);
   ctx.closePath();
   ctx.fill();
   // 정문 격자
@@ -1857,19 +1859,19 @@ function drawCastleGate(x, y) {
   ctx.lineWidth = 1;
   for (let i = -10; i <= 10; i += 4) {
     ctx.beginPath();
-    ctx.moveTo(cx + i, y - 4);
-    ctx.lineTo(cx + i, y + 10);
+    ctx.moveTo(cx + i, cy - 12);
+    ctx.lineTo(cx + i, cy + 2);
     ctx.stroke();
   }
-  for (let i = -2; i <= 10; i += 4) {
+  for (let i = -10; i <= 2; i += 4) {
     ctx.beginPath();
-    ctx.moveTo(cx - 10, y + i);
-    ctx.lineTo(cx + 10, y + i);
+    ctx.moveTo(cx - 10, cy + i);
+    ctx.lineTo(cx + 10, cy + i);
     ctx.stroke();
   }
   // 잔디/땅 패치
   ctx.fillStyle = '#3a4a2a';
-  ctx.fillRect(cx - 38, y + 12, 76, 4);
+  ctx.fillRect(cx - 38, cy + 4, 76, 4);
 }
 
 // ============================================================

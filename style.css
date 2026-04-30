@@ -43,10 +43,10 @@ html, body {
   display: inline-block;
 }
 @keyframes rotate {
-  0%, 30%   { transform: rotate(0deg); }
-  60%, 100% { transform: rotate(-90deg); }
+  0%, 30%   { transform: rotate(-90deg); }
+  60%, 100% { transform: rotate(0deg); }
 }
-@media (orientation: portrait) and (pointer: coarse) and (max-height: 700px) {
+@media (orientation: landscape) and (pointer: coarse) and (max-width: 900px) {
   #orient-hint { display: flex; }
 }
 
