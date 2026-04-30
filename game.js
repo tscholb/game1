@@ -2249,18 +2249,10 @@ function hardResetAll() {
     meta.essence = 0;
     meta.upgrades = {};
     meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
-    // localStorage 안의 게임 관련 키 모두 제거 (혹시 모를 잔여 데이터까지)
-    try {
-      const toRemove = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith('boon-defense')) toRemove.push(k);
-      }
-      toRemove.forEach(k => localStorage.removeItem(k));
-    } catch (_) {}
-    // 명시적으로 두 키도 한 번 더 삭제 (보장)
-    try { localStorage.removeItem(RUN_KEY); } catch (_) {}
-    try { localStorage.removeItem(META_KEY); } catch (_) {}
+    // 가장 강력하게: 사이트 origin 의 localStorage 전체 비우기
+    try { localStorage.clear(); } catch (_) {}
+    // sessionStorage도 혹시 모를 잔여 데이터 비움
+    try { sessionStorage.clear(); } catch (_) {}
   } catch (e) { console.warn(e); }
   // Service Worker 캐시 비우기 + 등록 해제
   try {
