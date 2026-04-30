@@ -380,6 +380,8 @@ function castHeroSkill() {
   if (!he || he.skillCD > 0) return false;
   const skill = HEROES[he.type].skill;
   if (!skill) return false;
+  // 큰 일러스트 + 대사 cut-in
+  if (game._playSkillCutin) game._playSkillCutin(he.type, skill.name);
   if (skill.kind === 'arrow-rain') {
     // 25발 화살이 화면 위에서 떨어짐
     for (let i = 0; i < 28; i++) {
@@ -570,42 +572,70 @@ function drawHeroEntity() {
   ctx.stroke();
   ctx.setLineDash([]);
   // 영웅 모션 — 호흡(상하), 사위(좌우), 공격 시 살짝 앞으로 기울기
-  const bob = Math.sin(he.bobT * 2.4) * 1.5;
-  const breath = Math.sin(he.bobT * 1.4) * 1.2;
-  const sway = Math.cos(he.bobT * 0.8) * 0.6;
+  const bob = Math.sin(he.bobT * 2.4) * 2;
+  const breath = Math.sin(he.bobT * 1.4) * 1.5;
+  const sway = Math.cos(he.bobT * 0.8) * 0.8;
+  const pulse = 0.5 + 0.5 * Math.sin(he.bobT * 2.0); // 0~1 펄스
   const heroColor = HEROES[he.type].color;
-  // 발 아래 큰 빛나는 원 (위압감)
-  ctx.fillStyle = `${heroColor}26`;
-  ctx.beginPath();
-  ctx.ellipse(he.cx, he.cy + 20, 24, 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = `${heroColor}55`;
-  ctx.beginPath();
-  ctx.ellipse(he.cx, he.cy + 20, 14, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // 발광 (영웅 색, 발사 시 약하게)
-  if (he.flashT > 0) {
-    const r = parseInt(heroColor.slice(1, 3), 16);
-    const g = parseInt(heroColor.slice(3, 5), 16);
-    const b = parseInt(heroColor.slice(5, 7), 16);
-    ctx.fillStyle = `rgba(${r},${g},${b},${he.flashT * 0.6})`;
+  const r = parseInt(heroColor.slice(1, 3), 16);
+  const g = parseInt(heroColor.slice(3, 5), 16);
+  const b = parseInt(heroColor.slice(5, 7), 16);
+  // 회전 광선 후광 (위압)
+  ctx.save();
+  ctx.translate(he.cx, he.cy);
+  ctx.rotate(he.bobT * 0.6);
+  ctx.globalAlpha = 0.18 + pulse * 0.08;
+  for (let i = 0; i < 6; i++) {
+    ctx.fillStyle = heroColor;
     ctx.beginPath();
-    ctx.arc(he.cx, he.cy - 12, 20, 0, Math.PI * 2);
+    ctx.moveTo(0, 0);
+    const a1 = (i / 6) * Math.PI * 2;
+    const a2 = a1 + 0.3;
+    ctx.arc(0, 0, 50, a1, a2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+  // 큰 펄스 글로우
+  ctx.save();
+  ctx.globalAlpha = 0.25 + pulse * 0.15;
+  const grad = ctx.createRadialGradient(he.cx, he.cy + 4, 4, he.cx, he.cy + 4, 44);
+  grad.addColorStop(0, `rgba(${r},${g},${b},0.55)`);
+  grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(he.cx, he.cy + 4, 44, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  // 발 아래 두 겹 빛나는 원
+  ctx.fillStyle = `rgba(${r},${g},${b},${0.25 + pulse * 0.1})`;
+  ctx.beginPath();
+  ctx.ellipse(he.cx, he.cy + 26, 30 + pulse * 4, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = `rgba(${r},${g},${b},0.55)`;
+  ctx.beginPath();
+  ctx.ellipse(he.cx, he.cy + 26, 16, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 발사 시 추가 발광
+  if (he.flashT > 0) {
+    ctx.fillStyle = `rgba(${r},${g},${b},${he.flashT * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(he.cx, he.cy - 16, 28, 0, Math.PI * 2);
     ctx.fill();
   }
   // 영웅 캐릭터 (위압적 크기 + 모션)
   const sprite = HERO_SPRITE[he.type];
   if (sprite && sprite.complete && sprite.naturalWidth > 0) {
-    const size = 60;
+    ctx.imageSmoothingEnabled = false;
+    const size = 80;
     const dx = he.cx - size / 2 + sway;
-    const dy = he.cy + bob + breath - size + 12;
+    const dy = he.cy + bob + breath - size + 18;
     if (he.flashT > 0) {
-      // 공격 모션 — 살짝 앞으로 숙임
-      const tilt = he.flashT * 0.18;
+      const tilt = he.flashT * 0.2;
       ctx.save();
-      ctx.translate(he.cx, he.cy + 16);
+      ctx.translate(he.cx, he.cy + 18);
       ctx.rotate(tilt);
-      ctx.translate(-he.cx, -(he.cy + 16));
+      ctx.translate(-he.cx, -(he.cy + 18));
       ctx.drawImage(sprite, dx, dy, size, size);
       ctx.restore();
     } else {
@@ -3817,6 +3847,28 @@ function setupInput() {
   $('sidebar-toggle').addEventListener('click', () => {
     $('sidebar').classList.toggle('open');
   });
+  // 영웅 스킬 cut-in (큰 일러스트 + 대사)
+  const SKILL_QUOTES = {
+    archer: '달빛이 너희를 꿰뚫는다!',
+    mage: '타올라라 — 이 세계마저!',
+    merchant: '비켜라, 모두!',
+  };
+  function playSkillCutin(heroId, skillName) {
+    const cut = $('skill-cutin');
+    const portrait = $('cutin-portrait');
+    const quote = $('cutin-quote');
+    const sname = $('cutin-skill-name');
+    const img = HERO_IMG[heroId];
+    if (img && img.complete) portrait.src = img.src;
+    quote.textContent = SKILL_QUOTES[heroId] || '';
+    sname.textContent = skillName || '';
+    cut.classList.remove('active');
+    void cut.offsetWidth;
+    cut.classList.add('active');
+    setTimeout(() => cut.classList.remove('active'), 1700);
+  }
+  game._playSkillCutin = playSkillCutin;
+
   $('skill-btn').addEventListener('click', () => {
     castHeroSkill();
   });
