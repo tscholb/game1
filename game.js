@@ -1265,19 +1265,29 @@ function drawLevelStars(ctx, cx, y, level, color) {
 
 // 타워 ID 분기
 function drawTower(ctx, type, cx, footY, level = 1) {
-  // 타워 base 패드 (잔디 위에서 분명히 보이도록)
+  // 타워 base — 큰 돌 받침대 (잔디 위에서 즉시 보이도록)
   ctx.save();
-  ctx.fillStyle = 'rgba(20, 25, 35, 0.55)';
+  // 그림자
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
-  ctx.ellipse(cx, footY - 1, 14, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, footY + 2, 16, 6, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(60, 50, 40, 0.85)';
-  ctx.beginPath();
-  ctx.ellipse(cx, footY - 3, 13, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
+  // 베이스 사각형 (돌 색상)
+  const baseW = 26, baseH = 22;
+  const bx = cx - baseW / 2, by = footY - baseH + 4;
+  // 외곽 어두운
+  ctx.fillStyle = '#3a2f24';
+  ctx.fillRect(bx - 1, by - 1, baseW + 2, baseH + 2);
+  // 안쪽 베이지
+  ctx.fillStyle = '#a08054';
+  ctx.fillRect(bx, by, baseW, baseH);
+  // 하이라이트
+  ctx.fillStyle = '#c9a378';
+  ctx.fillRect(bx, by, baseW, 4);
+  // 외곽선 흰
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bx, by, baseW, baseH);
   ctx.restore();
   if (type === 'archer') drawArcherTower(ctx, cx, footY, level);
   else if (type === 'cannon') drawCannonTower(ctx, cx, footY, level);
@@ -2308,18 +2318,9 @@ function render() {
       }
     }
   }
-  // 산발적 디테일 (꽃/덤불) — 결정론적 패턴, 빈도 낮춤, 안전한 인덱스만
-  const decorIds = [130, 132];
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-      if (isTileBlocked(x, y)) continue;
-      if (tileHasTower(x, y)) continue;
-      const seed = (x * 73 + y * 131) % 37;
-      if (seed < 2) {
-        kdraw(decorIds[seed % decorIds.length], x * TILE, y * TILE, TILE);
-      }
-    }
-  }
+  // 디테일 (꽃/덤불) — 일시 비활성. 타워 가시성 우선 확보 후 다시 켤 예정
+  // const decorIds = [130, 132];
+  // for (let y = 0; y < ROWS; y++) { ... }
 
   // 경로 그리기 (모래/흙길 — Kenney 잔디 타일에 어울리는 톤)
   ctx.strokeStyle = '#7a5a32';
