@@ -576,11 +576,14 @@ function drawHeroEntity() {
   ctx.beginPath();
   ctx.ellipse(he.cx, he.cy + 18, 18, 6, 0, 0, Math.PI * 2);
   ctx.fill();
-  // 발광 광선 (크게)
+  // 발광 광선 (영웅 색상, 작게, 약하게)
   if (he.flashT > 0) {
-    ctx.fillStyle = `rgba(255,255,255,${he.flashT * 2})`;
+    const r = parseInt(heroColor.slice(1, 3), 16);
+    const g = parseInt(heroColor.slice(3, 5), 16);
+    const b = parseInt(heroColor.slice(5, 7), 16);
+    ctx.fillStyle = `rgba(${r},${g},${b},${he.flashT * 0.8})`;
     ctx.beginPath();
-    ctx.arc(he.cx, he.cy - 16, 30, 0, Math.PI * 2);
+    ctx.arc(he.cx, he.cy - 8, 18, 0, Math.PI * 2);
     ctx.fill();
   }
   // 영웅 캐릭터 (스프라이트 있으면 사용, 없으면 도형)
@@ -2220,12 +2223,19 @@ function updateCancelButton() {
   if (!btn) return;
   const show = !!(game.placingTowerType || game.selectedTower);
   btn.classList.toggle('hidden', !show);
+  if (game.placingTowerType) {
+    const def = TOWERS[game.placingTowerType];
+    btn.textContent = `${def.name} 배치 중 — 빈칸 탭 / 취소`;
+  } else if (game.selectedTower) {
+    btn.textContent = '선택 해제';
+  }
 }
 
 // ============================================================
 // 렌더링 (Step 1: 그리드 + 경로만)
 // ============================================================
 function render() {
+  ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   // 화면 흔들림
@@ -3602,6 +3612,9 @@ function setupInput() {
       return;
     }
     quitToMenu();
+  });
+  $('sidebar-close').addEventListener('click', () => {
+    $('sidebar').classList.remove('open');
   });
   $('sidebar-toggle').addEventListener('click', () => {
     $('sidebar').classList.toggle('open');
