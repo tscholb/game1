@@ -3778,7 +3778,6 @@ function setupInput() {
     $('result-screen').classList.add('hidden');
     quitToMenu();
   });
-  $('reset-meta').addEventListener('click', hardResetAll);
   $('hard-reset-btn').addEventListener('click', hardResetAll);
 }
 
