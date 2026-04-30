@@ -114,27 +114,27 @@ const HEROES = {
   },
   merchant: {
     id: 'merchant',
-    name: '카이런',
-    flavor: '대륙을 누비는 상인. 골드는 그가 휘두르는 또 다른 무기다.',
-    color: '#fbbf24',
-    accent: '#c8881b',
-    hair: '#5b3b1a',
-    skin: '#f4d2a8',
-    cloth: '#7a4a14',
-    cloth2: '#fbbf24',
-    passives: ['시작 골드 +75', '적 처치 골드 +1', '본인이 직접 전투에 참여'],
-    combat: { dmg: 12, range: 120, fireRate: 0.6, projectile: 'coin', air: false },
+    name: '레이나',
+    flavor: '전장을 떠도는 전설의 용병. 그녀의 대검 앞에 살아남는 자는 없다.',
+    color: '#fcd34d',
+    accent: '#b45309',
+    hair: '#fcd34d',
+    skin: '#fbe1d3',
+    cloth: '#1a1a1a',
+    cloth2: '#f4f4f4',
+    passives: ['시작 라이프 +5', '대검 광역 근접 공격', '본인이 직접 전투에 참여'],
+    combat: { dmg: 55, range: 90, fireRate: 0.85, projectile: 'slash', air: false, splash: 70 },
     skill: {
-      name: '황금 비',
-      desc: '5초간 처치 골드 ×2 + 즉시 +50 골드',
-      cooldown: 30,
-      kind: 'gold-rain',
+      name: '대지 가르기',
+      desc: '주변 모든 적을 휩쓰는 거대한 슬래시 일격',
+      cooldown: 16,
+      kind: 'great-cleave',
     },
     upgrades: [
-      { id: 'mer-purse',   name: '두둑한 지갑',  desc: '시작 골드 단계당 +25', max: 4, cost: [3, 5, 8, 12], per: 25 },
-      { id: 'mer-trade',   name: '교역로',     desc: '적 처치 골드 단계당 +1', max: 3, cost: [4, 8, 14], per: 1 },
-      { id: 'mer-discount',name: '대량구매',    desc: '타워 비용 단계당 -3%', max: 3, cost: [4, 8, 14], per: 0.03 },
-      { id: 'mer-tribute', name: '왕실 공물',   desc: '웨이브 종료 보너스 단계당 +15 골드', max: 2, cost: [6, 12], per: 15 },
+      { id: 'mer-purse',   name: '강철 의지',     desc: '시작 라이프 단계당 +3',          max: 3, cost: [3, 5, 8],     per: 3 },
+      { id: 'mer-trade',   name: '대검 숙련',     desc: '용병 데미지 단계당 +12%',        max: 3, cost: [4, 8, 14],    per: 0.12 },
+      { id: 'mer-discount',name: '광전사',       desc: '용병 공속 단계당 -8%',           max: 3, cost: [4, 8, 14],    per: 0.08 },
+      { id: 'mer-tribute', name: '용병의 기치',   desc: '모든 타워 데미지 +5%',           max: 2, cost: [6, 12],       per: 0.05 },
     ],
   },
 };
@@ -280,33 +280,64 @@ function updateHero(dt) {
     if (e.pathT > bestT) { bestT = e.pathT; best = e; }
   }
   if (!best) return;
-  // 발사
   const stat = heroEffectiveStat(he);
-  const p = {
-    x: he.cx, y: he.cy - 16,
-    target: best,
-    type: def.projectile,
-    speed: 520,
-    dmg: stat.dmg,
-    splash: 0,
-    magic: !!def.magic,
-    arc: false, arcT: 0, arcDur: 0,
-    startX: he.cx, startY: he.cy - 16,
-    targetX: best.x, targetY: best.y,
-    slow: 0, slowDur: 0,
-    dead: false,
-    fromType: 'hero-' + he.type,
-  };
-  game.projectiles.push(p);
+  if (def.projectile === 'slash') {
+    // 근접 광역: 자신 주변 즉시 데미지
+    const r = stat.range;
+    for (const e of game.enemies) {
+      if (e.dead) continue;
+      if (e.air && !def.air) continue;
+      if (Math.hypot(e.x - he.cx, e.y - he.cy) <= r) {
+        e.hp -= stat.dmg;
+        if (e.hp <= 0) e.dead = true;
+        // 데미지 숫자
+        game.damageNums = game.damageNums || [];
+        game.damageNums.push({
+          x: e.x + (Math.random() - 0.5) * 12,
+          y: e.y - 20,
+          value: Math.round(stat.dmg),
+          life: 0.7, maxLife: 0.7,
+          color: stat.dmg >= 60 ? '#fde68a' : '#fff',
+          size: stat.dmg >= 60 ? 16 : 12,
+        });
+        e.hitT = 0.1;
+      }
+    }
+    // 슬래시 호 이펙트
+    game.effects.push({ kind: 'slash', x: he.cx, y: he.cy, r, t: 0, dur: 0.32, color: '#ffe89a' });
+    addCameraShake(0.15, 3);
+  } else {
+    const p = {
+      x: he.cx, y: he.cy - 16,
+      target: best,
+      type: def.projectile,
+      speed: 520,
+      dmg: stat.dmg,
+      splash: 0,
+      magic: !!def.magic,
+      arc: false, arcT: 0, arcDur: 0,
+      startX: he.cx, startY: he.cy - 16,
+      targetX: best.x, targetY: best.y,
+      slow: 0, slowDur: 0,
+      dead: false,
+      fromType: 'hero-' + he.type,
+    };
+    game.projectiles.push(p);
+  }
   he.cooldown = stat.fireRate;
   he.flashT = 0.12;
 }
 
 function heroEffectiveStat(he) {
   const def = HEROES[he.type].combat;
-  let stat = { dmg: def.dmg, range: def.range, fireRate: def.fireRate };
-  // 메타 강화 일부 영웅에도 적용 (예: 영웅 데미지 약하게 보강)
-  if (game.meta) stat.range *= game.meta.rangeMul;
+  let stat = { dmg: def.dmg, range: def.range, fireRate: def.fireRate, splash: def.splash || 0 };
+  if (game.meta) {
+    stat.range *= game.meta.rangeMul;
+    if (he.type === 'merchant') {
+      stat.dmg *= (game.meta.mercDmgMul || 1);
+      stat.fireRate *= (game.meta.mercFireMul || 1);
+    }
+  }
   return stat;
 }
 
@@ -346,6 +377,33 @@ function castHeroSkill() {
     const ty = target ? target.y : CANVAS_H / 2;
     fireBurstAt(tx, ty);
     addCameraShake(0.9, 14);
+  } else if (skill.kind === 'great-cleave') {
+    // 자신 주변 큰 광역 슬래시 + 강력한 데미지
+    const r = 180;
+    for (const e of game.enemies) {
+      if (e.dead) continue;
+      if (Math.hypot(e.x - he.cx, e.y - he.cy) <= r) {
+        e.hp -= 200;
+        if (e.hp <= 0) e.dead = true;
+        e.hitT = 0.2;
+      }
+    }
+    game.effects.push({ kind: 'slash-big', x: he.cx, y: he.cy, r, t: 0, dur: 0.55, color: '#fde68a' });
+    // 황금 파편 파티클
+    for (let i = 0; i < 50; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const sp = 200 + Math.random() * 300;
+      game.particles = game.particles || [];
+      game.particles.push({
+        x: he.cx, y: he.cy - 16,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life: 0.5 + Math.random() * 0.5, maxLife: 1,
+        size: 2 + Math.random() * 3,
+        color: i % 3 === 0 ? '#ffffff' : (i % 2 ? '#fde68a' : '#fbbf24'),
+        kind: 'shard', g: 200,
+      });
+    }
+    addCameraShake(0.7, 12);
   } else if (skill.kind === 'gold-rain') {
     game.gold += 50;
     game.goldRainT = 5;
@@ -1697,8 +1755,10 @@ function metaBonus(heroId) {
   const acc = {
     archerDmgMul: 1, archerFireMul: 1, sniperDmgMul: 1, sniperFireMul: 1,
     mageDmgMul: 1, frostDmgMul: 1,
+    mercDmgMul: 1, mercFireMul: 1,
+    allTowerDmgMul: 1,
     rangeMul: 1,
-    startGold: 0, killGold: 0, costMul: 1, waveBonus: 0,
+    startGold: 0, startHp: 0, killGold: 0, costMul: 1, waveBonus: 0,
     boonChoices: 3,
     freeTowers: [], // {type, level}
   };
@@ -1715,10 +1775,11 @@ function metaBonus(heroId) {
       case 'm-power':     acc.mageDmgMul *= 1 + v; acc.frostDmgMul *= 1 + v; break;
       case 'm-mark':      acc.boonChoices = 4; break;
       case 'm-bonus':     acc.freeTowers.push({ type: 'mage', level: 2 }); break;
-      case 'mer-purse':   acc.startGold += v; break;
-      case 'mer-trade':   acc.killGold += v; break;
-      case 'mer-discount':acc.costMul *= 1 - v; break;
-      case 'mer-tribute': acc.waveBonus += v; break;
+      // 용병 (레이나)
+      case 'mer-purse':   acc.startHp += v; break;          // 시작 라이프 +
+      case 'mer-trade':   acc.mercDmgMul *= 1 + v; break;   // 용병 데미지 +
+      case 'mer-discount':acc.mercFireMul *= 1 - v; break;  // 용병 공속 -
+      case 'mer-tribute': acc.allTowerDmgMul *= 1 + v; break; // 모든 타워 데미지 +
     }
   }
   return acc;
@@ -1950,10 +2011,11 @@ function _startRun() {
 
 function applyHeroPassives() {
   // 영웅 기본 패시브
-  if (game.hero.id === 'merchant') game.gold += 75;
+  if (game.hero.id === 'merchant') game.hp += 5; // 용병: 시작 라이프 +5
   // 메타 강화
   game.meta = metaBonus(game.hero.id);
   game.gold += game.meta.startGold;
+  game.hp += game.meta.startHp;
   // 영웅 본체 자동 배치 (먼저)
   placeHero();
   // 시작 무료 타워 (영웅 강화로 부여)
@@ -2362,7 +2424,6 @@ function update(dt) {
       onEnemyKilled(e);
       game.kills += 1;
       let drop = e.goldDrop;
-      if (game.hero && game.hero.id === 'merchant') drop += 1;
       if (game.meta) drop += game.meta.killGold;
       if (hasBoon('bountiful')) drop += 2;
       if (game.goldRainT > 0) drop *= 2;
@@ -2490,6 +2551,7 @@ function getTowerStat(tw) {
     if (tw.type === 'sniper') { stat.dmg *= game.meta.sniperDmgMul; stat.fireRate *= game.meta.sniperFireMul; }
     if (tw.type === 'mage')   stat.dmg *= game.meta.mageDmgMul;
     if (tw.type === 'frost')  stat.dmg *= game.meta.frostDmgMul;
+    stat.dmg *= (game.meta.allTowerDmgMul || 1);
     stat.range *= game.meta.rangeMul;
   }
   return applyBoonStats(tw, def, stat);
@@ -2892,6 +2954,32 @@ function drawEffect(ctx, fx) {
     ctx.arc(fx.x, fx.y, 5 + k * 6, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (fx.kind === 'slash' || fx.kind === 'slash-big') {
+    // 호 형태의 슬래시 — 빠르게 그어지고 페이드
+    const big = fx.kind === 'slash-big';
+    const rNow = fx.r * Math.min(1, k * 1.4);
+    ctx.save();
+    ctx.translate(fx.x, fx.y);
+    ctx.rotate(-Math.PI / 2 + (k - 0.5) * Math.PI * (big ? 1.4 : 1.0));
+    ctx.strokeStyle = `rgba(255,232,154,${1 - k})`;
+    ctx.lineWidth = big ? 6 : 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, rNow * 0.85, -Math.PI * 0.45, Math.PI * 0.45);
+    ctx.stroke();
+    if (big) {
+      ctx.strokeStyle = `rgba(255,255,255,${(1 - k) * 0.7})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, rNow * 0.7, -Math.PI * 0.45, Math.PI * 0.45);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 광역 원
+    ctx.strokeStyle = `rgba(255,232,154,${(1 - k) * 0.3})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, rNow, 0, Math.PI * 2);
+    ctx.stroke();
   } else if (fx.kind === 'fireburst') {
     // 거대한 화염 폭발 + 빛 줄기
     const rNow = fx.r * Math.min(1, k * 1.4);
