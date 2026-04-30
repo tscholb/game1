@@ -1814,13 +1814,56 @@ function showBoonOverlay() {
       <div class="name">${b.name}</div>
       <div class="desc">${b.desc}</div>
       <div class="target">${target}</div>`;
-    el.addEventListener('click', () => {
-      addBoon(b);
-      overlay.classList.add('hidden');
-    });
+    el.addEventListener('click', () => openBoonConfirm(b));
     wrap.appendChild(el);
   }
   overlay.classList.remove('hidden');
+}
+
+function openBoonConfirm(boon) {
+  const card = $('boon-confirm-card');
+  card.className = 'boon-confirm-card ' + boon.rarity;
+  const rarityLabel = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[boon.rarity] || boon.rarity;
+  const target = boon.tower ? `${TOWERS[boon.tower].name} 전용` : (boon.kind === 'instant' ? '즉시 효과' : '모든 병사');
+  $('bc-rarity').textContent = `◆ ${rarityLabel} 가호 ◆`;
+  $('bc-rarity').style.color = {
+    common: '#c8cdd9', rare: '#93d8ff', epic: '#d8b4fe', legendary: '#fde68a'
+  }[boon.rarity] || '#fff';
+  $('bc-name').textContent = boon.name;
+  $('bc-desc').textContent = boon.desc;
+  $('bc-target').textContent = target;
+  $('boon-confirm').classList.add('active');
+  // 핸들러 한 번 등록
+  const yesBtn = $('boon-confirm-yes');
+  const noBtn = $('boon-confirm-no');
+  const close = () => $('boon-confirm').classList.remove('active');
+  const onYes = () => {
+    close();
+    triggerBoonFlash(boon.rarity);
+    addBoon(boon);
+    $('boon-overlay').classList.add('hidden');
+    yesBtn.removeEventListener('click', onYes);
+    noBtn.removeEventListener('click', onNo);
+  };
+  const onNo = () => {
+    close();
+    yesBtn.removeEventListener('click', onYes);
+    noBtn.removeEventListener('click', onNo);
+  };
+  yesBtn.addEventListener('click', onYes);
+  noBtn.addEventListener('click', onNo);
+}
+
+function triggerBoonFlash(rarity) {
+  const flash = $('boon-flash');
+  flash.className = '';
+  // 강제 reflow로 애니메이션 재시작
+  void flash.offsetWidth;
+  flash.classList.add(rarity, 'active');
+  setTimeout(() => flash.classList.remove('active', rarity), 1100);
+  // 카메라 흔들림 (등급별 강도)
+  const shakeMag = { common: 0, rare: 4, epic: 8, legendary: 14 }[rarity] || 0;
+  if (shakeMag > 0) addCameraShake(0.5, shakeMag);
 }
 
 // ============================================================

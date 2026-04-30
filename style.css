@@ -878,17 +878,241 @@ button.small { padding: 4px 10px; font-size: 11px; }
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.boon-choice.common { border-color: #4a5060; }
-.boon-choice.common:hover { border-color: #6a7080; }
-.boon-choice.rare { border-color: #4070a0; }
-.boon-choice.rare:hover { border-color: #6ea3e0; box-shadow: 0 0 20px rgba(110, 163, 224, 0.3); }
+/* 등급별 상시 표시 */
+.boon-choice {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.boon-choice.common {
+  border-color: #5a6280;
+  background: linear-gradient(160deg, #1a1d28 0%, #20242f 100%);
+}
+.boon-choice.common:hover { border-color: #7a8090; transform: translateY(-3px); }
+
+.boon-choice.rare {
+  border-color: #4070a0;
+  background: linear-gradient(160deg, #16202c 0%, #1c2a3a 100%);
+  box-shadow: 0 0 14px rgba(110, 163, 224, 0.2);
+}
+.boon-choice.rare:hover {
+  border-color: #6ea3e0;
+  box-shadow: 0 0 28px rgba(110, 163, 224, 0.5);
+  transform: translateY(-3px);
+}
 .boon-choice.rare .rarity { color: #93d8ff; }
-.boon-choice.epic { border-color: #7c3aed; }
-.boon-choice.epic:hover { border-color: #c084fc; box-shadow: 0 0 20px rgba(192, 132, 252, 0.3); }
-.boon-choice.epic .rarity { color: #d8b4fe; }
-.boon-choice.legendary { border-color: #c0a040; }
-.boon-choice.legendary:hover { border-color: #f3d878; box-shadow: 0 0 24px rgba(243, 216, 120, 0.4); }
-.boon-choice.legendary .rarity { color: #f3d878; }
+
+.boon-choice.epic {
+  border-color: #7c3aed;
+  background: linear-gradient(160deg, #1a1228 0%, #2a1a4a 100%);
+  box-shadow: 0 0 18px rgba(192, 132, 252, 0.3);
+  animation: epicPulse 2.4s ease-in-out infinite;
+}
+.boon-choice.epic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(192,132,252,0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+.boon-choice.epic:hover {
+  border-color: #d8b4fe;
+  box-shadow: 0 0 32px rgba(192, 132, 252, 0.6);
+  transform: translateY(-4px);
+}
+.boon-choice.epic .rarity { color: #d8b4fe; text-shadow: 0 0 10px rgba(192,132,252,0.6); }
+@keyframes epicPulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(192, 132, 252, 0.3); }
+  50% { box-shadow: 0 0 26px rgba(192, 132, 252, 0.55); }
+}
+
+.boon-choice.legendary {
+  border-color: #f3d878;
+  background: linear-gradient(160deg, #2a1f10 0%, #3a2a14 50%, #2a1f10 100%);
+  box-shadow: 0 0 24px rgba(243, 216, 120, 0.4);
+  animation: legendaryGlow 2s ease-in-out infinite;
+}
+.boon-choice.legendary::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(255,232,154,0.15) 25%, transparent 50%, rgba(255,232,154,0.15) 75%, transparent 100%);
+  animation: legendarySpin 6s linear infinite;
+  pointer-events: none;
+}
+.boon-choice.legendary::after {
+  content: '★';
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  color: #fde68a;
+  font-size: 14px;
+  text-shadow: 0 0 10px rgba(253, 230, 138, 0.9);
+  animation: legendaryStar 1.4s ease-in-out infinite;
+}
+.boon-choice.legendary:hover {
+  border-color: #fff3a0;
+  box-shadow: 0 0 40px rgba(243, 216, 120, 0.7);
+  transform: translateY(-5px) scale(1.02);
+}
+.boon-choice.legendary .rarity { color: #fde68a; text-shadow: 0 0 12px rgba(243,216,120,0.8); }
+.boon-choice.legendary .name { color: #fff3a0; text-shadow: 0 0 8px rgba(243,216,120,0.4); }
+@keyframes legendaryGlow {
+  0%, 100% { box-shadow: 0 0 24px rgba(243, 216, 120, 0.4); }
+  50% { box-shadow: 0 0 38px rgba(243, 216, 120, 0.7); }
+}
+@keyframes legendarySpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes legendaryStar {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.9; }
+  50% { transform: scale(1.3) rotate(180deg); opacity: 1; }
+}
+
+.boon-choice .name, .boon-choice .desc, .boon-choice .target, .boon-choice .rarity {
+  position: relative;
+  z-index: 1;
+}
+
+/* 줌 확인 다이얼로그 */
+#boon-confirm {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 250;
+  animation: confirmFadeIn 0.2s ease;
+}
+#boon-confirm.active { display: flex; }
+@keyframes confirmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.boon-confirm-card {
+  width: min(420px, 90vw);
+  background: #1a1d28;
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: confirmZoom 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes confirmZoom {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.boon-confirm-card.common { border: 2px solid #7a8090; }
+.boon-confirm-card.rare {
+  border: 2px solid #6ea3e0;
+  box-shadow: 0 0 50px rgba(110,163,224,0.5);
+}
+.boon-confirm-card.epic {
+  border: 2px solid #c084fc;
+  box-shadow: 0 0 60px rgba(192,132,252,0.6);
+}
+.boon-confirm-card.epic::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, rgba(192,132,252,0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+.boon-confirm-card.legendary {
+  border: 2px solid #f3d878;
+  box-shadow: 0 0 70px rgba(243,216,120,0.7);
+}
+.boon-confirm-card.legendary::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(255,232,154,0.2) 25%, transparent 50%, rgba(255,232,154,0.2) 75%, transparent 100%);
+  animation: legendarySpin 6s linear infinite;
+  pointer-events: none;
+}
+.boon-confirm-card .rarity-big {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 1;
+}
+.boon-confirm-card .name-big {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+.boon-confirm-card .desc-big {
+  font-size: 15px;
+  color: #c8cdd9;
+  line-height: 1.6;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+.boon-confirm-card .target-big {
+  display: inline-block;
+  font-size: 11px;
+  color: #93d8ff;
+  background: rgba(110,163,224,0.15);
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+.boon-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+.boon-confirm-actions button {
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 700;
+  border-radius: 8px;
+}
+#boon-confirm-yes {
+  background: linear-gradient(180deg, #4a8a3a 0%, #2a6a1a 100%);
+  border: 1px solid #6aaa5a;
+}
+#boon-confirm-yes:hover { background: linear-gradient(180deg, #5a9a4a 0%, #3a7a2a 100%); }
+#boon-confirm-no {
+  background: #2a2f3f;
+  border: 1px solid #4a5060;
+}
+#boon-confirm-no:hover { background: #3a3f4f; }
+
+/* 가호 선택 시 화면 빛 폭발 */
+#boon-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 300;
+  opacity: 0;
+}
+#boon-flash.active {
+  animation: boonFlash 1s ease-out forwards;
+}
+@keyframes boonFlash {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+#boon-flash.common { background: radial-gradient(circle at center, rgba(220,220,220,0.5) 0%, transparent 60%); }
+#boon-flash.rare { background: radial-gradient(circle at center, rgba(110,163,224,0.7) 0%, rgba(60,100,180,0.3) 30%, transparent 70%); }
+#boon-flash.epic { background: radial-gradient(circle at center, rgba(192,132,252,0.85) 0%, rgba(120,60,200,0.4) 30%, transparent 70%); }
+#boon-flash.legendary { background: radial-gradient(circle at center, rgba(255,232,154,0.95) 0%, rgba(243,180,80,0.5) 30%, transparent 80%); }
 
 .result-stats {
   display: flex;
