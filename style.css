@@ -424,6 +424,41 @@ button.small { padding: 4px 10px; font-size: 11px; }
 #help { margin-top: 16px; font-size: 11px; color: #6b7088; line-height: 1.6; }
 #help b { color: #8a90a3; }
 
+.skill-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+  color: #fff;
+  border: 2px solid #fde68a;
+  border-radius: 50%;
+  width: 88px;
+  height: 88px;
+  font-weight: 700;
+  box-shadow: 0 6px 20px rgba(192,132,252,0.5);
+  transition: transform 0.15s;
+}
+.skill-btn:hover { transform: scale(1.05); }
+.skill-btn:active { transform: scale(0.95); }
+.skill-btn:disabled {
+  background: linear-gradient(180deg, #4a4a5a 0%, #2a2a3a 100%);
+  border-color: #5a5a6a;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.skill-btn .sname { font-size: 11px; }
+.skill-btn .scd { font-size: 18px; font-weight: 700; }
+.skill-btn .scd.ready { color: #fde68a; animation: pulse 1s infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 #tower-info {
   position: absolute;
   background: rgba(10, 12, 18, 0.95);
