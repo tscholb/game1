@@ -2245,15 +2245,17 @@ function hardResetAll() {
   // beforeunload에서 saveRun 막기
   game._resetting = true;
   game.state = 'menu';
+  const beforeKeys = Object.keys(localStorage);
+  console.log('[hardReset] before clear, keys:', beforeKeys, 'count=', beforeKeys.length);
   try {
     meta.essence = 0;
     meta.upgrades = {};
     meta.stats = { totalRuns: 0, bestWave: 0, totalKills: 0 };
-    // 가장 강력하게: 사이트 origin 의 localStorage 전체 비우기
     try { localStorage.clear(); } catch (_) {}
-    // sessionStorage도 혹시 모를 잔여 데이터 비움
     try { sessionStorage.clear(); } catch (_) {}
   } catch (e) { console.warn(e); }
+  const afterKeys = Object.keys(localStorage);
+  console.log('[hardReset] after clear, keys:', afterKeys, 'count=', afterKeys.length);
   // Service Worker 캐시 비우기 + 등록 해제
   try {
     if ('caches' in window) {
@@ -2263,7 +2265,13 @@ function hardResetAll() {
       navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
     }
   } catch (e) { console.warn(e); }
-  alert('초기화 완료. 페이지를 새로고침하면 깨끗한 상태로 시작합니다.');
+  alert(
+    `초기화 결과:\n\n` +
+    `· 삭제 전 키 수: ${beforeKeys.length}\n` +
+    `· 삭제 후 키 수: ${afterKeys.length}\n` +
+    (afterKeys.length > 0 ? `\n남은 키: ${afterKeys.join(', ')}\n` : '') +
+    `\n새로고침 후 빈 메뉴가 떠야 합니다.`
+  );
   setTimeout(() => location.reload(), 300);
 }
 
