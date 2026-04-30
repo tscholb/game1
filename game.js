@@ -2136,6 +2136,9 @@ function _startRun() {
   $('result-screen').classList.add('hidden');
   saveRun();
   updateHud();
+  // 첫 프레임 즉시 그리기 (게임 루프가 돌기 전이라도 캔버스가 비지 않도록)
+  try { render(); } catch (e) { console.error('Initial render failed:', e); }
+  console.log('[startRun] state=', game.state, 'hero=', game.hero && game.hero.id, 'heroEntity=', !!game.heroEntity, 'towers=', game.towers.length);
 }
 
 function applyHeroPassives() {
