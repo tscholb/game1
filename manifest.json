@@ -1,0 +1,15 @@
+{
+  "name": "Boon Defense",
+  "short_name": "BoonDef",
+  "description": "로그라이크 타워디펜스. 가호를 모아 던전을 막아라.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d0e14",
+  "theme_color": "#0d0e14",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

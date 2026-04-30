@@ -1615,7 +1615,15 @@ function updateHud() {
   $('wave-max').textContent = game.waveMax;
   $('kills').textContent = game.kills;
   $('start-wave').disabled = game.waveActive || game.state !== 'playing';
-  $('speed-btn').textContent = `속도 ×${game.speed} (F)`;
+  $('speed-btn').textContent = `×${game.speed}`;
+  updateCancelButton();
+}
+
+function updateCancelButton() {
+  const btn = $('cancel-btn');
+  if (!btn) return;
+  const show = !!(game.placingTowerType || game.selectedTower);
+  btn.classList.toggle('hidden', !show);
 }
 
 // ============================================================
@@ -1666,9 +1674,9 @@ function render() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // 시작/종료 표시
-  drawPathEndpoint(PATH[0].x, PATH[0].y, '#4a7d3f', '입구');
-  drawPathEndpoint(PATH[PATH.length - 1].x, PATH[PATH.length - 1].y, '#7d3f3f', '성문');
+  // 시작/종료 (그래픽)
+  drawCaveEntrance(PATH[0].x, PATH[0].y);
+  drawCastleGate(PATH[PATH.length - 1].x, PATH[PATH.length - 1].y);
 
   // 호버 타일 표시 (Step 3에서 타워 배치 시 활용)
   if (game.hoveredTile) {
@@ -1720,18 +1728,148 @@ function render() {
   }
 }
 
-function drawPathEndpoint(x, y, color, label) {
-  const cx = Math.max(8, Math.min(CANVAS_W - 8, x));
-  const cy = y;
-  ctx.fillStyle = color;
+// 시작점: 동굴 입구 (어둠 + 바위)
+function drawCaveEntrance(x, y) {
+  const cx = Math.max(0, x);
+  // 바위 더미
+  ctx.fillStyle = '#3a3a4a';
   ctx.beginPath();
-  ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+  ctx.ellipse(cx + 4, y + 18, 22, 10, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 11px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(label, cx, cy + 4);
-  ctx.textAlign = 'start';
+  ctx.fillStyle = '#5a5a6a';
+  ctx.beginPath();
+  ctx.arc(cx + 6, y - 4, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 18, y - 8, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx - 6, y + 2, 12, 0, Math.PI * 2);
+  ctx.fill();
+  // 동굴 입구 (검은 아치)
+  ctx.fillStyle = '#0a0a14';
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, y + 14);
+  ctx.lineTo(cx - 12, y - 6);
+  ctx.quadraticCurveTo(cx + 4, y - 22, cx + 20, y - 6);
+  ctx.lineTo(cx + 20, y + 14);
+  ctx.closePath();
+  ctx.fill();
+  // 동굴 안의 빨간 빛
+  ctx.fillStyle = 'rgba(255,80,40,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(cx + 4, y + 4, 8, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 두 개의 작은 눈 (몬스터 둥지 느낌)
+  ctx.fillStyle = '#ff4040';
+  ctx.fillRect(cx - 2, y, 2, 2);
+  ctx.fillRect(cx + 6, y, 2, 2);
+  // 바위 디테일
+  ctx.fillStyle = '#7a7a8a';
+  ctx.fillRect(cx - 8, y - 8, 3, 2);
+  ctx.fillRect(cx + 14, y - 12, 3, 2);
+}
+
+// 끝점: 성 (탑, 깃발, 문)
+function drawCastleGate(x, y) {
+  const cx = Math.min(CANVAS_W, x);
+  // 성 베이스 (회색 돌)
+  ctx.fillStyle = '#6a6a7a';
+  ctx.fillRect(cx - 30, y - 28, 60, 40);
+  // 흙 그림자
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(cx - 30, y + 10, 60, 4);
+  // 돌 텍스처 라인
+  ctx.fillStyle = '#5a5a6a';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(cx - 30, y - 24 + i * 12, 60, 1);
+  }
+  for (let i = 0; i < 4; i++) {
+    ctx.fillRect(cx - 22 + i * 14, y - 28, 1, 12);
+  }
+  // 성벽 위 톱니 (battlements)
+  ctx.fillStyle = '#6a6a7a';
+  for (let i = 0; i < 5; i++) {
+    ctx.fillRect(cx - 30 + i * 14, y - 34, 8, 8);
+  }
+  // 좌우 탑
+  ctx.fillStyle = '#5a5a7a';
+  ctx.fillRect(cx - 38, y - 36, 12, 48);
+  ctx.fillRect(cx + 26, y - 36, 12, 48);
+  // 탑 지붕 (삼각형)
+  ctx.fillStyle = '#7d3f3f';
+  ctx.beginPath();
+  ctx.moveTo(cx - 38, y - 36);
+  ctx.lineTo(cx - 32, y - 50);
+  ctx.lineTo(cx - 26, y - 36);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx + 26, y - 36);
+  ctx.lineTo(cx + 32, y - 50);
+  ctx.lineTo(cx + 38, y - 36);
+  ctx.closePath();
+  ctx.fill();
+  // 탑 창문
+  ctx.fillStyle = '#fde68a';
+  ctx.fillRect(cx - 35, y - 22, 4, 6);
+  ctx.fillRect(cx + 31, y - 22, 4, 6);
+  ctx.fillRect(cx - 35, y - 8, 4, 6);
+  ctx.fillRect(cx + 31, y - 8, 4, 6);
+  // 깃발 (좌)
+  ctx.strokeStyle = '#3a2a1a';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx - 32, y - 50);
+  ctx.lineTo(cx - 32, y - 60);
+  ctx.stroke();
+  ctx.fillStyle = '#f3d878';
+  ctx.beginPath();
+  ctx.moveTo(cx - 32, y - 60);
+  ctx.lineTo(cx - 22, y - 56);
+  ctx.lineTo(cx - 32, y - 52);
+  ctx.closePath();
+  ctx.fill();
+  // 깃발 (우)
+  ctx.strokeStyle = '#3a2a1a';
+  ctx.beginPath();
+  ctx.moveTo(cx + 32, y - 50);
+  ctx.lineTo(cx + 32, y - 60);
+  ctx.stroke();
+  ctx.fillStyle = '#f3d878';
+  ctx.beginPath();
+  ctx.moveTo(cx + 32, y - 60);
+  ctx.lineTo(cx + 42, y - 56);
+  ctx.lineTo(cx + 32, y - 52);
+  ctx.closePath();
+  ctx.fill();
+  // 정문 (어두운 아치)
+  ctx.fillStyle = '#1a1018';
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, y + 12);
+  ctx.lineTo(cx - 12, y - 6);
+  ctx.quadraticCurveTo(cx, y - 18, cx + 12, y - 6);
+  ctx.lineTo(cx + 12, y + 12);
+  ctx.closePath();
+  ctx.fill();
+  // 정문 격자
+  ctx.strokeStyle = '#5a3a1a';
+  ctx.lineWidth = 1;
+  for (let i = -10; i <= 10; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(cx + i, y - 4);
+    ctx.lineTo(cx + i, y + 10);
+    ctx.stroke();
+  }
+  for (let i = -2; i <= 10; i += 4) {
+    ctx.beginPath();
+    ctx.moveTo(cx - 10, y + i);
+    ctx.lineTo(cx + 10, y + i);
+    ctx.stroke();
+  }
+  // 잔디/땅 패치
+  ctx.fillStyle = '#3a4a2a';
+  ctx.fillRect(cx - 38, y + 12, 76, 4);
 }
 
 // ============================================================
@@ -2242,6 +2380,9 @@ function renderTowerShop() {
       game.placingTowerType = (game.placingTowerType === id) ? null : id;
       game.selectedTower = null;
       renderTowerShop();
+      updateCancelButton();
+      // 모바일: 타워 선택 후 사이드바 자동 닫기
+      $('sidebar').classList.remove('open');
     });
     shop.appendChild(card);
   }
@@ -2505,38 +2646,86 @@ function resumeRun(data) {
 // 입력
 // ============================================================
 function setupInput() {
-  canvas.addEventListener('mousemove', (e) => {
+  function canvasCoords(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (CANVAS_W / rect.width);
-    const y = (e.clientY - rect.top) * (CANVAS_H / rect.height);
-    const tx = Math.floor(x / TILE);
-    const ty = Math.floor(y / TILE);
-    game.hoveredTile = { x: tx, y: ty };
+    return {
+      x: (clientX - rect.left) * (CANVAS_W / rect.width),
+      y: (clientY - rect.top) * (CANVAS_H / rect.height),
+    };
+  }
+
+  function tileFromClient(clientX, clientY) {
+    const { x, y } = canvasCoords(clientX, clientY);
+    return { x: Math.floor(x / TILE), y: Math.floor(y / TILE) };
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    game.hoveredTile = tileFromClient(e.clientX, e.clientY);
   });
   canvas.addEventListener('mouseleave', () => {
     game.hoveredTile = null;
   });
 
   canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (CANVAS_W / rect.width);
-    const y = (e.clientY - rect.top) * (CANVAS_H / rect.height);
-    const tx = Math.floor(x / TILE);
-    const ty = Math.floor(y / TILE);
+    const t = tileFromClient(e.clientX, e.clientY);
     if (game.placingTowerType) {
-      placeTowerAt(tx, ty);
+      placeTowerAt(t.x, t.y);
     } else {
-      selectTowerAt(tx, ty);
+      selectTowerAt(t.x, t.y);
     }
   });
 
   canvas.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    cancelSelection();
+  });
+
+  // 터치: tap = 배치/선택, 두 손가락 = 취소
+  let touchStartTile = null;
+  let touchStartTime = 0;
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (e.touches.length >= 2) {
+      cancelSelection();
+      touchStartTile = null;
+      return;
+    }
+    const t = e.touches[0];
+    touchStartTile = tileFromClient(t.clientX, t.clientY);
+    touchStartTime = performance.now();
+    game.hoveredTile = touchStartTile;
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 0) return;
+    const t = e.touches[0];
+    game.hoveredTile = tileFromClient(t.clientX, t.clientY);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (!touchStartTile) return;
+    const dur = performance.now() - touchStartTime;
+    // 짧은 탭만 동작 (드래그/길게 누름 무시)
+    if (dur < 700) {
+      const tile = game.hoveredTile || touchStartTile;
+      if (game.placingTowerType) {
+        placeTowerAt(tile.x, tile.y);
+      } else {
+        selectTowerAt(tile.x, tile.y);
+      }
+    }
+    touchStartTile = null;
+  }, { passive: false });
+
+  function cancelSelection() {
     game.placingTowerType = null;
     game.selectedTower = null;
     renderTowerShop();
     renderTowerInfo();
-  });
+    updateCancelButton();
+  }
+  game._cancelSelection = cancelSelection;
 
   document.addEventListener('keydown', (e) => {
     if (game.state !== 'playing') return;
@@ -2564,6 +2753,14 @@ function setupInput() {
     }
     quitToMenu();
   });
+  $('sidebar-toggle').addEventListener('click', () => {
+    $('sidebar').classList.toggle('open');
+  });
+  $('cancel-btn').addEventListener('click', () => {
+    if (game._cancelSelection) game._cancelSelection();
+    $('sidebar').classList.remove('open');
+  });
+
   $('start-run').addEventListener('click', () => {
     const saved = loadRun();
     if (saved && !confirm(saved.heroId === game.selectedHeroId
@@ -2629,6 +2826,13 @@ function boot() {
       saveRun();
     }
   });
+
+  // PWA: Service Worker 등록
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
 }
 
 boot();

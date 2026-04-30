@@ -2,6 +2,13 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0e14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
   <title>Boon Defense — Roguelike Tower Defense</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -54,8 +61,10 @@
           <div class="stat"><span class="label">골드</span><b id="gold">150</b></div>
           <div class="stat"><span class="label">웨이브</span><b id="wave">0</b>/<b id="wave-max">20</b></div>
           <div class="stat"><span class="label">처치</span><b id="kills">0</b></div>
-          <button id="start-wave">웨이브 시작 (Space)</button>
-          <button id="speed-btn">속도 ×1 (F)</button>
+          <button id="start-wave">웨이브 시작</button>
+          <button id="speed-btn">×1</button>
+          <button id="cancel-btn" class="small hidden">취소</button>
+          <button id="sidebar-toggle" class="small mobile-only">메뉴</button>
           <button id="quit-btn" class="small">포기</button>
         </div>
         <div id="tower-info" class="hidden">
@@ -112,6 +121,10 @@
         <button id="result-btn">메인 메뉴로</button>
       </div>
     </div>
+  </div>
+  <div id="orient-hint">
+    <span class="icon">📱</span>
+    <div>가로 모드로 회전해주세요<br><span style="color:#8a90a3;font-size:13px;">화면을 가로로 돌리면 게임이 시작됩니다</span></div>
   </div>
   <script src="game.js"></script>
 </body>
