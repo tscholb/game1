@@ -1265,6 +1265,20 @@ function drawLevelStars(ctx, cx, y, level, color) {
 
 // 타워 ID 분기
 function drawTower(ctx, type, cx, footY, level = 1) {
+  // 타워 base 패드 (잔디 위에서 분명히 보이도록)
+  ctx.save();
+  ctx.fillStyle = 'rgba(20, 25, 35, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(cx, footY - 1, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(60, 50, 40, 0.85)';
+  ctx.beginPath();
+  ctx.ellipse(cx, footY - 3, 13, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
   if (type === 'archer') drawArcherTower(ctx, cx, footY, level);
   else if (type === 'cannon') drawCannonTower(ctx, cx, footY, level);
   else if (type === 'mage') drawMageTower(ctx, cx, footY, level);
@@ -2294,13 +2308,14 @@ function render() {
       }
     }
   }
-  // 산발적 디테일 (꽃/돌 등) — 결정론적 패턴으로 분포
-  const decorIds = [111, 123, 124, 130, 132];
+  // 산발적 디테일 (꽃/덤불) — 결정론적 패턴, 빈도 낮춤, 안전한 인덱스만
+  const decorIds = [130, 132];
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       if (isTileBlocked(x, y)) continue;
-      const seed = (x * 73 + y * 131) % 23;
-      if (seed < 4) {
+      if (tileHasTower(x, y)) continue;
+      const seed = (x * 73 + y * 131) % 37;
+      if (seed < 2) {
         kdraw(decorIds[seed % decorIds.length], x * TILE, y * TILE, TILE);
       }
     }
@@ -3126,6 +3141,23 @@ function drawProjectile(ctx, p) {
 
 function drawEffect(ctx, fx) {
   const k = fx.t / fx.dur;
+  if (fx.kind === 'place-ring') {
+    // 타워 배치 직후 — 노란 링 확장 + 빛
+    const r = 8 + 28 * k;
+    ctx.save();
+    ctx.globalAlpha = 1 - k;
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(253, 230, 138, ${(1 - k) * 0.25})`;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
   if (fx.kind === 'splash') {
     ctx.strokeStyle = fx.color;
     ctx.globalAlpha = 1 - k;
@@ -3291,7 +3323,15 @@ function placeTowerAt(tx, ty) {
   const cost = effectiveTowerCost(game.placingTowerType);
   if (game.gold < cost) return false;
   game.gold -= cost;
-  game.towers.push(makeTower(game.placingTowerType, tx, ty));
+  const tw = makeTower(game.placingTowerType, tx, ty);
+  game.towers.push(tw);
+  // 배치 시각 피드백 — 빛나는 링 + 작은 흔들림
+  game.effects.push({
+    kind: 'place-ring',
+    x: tx * TILE + TILE / 2,
+    y: ty * TILE + TILE / 2,
+    r: 6, t: 0, dur: 0.5,
+  });
   renderTowerShop();
   updateHud();
   return true;
