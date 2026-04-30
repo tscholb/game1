@@ -133,9 +133,274 @@ html, body {
 
 #hero-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+/* 메뉴: 선택된 영웅 요약 */
+#hero-summary {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  background: #14161e;
+  border: 1px solid #3d445a;
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.hero-summary-portrait {
+  width: 160px;
+  height: 160px;
+  border-radius: 10px;
+  border: 2px solid #f3d878;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.hero-summary-info { flex: 1; min-width: 0; }
+.hero-summary-info h3 { color: #f3d878; font-size: 22px; margin-bottom: 6px; }
+.hero-summary-info p { color: #c8cdd9; font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+.hero-summary-passive { list-style: none; }
+.hero-summary-passive li {
+  background: #1a1d28;
+  border-left: 3px solid #6ea3e0;
+  padding: 6px 10px;
+  margin-bottom: 3px;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #c8cdd9;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.menu-actions .big {
+  padding: 14px 20px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border-radius: 10px;
+}
+.fountain-btn {
+  background: linear-gradient(180deg, #4a3a8a 0%, #2a1a5a 100%);
+  border: 2px solid #c084fc;
+  color: #d8b4fe;
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
+}
+.fountain-btn:hover {
+  background: linear-gradient(180deg, #5a4a9a 0%, #3a2a6a 100%);
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(192, 132, 252, 0.4);
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  #hero-summary { flex-direction: column; text-align: center; }
+  .hero-summary-portrait { width: 140px; height: 140px; }
+  .hero-summary-passive li { text-align: left; }
+}
+
+/* ===== 영원의 샘 화면 ===== */
+#fountain-screen {
+  background: linear-gradient(180deg, #0d0e14 0%, #1a0e2a 50%, #2a1a4a 100%);
+  overflow-y: auto;
+  padding: 28px;
+}
+.fountain-header {
+  position: relative;
+  text-align: center;
+  padding: 20px 0 30px;
+  border-bottom: 1px solid #3d2a6a;
+  margin-bottom: 24px;
+}
+.fountain-header h1 {
+  color: #d8b4fe;
+  font-size: 36px;
+  text-shadow: 0 0 30px rgba(192, 132, 252, 0.4);
+}
+.fountain-header .subtitle { color: #8a90a3; margin-top: 6px; }
+.back-btn {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  background: rgba(20, 22, 30, 0.8);
+  border-color: #5a6280;
+}
+.essence-counter.inline {
+  position: static;
+  display: inline-flex;
+  margin-top: 12px;
+}
+
+.fountain-body { max-width: 880px; margin: 0 auto; }
+
+#fountain-hero-tabs {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.fountain-tab {
+  background: #1a1d28;
+  border: 2px solid #3d445a;
+  border-radius: 8px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #c8cdd9;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fountain-tab:hover { border-color: #c084fc; }
+.fountain-tab.active {
+  background: #2a1a4a;
+  border-color: #c084fc;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.3);
+}
+.fountain-tab img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  image-rendering: pixelated;
+}
+
+.fountain-hero-banner {
+  display: flex;
   gap: 16px;
-  margin-bottom: 28px;
+  align-items: center;
+  background: rgba(20, 22, 30, 0.7);
+  border: 1px solid #3d2a6a;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 18px;
+}
+.fountain-hero-banner img {
+  width: 80px; height: 80px;
+  border-radius: 8px; border: 2px solid #c084fc;
+  image-rendering: pixelated; flex-shrink: 0;
+}
+.fountain-hero-banner h3 { color: #f3d878; font-size: 20px; margin-bottom: 4px; }
+.fountain-hero-banner p { color: #c8cdd9; font-size: 12px; line-height: 1.5; }
+
+#fountain-content h4 {
+  font-size: 12px;
+  color: #d8b4fe;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin: 18px 0 12px;
+}
+
+#fh-upgrades {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  .fountain-header h1 { font-size: 24px; }
+  .back-btn { position: static; display: inline-block; margin-bottom: 12px; }
+  .fountain-hero-banner { flex-direction: column; text-align: center; }
+}
+
+/* ===== 프롤로그 화면 ===== */
+#prologue-screen {
+  position: relative;
+  background: #0a0a14;
+  overflow: hidden;
+}
+.prologue-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.prologue-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  filter: blur(2px) saturate(1.1);
+  image-rendering: pixelated;
+}
+.prologue-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(10,10,20,0.85) 80%),
+    linear-gradient(180deg, rgba(10,10,20,0.4) 0%, rgba(10,10,20,0.7) 60%, rgba(10,10,20,0.95) 100%);
+}
+.prologue-overlay {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+.prologue-overlay h2 {
+  font-size: 38px;
+  color: #f3d878;
+  text-shadow: 0 0 30px rgba(243, 216, 120, 0.5);
+  margin-bottom: 24px;
+  letter-spacing: 0.1em;
+  animation: prologueTitleIn 1.2s ease;
+}
+@keyframes prologueTitleIn {
+  from { opacity: 0; transform: translateY(20px); letter-spacing: 0.4em; }
+  to { opacity: 1; transform: translateY(0); letter-spacing: 0.1em; }
+}
+
+.prologue-scroll {
+  width: min(680px, 90vw);
+  height: min(45vh, 360px);
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(180deg, transparent 0%, black 12%, black 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+.prologue-story-inner {
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  font-size: 17px;
+  line-height: 1.9;
+  color: #e8e9ee;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+  padding: 0 20px;
+}
+.prologue-story-inner.scrolling {
+  animation: prologueScroll var(--scroll-duration, 18s) linear forwards;
+}
+.prologue-story-inner p { margin-bottom: 18px; }
+.prologue-story-inner p.highlight { color: #f3d878; font-style: italic; }
+@keyframes prologueScroll {
+  from { transform: translateY(100%); }
+  to { transform: translateY(-100%); }
+}
+
+.prologue-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+.prologue-actions .big {
+  padding: 12px 32px;
+  font-size: 16px;
+  letter-spacing: 0.1em;
 }
 .hero-card {
   background: #1a1d28;

@@ -86,6 +86,15 @@ const HEROES = {
       { id: 'a-eyes',      name: '예리한 눈', desc: '모든 타워 사거리 단계당 +5%',   max: 3, cost: [4, 8, 12], per: 0.05 },
       { id: 'a-bonus',     name: '시작 화살통', desc: '시작 시 궁수 타워 1개 무료 배치 (LV+1)', max: 1, cost: [12], per: 1 },
     ],
+    prologue: [
+      '달이 가장 차오르는 밤, 별의 정령들이 그녀에게 활을 건넸다.',
+      '"네 화살은 빛이 닿지 않는 곳까지 닿으리라."',
+      '그날 이후, 어둠에 숨은 자도, 그림자 너머의 적도',
+      '그녀의 시야에서 도망칠 수 없었다.',
+      '',
+      '오늘 밤, 던전의 검은 입이 다시 열렸다.',
+      '루나는 활을 들고, 달빛을 따라 걸어간다.',
+    ],
   },
   mage: {
     id: 'mage',
@@ -111,6 +120,18 @@ const HEROES = {
       { id: 'm-mark',   name: '예언의 표식', desc: '가호 선택지 +1개 (4지선다)',       max: 1, cost: [15], per: 1 },
       { id: 'm-bonus',  name: '별의 가호',   desc: '시작 시 마법 타워 1개 무료 배치 (LV+1)', max: 1, cost: [12], per: 1 },
     ],
+    prologue: [
+      '화염의 도시 헬리오스, 그곳에서 그녀는 태어났다.',
+      '검은 머리에서 흘러내리는 잿빛, 보라색 눈에 깃든 불꽃 —',
+      '어릴 적부터 그녀의 손끝은 이미 지옥을 품고 있었다.',
+      '',
+      '"세상이 차갑다면, 내가 태워주마."',
+      '왕국의 마법사들이 그녀를 두려워해 추방했지만',
+      '이그니아는 미소만 남기고 화염 속으로 사라졌다.',
+      '',
+      '이제 그녀는 던전의 깊은 어둠을 향해 손을 든다.',
+      '모든 것이 타오를 때까지 — 그녀는 멈추지 않는다.',
+    ],
   },
   merchant: {
     id: 'merchant',
@@ -135,6 +156,18 @@ const HEROES = {
       { id: 'mer-trade',   name: '대검 숙련',     desc: '용병 데미지 단계당 +12%',        max: 3, cost: [4, 8, 14],    per: 0.12 },
       { id: 'mer-discount',name: '광전사',       desc: '용병 공속 단계당 -8%',           max: 3, cost: [4, 8, 14],    per: 0.08 },
       { id: 'mer-tribute', name: '용병의 기치',   desc: '모든 타워 데미지 +5%',           max: 2, cost: [6, 12],       per: 0.05 },
+    ],
+    prologue: [
+      '스무 해를 전장에서 보냈다.',
+      '백 명의 왕을 위해 검을 들었고, 백 개의 깃발 아래에서 피를 흘렸다.',
+      '하지만 그 모든 명령들이 끝내 그녀에게 남긴 것은 —',
+      '오직 자신의 검 한 자루뿐이었다.',
+      '',
+      '"이번엔 누구의 명령도 받지 않는다."',
+      '금발을 묶고, 대검을 어깨에 걸친 채',
+      '레이나는 자신만의 전장으로 걸어 나간다.',
+      '',
+      '대지를 가르는 검 앞에서 — 어떤 어둠도 살아남지 못한다.',
     ],
   },
 };
@@ -1864,17 +1897,23 @@ function renderMainMenu() {
 }
 
 function renderHeroDetail() {
-  const detail = $('hero-detail');
+  // 새 구조에서는 hero-summary로 대체
+  renderHeroSummary();
+}
+
+function renderHeroSummary() {
+  const summary = $('hero-summary');
   const hero = HEROES[game.selectedHeroId];
   if (!hero) {
-    detail.classList.add('hidden');
+    summary.classList.add('hidden');
     return;
   }
-  detail.classList.remove('hidden');
-  $('hd-name').textContent = hero.name;
-  $('hd-flavor').textContent = hero.flavor;
-  // 큰 일러스트 (있으면 표시)
-  const portrait = $('hd-portrait');
+  summary.classList.remove('hidden');
+  $('hs-name').textContent = hero.name;
+  $('hs-flavor').textContent = hero.flavor;
+
+  // 큰 일러스트
+  const portrait = $('hs-portrait');
   const img = HERO_IMG[hero.id];
   if (img && img.complete && img.naturalWidth > 0) {
     portrait.src = img.src;
@@ -1883,7 +1922,8 @@ function renderHeroDetail() {
     portrait.classList.add('hidden');
   }
 
-  const passive = $('hd-passive');
+  // 패시브
+  const passive = $('hs-passive');
   passive.innerHTML = '';
   for (const p of hero.passives) {
     const li = document.createElement('li');
@@ -1891,8 +1931,76 @@ function renderHeroDetail() {
     passive.appendChild(li);
   }
 
+  // 이어하기 / 저장된 런 표시
+  const saved = loadRun();
+  const resumeBtn = $('resume-run');
+  const startBtn = $('start-run');
+  const runInfo = $('run-info');
+  if (saved && saved.heroId === hero.id) {
+    resumeBtn.classList.remove('hidden');
+    runInfo.classList.remove('hidden');
+    runInfo.innerHTML = `진행 중인 게임 — 웨이브 <b>${saved.wave}</b> · 생명 <b>${saved.hp}</b> · 골드 <b>${saved.gold}</b> · 타워 <b>${saved.towers.length}</b>개 · 가호 <b>${saved.boons.length}</b>개`;
+    startBtn.textContent = '⚔ 새 게임 시작 (저장 폐기) ⚔';
+  } else if (saved) {
+    resumeBtn.classList.add('hidden');
+    runInfo.classList.remove('hidden');
+    const sh = HEROES[saved.heroId];
+    runInfo.innerHTML = `다른 영웅(<b>${sh ? sh.name : saved.heroId}</b>)의 진행 중 게임이 있습니다. 그 영웅을 선택하면 이어할 수 있습니다.`;
+    startBtn.textContent = '⚔ 게임 시작 ⚔';
+  } else {
+    resumeBtn.classList.add('hidden');
+    runInfo.classList.add('hidden');
+    startBtn.textContent = '⚔ 게임 시작 ⚔';
+  }
+}
+
+// ============================================================
+// 영원의 샘 화면 (메타 강화 트리)
+// ============================================================
+function openFountain() {
+  if (!game.fountainHeroId) game.fountainHeroId = game.selectedHeroId;
+  renderFountain();
+  showScreen('fountain');
+}
+
+function renderFountain() {
+  $('fountain-essence').textContent = meta.essence;
+  // 영웅 탭
+  const tabs = $('fountain-hero-tabs');
+  tabs.innerHTML = '';
+  for (const hero of Object.values(HEROES)) {
+    const tab = document.createElement('div');
+    tab.className = 'fountain-tab';
+    if (game.fountainHeroId === hero.id) tab.classList.add('active');
+    const img = HERO_IMG[hero.id];
+    if (img && img.complete) {
+      const ic = document.createElement('img');
+      ic.src = img.src;
+      tab.appendChild(ic);
+    }
+    const name = document.createElement('span');
+    name.textContent = hero.name;
+    tab.appendChild(name);
+    tab.addEventListener('click', () => {
+      game.fountainHeroId = hero.id;
+      renderFountain();
+    });
+    tabs.appendChild(tab);
+  }
+  // 영웅 배너
+  const hero = HEROES[game.fountainHeroId];
+  $('fh-name').textContent = hero.name;
+  $('fh-flavor').textContent = hero.flavor;
+  const banner = $('fh-portrait');
+  const heroImg = HERO_IMG[hero.id];
+  if (heroImg && heroImg.complete) {
+    banner.src = heroImg.src;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
   // 강화 트리
-  const wrap = $('hd-upgrades');
+  const wrap = $('fh-upgrades');
   wrap.innerHTML = '';
   for (const up of hero.upgrades) {
     const lvl = getUpgradeLevel(hero.id, up.id);
@@ -1920,33 +2028,52 @@ function renderHeroDetail() {
   wrap.querySelectorAll('button[data-up]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (buyUpgrade(hero.id, btn.dataset.up)) {
-        $('meta-essence').textContent = meta.essence;
-        renderHeroDetail();
+        renderFountain();
       }
     });
   });
+}
 
-  // 이어하기 / 저장된 런 표시
-  const saved = loadRun();
-  const resumeBtn = $('resume-run');
-  const startBtn = $('start-run');
-  const runInfo = $('run-info');
-  if (saved && saved.heroId === hero.id) {
-    resumeBtn.classList.remove('hidden');
-    runInfo.classList.remove('hidden');
-    runInfo.innerHTML = `진행 중인 게임 — 웨이브 <b>${saved.wave}</b> · 생명 <b>${saved.hp}</b> · 골드 <b>${saved.gold}</b> · 타워 <b>${saved.towers.length}</b>개 · 가호 <b>${saved.boons.length}</b>개`;
-    startBtn.textContent = '새 게임 (저장 폐기)';
-  } else if (saved) {
-    resumeBtn.classList.add('hidden');
-    runInfo.classList.remove('hidden');
-    const sh = HEROES[saved.heroId];
-    runInfo.innerHTML = `다른 영웅(<b>${sh ? sh.name : saved.heroId}</b>)의 진행 중 게임이 있습니다. 그 영웅을 선택하면 이어할 수 있습니다.`;
-    startBtn.textContent = '출진';
+// ============================================================
+// 프롤로그 화면 (영웅 사진 + 스토리 스크롤)
+// ============================================================
+function showPrologue() {
+  const hero = HEROES[game.selectedHeroId];
+  if (!hero) { _startRun(); return; }
+  $('prologue-title').textContent = hero.name;
+
+  const portrait = $('prologue-portrait');
+  const img = HERO_IMG[hero.id];
+  if (img && img.complete) {
+    portrait.src = img.src;
+    portrait.style.display = '';
   } else {
-    resumeBtn.classList.add('hidden');
-    runInfo.classList.add('hidden');
-    startBtn.textContent = '출진';
+    portrait.style.display = 'none';
   }
+
+  const story = $('prologue-story');
+  story.innerHTML = '';
+  story.classList.remove('scrolling');
+  const lines = hero.prologue || [];
+  for (const line of lines) {
+    const p = document.createElement('p');
+    if (line.startsWith('"') || line === '') {
+      if (line === '') p.style.height = '0.6em';
+      else { p.textContent = line; p.classList.add('highlight'); }
+    } else {
+      p.textContent = line;
+    }
+    story.appendChild(p);
+  }
+
+  // 스크롤 시간: 라인 수에 비례
+  const dur = Math.max(14, lines.length * 1.8);
+  story.style.setProperty('--scroll-duration', dur + 's');
+  // 강제 reflow 후 애니메이션 시작
+  void story.offsetHeight;
+  story.classList.add('scrolling');
+
+  showScreen('prologue');
 }
 
 // ============================================================
@@ -1955,6 +2082,8 @@ function renderHeroDetail() {
 function showScreen(name) {
   $('main-menu').classList.toggle('hidden', name !== 'menu');
   $('game-screen').classList.toggle('hidden', name !== 'game');
+  $('fountain-screen').classList.toggle('hidden', name !== 'fountain');
+  $('prologue-screen').classList.toggle('hidden', name !== 'prologue');
 }
 
 function startRun() {
@@ -3490,12 +3619,25 @@ function setupInput() {
       return;
     }
     clearSavedRun();
-    startRun();
+    showPrologue();
   });
   $('resume-run').addEventListener('click', () => {
     const saved = loadRun();
     if (!saved) return;
     resumeRun(saved);
+  });
+  // 영원의 샘
+  $('open-fountain').addEventListener('click', openFountain);
+  $('back-to-menu').addEventListener('click', () => {
+    renderMainMenu();
+    showScreen('menu');
+  });
+  // 프롤로그
+  $('start-game').addEventListener('click', () => {
+    startRun();
+  });
+  $('skip-prologue').addEventListener('click', () => {
+    startRun();
   });
   $('boon-skip').addEventListener('click', () => {
     game.gold += 30;

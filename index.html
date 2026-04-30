@@ -14,7 +14,7 @@
 </head>
 <body>
   <div id="app">
-    <!-- ===== 메인 메뉴 (영웅 선택 + 메타 강화) ===== -->
+    <!-- ===== 메인 메뉴 (영웅 선택 + 시작/영원의 샘 버튼) ===== -->
     <div id="main-menu" class="screen">
       <div class="menu-header">
         <h1>BOON DEFENSE</h1>
@@ -30,26 +30,64 @@
       <div class="menu-body">
         <h2>영웅 선택</h2>
         <div id="hero-list"></div>
-        <div id="hero-detail" class="hidden">
-          <img id="hd-portrait" class="hero-detail-portrait hidden" alt="">
-          <div class="hero-detail-header">
-            <h3 id="hd-name"></h3>
-            <p id="hd-flavor"></p>
+        <div id="hero-summary" class="hidden">
+          <img id="hs-portrait" class="hero-summary-portrait hidden" alt="">
+          <div class="hero-summary-info">
+            <h3 id="hs-name"></h3>
+            <p id="hs-flavor"></p>
+            <ul id="hs-passive" class="hero-summary-passive"></ul>
           </div>
-          <div class="hero-passive">
-            <h4>시작 패시브</h4>
-            <ul id="hd-passive"></ul>
+        </div>
+        <div id="run-info" class="run-info hidden"></div>
+        <div class="menu-actions">
+          <button id="resume-run" class="big primary hidden">이어하기</button>
+          <button id="start-run" class="big primary">⚔ 게임 시작 ⚔</button>
+          <button id="open-fountain" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 영원의 샘 (메타 강화 화면) ===== -->
+    <div id="fountain-screen" class="screen hidden">
+      <div class="fountain-header">
+        <button id="back-to-menu" class="small back-btn">← 메뉴로</button>
+        <h1>⚜ 영원의 샘 ⚜</h1>
+        <p class="subtitle">영혼의 정수로 영웅을 영구 강화합니다</p>
+        <div class="essence-counter inline">
+          <span class="essence-icon">◆</span>
+          <span id="fountain-essence">0</span>
+          <span class="label">정수</span>
+        </div>
+      </div>
+      <div class="fountain-body">
+        <div id="fountain-hero-tabs"></div>
+        <div id="fountain-content">
+          <div class="fountain-hero-banner">
+            <img id="fh-portrait" class="hidden" alt="">
+            <div>
+              <h3 id="fh-name"></h3>
+              <p id="fh-flavor"></p>
+            </div>
           </div>
-          <div class="hero-upgrades">
-            <h4>영구 강화</h4>
-            <div id="hd-upgrades"></div>
-          </div>
-          <div class="hero-actions">
-            <button id="resume-run" class="big primary hidden">이어하기</button>
-            <button id="start-run" class="big primary">출진</button>
-            <button id="reset-meta" class="small">메타 초기화</button>
-          </div>
-          <div id="run-info" class="run-info hidden"></div>
+          <h4>영구 강화</h4>
+          <div id="fh-upgrades"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 프롤로그 화면 (영웅 사진 + 스토리 스크롤) ===== -->
+    <div id="prologue-screen" class="screen hidden">
+      <div class="prologue-bg">
+        <img id="prologue-portrait" alt="">
+      </div>
+      <div class="prologue-overlay">
+        <h2 id="prologue-title">영웅</h2>
+        <div class="prologue-scroll">
+          <div id="prologue-story" class="prologue-story-inner"></div>
+        </div>
+        <div class="prologue-actions">
+          <button id="skip-prologue" class="small">건너뛰기</button>
+          <button id="start-game" class="big primary">출진</button>
         </div>
       </div>
     </div>
