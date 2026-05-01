@@ -44,30 +44,33 @@
       </div>
     </div>
 
-    <!-- ===== 던전 진행 (지도) ===== -->
-    <div id="dungeon" class="screen hidden">
-      <div class="dungeon-header">
-        <button class="back-btn" id="dungeon-quit">포기</button>
-        <h2>층 <span id="floor-num">1</span></h2>
-        <div class="dungeon-status">
-          <span class="hp-icon">♥</span>
-          <span id="dungeon-hp">100</span>/<span id="dungeon-max-hp">100</span>
-          <span class="gold-icon">G</span>
-          <span id="dungeon-gold">0</span>
-        </div>
+    <!-- ===== 진행 분기 (두 갈래 길 선택) ===== -->
+    <div id="fork" class="screen hidden">
+      <div class="fork-bg"></div>
+      <div class="fork-content">
+        <h2>갈림길</h2>
+        <p class="subtitle">어느 길로 갈 것인가?</p>
+        <div id="fork-options"></div>
+        <button class="back-btn" id="fork-quit">던전 포기</button>
       </div>
-      <div class="dungeon-map" id="dungeon-map"></div>
     </div>
 
     <!-- ===== 전투 화면 ===== -->
     <div id="battle" class="screen hidden">
       <div class="battle-bg"></div>
 
-      <div class="battle-top">
-        <div class="round-info">턴 <span id="turn-num">1</span></div>
-        <div class="dungeon-status mini">
-          <span class="gold-icon">G</span>
-          <span id="battle-gold">0</span>
+      <div class="mini-hud">
+        <div class="hud-progress">
+          <span class="hud-label">층</span>
+          <span class="hud-val" id="hud-floor">1</span>
+          <span class="hud-sep">·</span>
+          <span class="hud-label">방</span>
+          <span class="hud-val" id="hud-room">1</span>/<span class="hud-val" id="hud-rooms">7</span>
+        </div>
+        <div class="hud-stats">
+          <span class="hud-chip"><span class="hp-icon">♥</span><span id="hud-hp">100</span></span>
+          <span class="hud-chip"><span class="gold-icon">G</span><span id="hud-gold">0</span></span>
+          <span class="hud-chip"><span class="hud-label-mini">턴</span><span id="turn-num">1</span></span>
         </div>
       </div>
 

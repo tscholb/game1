@@ -43,34 +43,44 @@ const ENEMIES = {
   dragon:   { name: '심연의 드래곤', hp: 380, atk: 30, emoji: '🐉', boss: true },
 };
 
-// ===== 가호 데이터 =====
+// ===== 가호 카테고리 =====
+const CATEGORIES = {
+  attack: { name: '공격', icon: '⚔', color: '#ff7a4a', desc: '근접 공격력 / 치명타 / 추가 공격' },
+  magic:  { name: '마법', icon: '🔥', color: '#dc6aff', desc: '마법력 / 화염구 강화 / 화상' },
+  defend: { name: '방어', icon: '🛡', color: '#6ea3e0', desc: '체력 / 방어 / 반사' },
+  utility:{ name: '유틸', icon: '✦', color: '#fde68a', desc: '회복 / 골드 / 쿨다운 / 부활' },
+};
+
+// ===== 가호 데이터 (cat: 카테고리) =====
 const BOONS = [
   // common
-  { id: 'b-vigor',     name: '활력',     desc: '최대 HP +20',                        rarity: 'common', apply: g => { g.maxHp += 20; g.hp += 20; } },
-  { id: 'b-strength',  name: '근력',     desc: '공격력 +4',                          rarity: 'common', mod: { atk: 4 } },
-  { id: 'b-magic',     name: '마법 숙련', desc: '마법 데미지 +6',                     rarity: 'common', mod: { mag: 6 } },
-  { id: 'b-heal',      name: '치유의 빛', desc: 'HP +30 즉시 회복',                   rarity: 'common', apply: g => { g.hp = Math.min(g.maxHp, g.hp + 30); } },
-  { id: 'b-coin',      name: '동전 자루', desc: '골드 +30',                          rarity: 'common', apply: g => { g.gold += 30; } },
+  { id: 'b-vigor',     cat: 'defend',  name: '활력',     desc: '최대 HP +20',                        rarity: 'common', apply: g => { g.maxHp += 20; g.hp += 20; } },
+  { id: 'b-strength',  cat: 'attack',  name: '근력',     desc: '공격력 +4',                          rarity: 'common', mod: { atk: 4 } },
+  { id: 'b-magic',     cat: 'magic',   name: '마법 숙련', desc: '마법 데미지 +6',                     rarity: 'common', mod: { mag: 6 } },
+  { id: 'b-heal',      cat: 'utility', name: '치유의 빛', desc: 'HP +30 즉시 회복',                   rarity: 'common', apply: g => { g.hp = Math.min(g.maxHp, g.hp + 30); } },
+  { id: 'b-coin',      cat: 'utility', name: '동전 자루', desc: '골드 +30',                          rarity: 'common', apply: g => { g.gold += 30; } },
 
   // rare
-  { id: 'b-iron',      name: '강철 의지', desc: '최대 HP +40, HP 완전 회복',          rarity: 'rare',   apply: g => { g.maxHp += 40; g.hp = g.maxHp; } },
-  { id: 'b-fury',      name: '광기',     desc: '공격력 +8, 마법력 +8',               rarity: 'rare',   mod: { atk: 8, mag: 8 } },
-  { id: 'b-crit',      name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',     rarity: 'rare',   mod: { critChance: 0.25 } },
-  { id: 'b-thorns',    name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',         rarity: 'rare',   mod: { thorns: 8 } },
-  { id: 'b-quick',     name: '재빠른 손', desc: '화염구 쿨다운 -1',                  rarity: 'rare',   mod: { skillCdReduce: 1 } },
+  { id: 'b-iron',      cat: 'defend',  name: '강철 의지', desc: '최대 HP +40, HP 완전 회복',          rarity: 'rare',   apply: g => { g.maxHp += 40; g.hp = g.maxHp; } },
+  { id: 'b-fury',      cat: 'attack',  name: '광기',     desc: '공격력 +8, 마법력 +8',               rarity: 'rare',   mod: { atk: 8, mag: 8 } },
+  { id: 'b-crit',      cat: 'attack',  name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',     rarity: 'rare',   mod: { critChance: 0.25 } },
+  { id: 'b-thorns',    cat: 'defend',  name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',         rarity: 'rare',   mod: { thorns: 8 } },
+  { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '화염구 쿨다운 -1',                  rarity: 'rare',   mod: { skillCdReduce: 1 } },
+  { id: 'b-flame',     cat: 'magic',   name: '불꽃 친화', desc: '마법력 +12',                         rarity: 'rare',   mod: { mag: 12 } },
 
   // epic
-  { id: 'b-vamp',      name: '흡혈',     desc: '공격 시 데미지의 30% HP로 회복',      rarity: 'epic',   mod: { lifesteal: 0.3 } },
-  { id: 'b-firestorm', name: '화염 폭풍', desc: '화염구가 연속 2회 발동',              rarity: 'epic',   mod: { skillMulti: 2 } },
-  { id: 'b-burn-mark', name: '낙인',     desc: '화염구 화상 데미지 ×2, 지속 +2턴',     rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
-  { id: 'b-double',    name: '쌍수',     desc: '공격이 2회 발동',                    rarity: 'epic',   mod: { atkMulti: 2 } },
-  { id: 'b-shield',    name: '불멸의 방패', desc: '방어 시 데미지 100% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
+  { id: 'b-vamp',      cat: 'attack',  name: '흡혈',     desc: '공격 시 데미지의 30% HP로 회복',      rarity: 'epic',   mod: { lifesteal: 0.3 } },
+  { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '화염구가 연속 2회 발동',              rarity: 'epic',   mod: { skillMulti: 2 } },
+  { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '화염구 화상 데미지 ×2, 지속 +2턴',     rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
+  { id: 'b-double',    cat: 'attack',  name: '쌍수',     desc: '공격이 2회 발동',                    rarity: 'epic',   mod: { atkMulti: 2 } },
+  { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 100% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
+  { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
 
   // legendary
-  { id: 'b-phoenix',   name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
-  { id: 'b-meteor',    name: '메테오',   desc: '화염구가 5턴마다 자동 발동 (대기)',    rarity: 'legendary', mod: { autoMeteor: true } },
-  { id: 'b-overpower', name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
-  { id: 'b-soul',      name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
+  { id: 'b-phoenix',   cat: 'defend',  name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
+  { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '화염구가 5턴마다 자동 발동',          rarity: 'legendary', mod: { autoMeteor: true } },
+  { id: 'b-overpower', cat: 'attack',  name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
+  { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
 ];
 
 // ===== 상태 =====
@@ -135,8 +145,9 @@ function newRun() {
     gold: bonus.startGold,
     boons: [],
     floor: 1,
-    nodeIndex: 0,
-    map: [],
+    roomNum: 0,
+    roomsPerFloor: 7,
+    pendingFork: null,
     skillCdMax: HERO.skill.cooldown + bonus.startCd,
     skillCd: 0,
     enemiesDefeated: 0,
@@ -144,86 +155,134 @@ function newRun() {
     phoenixUsed: false,
     autoMeteorTimer: 0,
   };
-  generateFloor();
-  renderDungeon();
-  showScreen('dungeon');
+  // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
+  enterFirstRoom();
 }
 
-function generateFloor() {
-  // 매 층 5~7방 + 보스 1
-  const rooms = 5 + Math.floor(Math.random() * 2);
-  const map = [];
-  for (let i = 0; i < rooms; i++) {
-    const types = ['combat', 'combat', 'combat', 'boon', 'rest', 'elite'];
-    map.push({ type: types[Math.floor(Math.random() * types.length)], done: false });
-  }
-  map.push({ type: 'boss', done: false });
-  game.run.map = map;
-  game.run.nodeIndex = 0;
+function enterFirstRoom() {
+  game.run.roomNum = 1;
+  // 첫 방은 그냥 일반 전투
+  startBattle('normal', { id: 'first', type: 'combat', kind: 'normal' });
 }
 
 // ============================================================
-// 던전 화면
+// 분기점 노드 생성 / 표시
 // ============================================================
-function renderDungeon() {
-  $('floor-num').textContent = game.run.floor;
-  $('dungeon-hp').textContent = game.run.hp;
-  $('dungeon-max-hp').textContent = game.run.maxHp;
-  $('dungeon-gold').textContent = game.run.gold;
-  const map = $('dungeon-map');
-  map.innerHTML = '';
-  game.run.map.forEach((node, i) => {
-    const row = document.createElement('div');
-    row.className = 'dungeon-row';
-    const el = document.createElement('div');
-    el.className = 'node';
-    el.dataset.type = node.type;
-    if (node.done) el.classList.add('done');
-    if (i === game.run.nodeIndex && !node.done) el.classList.add('available');
-    if (i < game.run.nodeIndex) el.classList.add('done');
-    el.textContent = nodeIcon(node.type);
-    if (i === game.run.nodeIndex && !node.done) {
-      el.addEventListener('click', () => enterNode(i));
-    }
-    row.appendChild(el);
-    map.appendChild(row);
-  });
-}
+const NODE_TEMPLATES = [
+  { type: 'combat', kind: 'normal',  weight: 4, icon: '⚔', name: '적 조우',     desc: '평범한 적과의 전투' },
+  { type: 'elite',  kind: 'elite',   weight: 1, icon: '☠', name: '엘리트',     desc: '강한 적, 더 좋은 보상' },
+  { type: 'boon',   kind: 'boon',    weight: 1, icon: '✦', name: '신비한 사당', desc: '전투 없이 가호 1개' },
+  { type: 'rest',   kind: 'rest',    weight: 1, icon: '🔥', name: '모닥불',     desc: 'HP 회복 또는 통과' },
+  { type: 'treasure', kind: 'treasure', weight: 1, icon: '💰', name: '보물',     desc: '큰 골드 + 가호' },
+];
 
-function nodeIcon(type) {
-  return { combat: '⚔', elite: '☠', boon: '✦', rest: '🔥', boss: '👑' }[type] || '?';
-}
-
-function enterNode(i) {
-  const node = game.run.map[i];
-  if (node.done) return;
-  if (node.type === 'combat') startBattle('normal');
-  else if (node.type === 'elite') startBattle('elite');
-  else if (node.type === 'boss') startBattle('boss');
-  else if (node.type === 'boon') openBoonScreen('보너스 가호');
-  else if (node.type === 'rest') openRest();
-}
-
-function advanceNode() {
-  game.run.map[game.run.nodeIndex].done = true;
-  game.run.nodeIndex++;
-  if (game.run.nodeIndex >= game.run.map.length) {
-    // 층 완료
-    game.run.floor++;
-    if (game.run.floor > 3) {
-      endRun(true);
-      return;
-    }
-    generateFloor();
+function rollNodeTemplate() {
+  const total = NODE_TEMPLATES.reduce((s, t) => s + t.weight, 0);
+  let r = Math.random() * total;
+  for (const t of NODE_TEMPLATES) {
+    if (r < t.weight) return t;
+    r -= t.weight;
   }
-  renderDungeon();
-  showScreen('dungeon');
+  return NODE_TEMPLATES[0];
+}
+
+function generateFork() {
+  // 두 갈래 — 가능한 다르게 (같은 타입 안 나오게 시도)
+  let a = rollNodeTemplate();
+  let b = rollNodeTemplate();
+  let tries = 0;
+  while (a.type === b.type && tries++ < 6) b = rollNodeTemplate();
+  return [decorateNode(a), decorateNode(b)];
+}
+
+function decorateNode(tmpl) {
+  // 보상 카테고리 + 등급 미리 결정
+  const categories = ['attack', 'magic', 'defend', 'utility'];
+  let rarityFloor = 'common';
+  if (tmpl.kind === 'elite') rarityFloor = 'rare';
+  if (tmpl.kind === 'treasure') rarityFloor = 'rare';
+  if (tmpl.kind === 'boon') rarityFloor = 'rare';
+  // run 후반일수록 등급 ↑
+  const f = game.run.floor;
+  if (f >= 2 && Math.random() < 0.3) rarityFloor = bumpRarity(rarityFloor);
+  if (f >= 3 && Math.random() < 0.3) rarityFloor = bumpRarity(rarityFloor);
+  const cat = categories[Math.floor(Math.random() * categories.length)];
+  return {
+    ...tmpl,
+    rewardCat: cat,
+    rewardRarity: rarityFloor,
+  };
+}
+
+function bumpRarity(r) {
+  return r === 'common' ? 'rare' : r === 'rare' ? 'epic' : r === 'epic' ? 'legendary' : 'legendary';
+}
+
+function nextStep() {
+  const r = game.run;
+  // 직전 노드가 보스였으면 → 다음 층
+  if (r.currentNode && r.currentNode.kind === 'boss') {
+    r.floor++;
+    if (r.floor > 3) { endRun(true); return; }
+    r.roomNum = 1;
+    // 새 층 첫 전투 바로
+    startBattle('normal', { id: 'first', type: 'combat', kind: 'normal' });
+    return;
+  }
+  r.roomNum++;
+  // 마지막 방 → 보스
+  if (r.roomNum > r.roomsPerFloor) {
+    startBattle('boss', { id: 'boss', type: 'combat', kind: 'boss', rewardCat: 'utility', rewardRarity: 'legendary' });
+    return;
+  }
+  // 분기점 두 갈래
+  r.pendingFork = generateFork();
+  renderFork();
+  showScreen('fork');
+}
+
+function renderFork() {
+  const wrap = $('fork-options');
+  wrap.innerHTML = '';
+  for (const node of game.run.pendingFork) {
+    const card = document.createElement('div');
+    card.className = `path-card path-${node.type}`;
+    const cat = CATEGORIES[node.rewardCat];
+    const rLbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[node.rewardRarity];
+    card.innerHTML = `
+      <div class="path-icon">${node.icon}</div>
+      <div class="path-name">${node.name}</div>
+      <div class="path-desc">${node.desc}</div>
+      <div class="reward-tag rarity-${node.rewardRarity}" style="--cat-color:${cat.color}">
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-name">${cat.name}</span>
+        <span class="cat-rarity">${rLbl}</span>
+      </div>`;
+    card.addEventListener('click', () => chooseFork(node));
+    wrap.appendChild(card);
+  }
+}
+
+function chooseFork(node) {
+  game.run.pendingFork = null;
+  if (node.type === 'combat') startBattle('normal', node);
+  else if (node.type === 'elite') startBattle('elite', node);
+  else if (node.type === 'boon') openBoonScreen('신비한 사당', node.rewardCat, node.rewardRarity);
+  else if (node.type === 'rest') openRest(node);
+  else if (node.type === 'treasure') openTreasure(node);
+}
+
+function openTreasure(node) {
+  const gold = 30 + Math.floor(Math.random() * 30) + game.run.floor * 10;
+  game.run.gold += gold;
+  // 가호 보상
+  setTimeout(() => openBoonScreen(`보물! +${gold} 골드`, node.rewardCat, node.rewardRarity), 200);
 }
 
 // ============================================================
 // 전투
 // ============================================================
-function startBattle(kind) {
+function startBattle(kind, node) {
   const f = game.run.floor;
   let ePool;
   if (kind === 'normal') ePool = ['goblin', 'orc', 'rogue', 'shield', 'drone'];
@@ -231,6 +290,7 @@ function startBattle(kind) {
   else if (kind === 'boss') ePool = [['giant', 'lich', 'dragon'][f - 1] || 'dragon'];
   const eid = ePool[Math.floor(Math.random() * ePool.length)];
   const def = ENEMIES[eid];
+  game.run.currentNode = node || { kind, rewardCat: null, rewardRarity: null };
   // 층/엘리트 스케일링
   const scale = 1 + (f - 1) * 0.4 + (kind === 'elite' ? 0.4 : 0);
   game.run.battle = {
@@ -276,7 +336,11 @@ function refreshBattleUI() {
   if (r.hp / r.maxHp < 0.25) $('hero-hp-fill').classList.add('critical');
   else if (r.hp / r.maxHp < 0.5) $('hero-hp-fill').classList.add('low');
   $('turn-num').textContent = b.turn;
-  $('battle-gold').textContent = r.gold;
+  $('hud-floor').textContent = r.floor;
+  $('hud-room').textContent = r.roomNum;
+  $('hud-rooms').textContent = r.roomsPerFloor;
+  $('hud-hp').textContent = r.hp;
+  $('hud-gold').textContent = r.gold;
   // 스킬 cooldown 표시
   const skillBtn = document.querySelector('[data-action="skill"]');
   if (b.skillCdNow > 0) {
@@ -458,7 +522,7 @@ function doFlee() {
     log('성공적으로 도망쳤다.', 'system');
     setTimeout(() => {
       b.over = true;
-      advanceNode();
+      nextStep();
     }, 600);
   } else {
     log('도망 실패!', 'system');
@@ -584,14 +648,20 @@ function onEnemyDefeat() {
     saveMeta();
   }
   setTimeout(() => {
-    // 일반 전투 → 가호 보상, 엘리트/보스 → 더 좋은 가호
+    const node = game.run.currentNode || {};
+    let context = '전투 승리!';
+    let cat = node.rewardCat;
+    let rarity = node.rewardRarity || 'common';
     if (b.enemy.kind === 'boss') {
-      openBoonScreen('보스 처치 보상!', 'epic');
+      context = '보스 처치!';
+      rarity = 'epic';
     } else if (b.enemy.kind === 'elite') {
-      openBoonScreen('엘리트 처치 보상!', 'rare');
-    } else {
-      openBoonScreen('전투 승리!');
+      context = '엘리트 처치!';
+      rarity = node.rewardRarity || 'rare';
+    } else if (node.id === 'first') {
+      context = '첫 전투 승리!';
     }
+    openBoonScreen(context, cat, rarity);
   }, 800);
 }
 
@@ -603,7 +673,7 @@ function onHeroDefeat() {
 // ============================================================
 // 가호 시스템
 // ============================================================
-function rollBoonChoices(rarityFloor = 'common') {
+function rollBoonChoices(category, rarityFloor = 'common') {
   const weights = {
     common:    { common: 60, rare: 30, epic: 10, legendary: 0 },
     rare:      { common: 30, rare: 50, epic: 18, legendary: 2 },
@@ -611,29 +681,33 @@ function rollBoonChoices(rarityFloor = 'common') {
     legendary: { common: 0,  rare: 0,  epic: 40, legendary: 60 },
   }[rarityFloor] || { common: 60, rare: 30, epic: 10, legendary: 0 };
   const owned = new Set(game.run.boons.map(b => b.id));
-  const pool = BOONS.filter(b => !owned.has(b.id));
+  // 카테고리 매칭: 카테고리 지정 시 해당 카테고리 우선
+  let pool = BOONS.filter(b => !owned.has(b.id));
+  let priority = category ? pool.filter(b => b.cat === category) : pool;
   const picks = [];
-  for (let i = 0; i < 3 && pool.length > 0; i++) {
-    // 가중치 기반 추첨
+  for (let i = 0; i < 3; i++) {
     let r = Math.random() * 100;
     let chosenRarity = 'common';
     for (const k of ['legendary', 'epic', 'rare', 'common']) {
       if (r < weights[k]) { chosenRarity = k; break; }
       r -= weights[k];
     }
-    const candidates = pool.filter(b => b.rarity === chosenRarity);
-    const chosen = candidates.length > 0
-      ? candidates[Math.floor(Math.random() * candidates.length)]
-      : pool[Math.floor(Math.random() * pool.length)];
+    // 카테고리 매칭 풀 우선, 없으면 전체 풀
+    let candidates = priority.filter(b => b.rarity === chosenRarity);
+    if (candidates.length === 0) candidates = pool.filter(b => b.rarity === chosenRarity);
+    if (candidates.length === 0) candidates = priority.length > 0 ? priority : pool;
+    if (candidates.length === 0) break;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
     picks.push(chosen);
-    pool.splice(pool.indexOf(chosen), 1);
+    pool = pool.filter(b => b !== chosen);
+    priority = priority.filter(b => b !== chosen);
   }
   return picks;
 }
 
-function openBoonScreen(context, rarityFloor) {
+function openBoonScreen(context, category, rarityFloor) {
   $('boon-context').textContent = context;
-  const choices = rollBoonChoices(rarityFloor);
+  const choices = rollBoonChoices(category, rarityFloor);
   const wrap = $('boon-choices');
   wrap.innerHTML = '';
   for (const b of choices) {
@@ -665,7 +739,7 @@ function openBoonConfirm(boon) {
     applyBoon(boon);
     yes.removeEventListener('click', onYes);
     no.removeEventListener('click', onNo);
-    setTimeout(() => advanceNode(), 800);
+    setTimeout(() => nextStep(), 800);
   };
   const onNo = () => {
     close();
@@ -697,7 +771,7 @@ function boonFlash(rarity) {
 // ============================================================
 // 휴식
 // ============================================================
-function openRest() {
+function openRest(node) {
   showScreen('rest-screen');
 }
 
@@ -835,14 +909,18 @@ function boot() {
   // 보스/가호 후 진행
   $('boon-skip').addEventListener('click', () => {
     game.run.gold += 30;
-    advanceNode();
+    nextStep();
   });
   // 휴식
   $('rest-heal').addEventListener('click', () => {
     game.run.hp = Math.min(game.run.maxHp, game.run.hp + 30);
-    advanceNode();
+    nextStep();
   });
-  $('rest-skip').addEventListener('click', () => advanceNode());
+  $('rest-skip').addEventListener('click', () => nextStep());
+  // 분기점 포기
+  $('fork-quit').addEventListener('click', () => {
+    if (confirm('던전을 포기합니까?')) endRun(false);
+  });
   // 결과
   $('back-to-menu').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
 

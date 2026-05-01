@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v1';
+const CACHE = 'ignia-v2-fork';
 const ASSETS = [
   './',
   './index.html',

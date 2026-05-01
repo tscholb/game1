@@ -172,33 +172,108 @@ button:active { transform: scale(0.96); }
 }
 
 /* ============================================================
-   던전 지도
+   분기점 화면 (두 갈래 길)
    ============================================================ */
-#dungeon {
-  background: linear-gradient(180deg, #0a0612 0%, #1a1218 100%);
-  padding: 16px;
+#fork {
+  background: #0a0612;
+  position: relative;
+  overflow: hidden;
+  justify-content: center;
 }
-.dungeon-header {
+.fork-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 25% 50%, rgba(255, 100, 40, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 50%, rgba(110, 163, 224, 0.18) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0612 0%, #1a0a18 100%);
+}
+.fork-content {
+  position: relative;
+  z-index: 1;
   width: 100%;
+  max-width: 720px;
+  padding: 24px 16px;
+  text-align: center;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 8px 4px 14px;
-  border-bottom: 1px solid #3a2030;
-  margin-bottom: 12px;
+  gap: 18px;
 }
-.dungeon-header h2 {
-  font-size: 18px;
-  letter-spacing: 0.1em;
+.fork-content h2 {
+  font-size: 28px;
+  letter-spacing: 0.2em;
   color: #fde68a;
+  text-shadow: 0 0 20px rgba(243, 216, 120, 0.4);
 }
-.dungeon-status {
+.fork-content .subtitle { color: #c8a890; font-size: 12px; letter-spacing: 0.1em; }
+#fork-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  margin-top: 8px;
+}
+.path-card {
+  background: linear-gradient(180deg, #1a0e1a 0%, #0a0612 100%);
+  border: 2px solid #3a2030;
+  border-radius: 14px;
+  padding: 20px 14px;
+  cursor: pointer;
   display: flex;
-  gap: 12px;
-  font-size: 13px;
-  color: #c8cdd9;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
 }
-.dungeon-status.mini { font-size: 11px; }
+.path-card:hover {
+  border-color: #fde68a;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(243, 216, 120, 0.3);
+}
+.path-card.path-combat { border-color: #6a3030; }
+.path-card.path-elite { border-color: #7c3aed; }
+.path-card.path-elite:hover { box-shadow: 0 12px 30px rgba(192, 132, 252, 0.5); }
+.path-card.path-boon { border-color: #4070a0; }
+.path-card.path-rest { border-color: #6a4a20; }
+.path-card.path-treasure { border-color: #c0a040; }
+.path-card.path-treasure:hover { box-shadow: 0 12px 30px rgba(243, 216, 120, 0.5); }
+
+.path-icon { font-size: 48px; line-height: 1; }
+.path-name { font-size: 17px; font-weight: 800; color: #fff; }
+.path-desc { font-size: 11px; color: #aaa; letter-spacing: 0.05em; min-height: 30px; }
+.reward-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1.5px solid var(--cat-color, #fde68a);
+  border-radius: 14px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 6px;
+  box-shadow: 0 0 12px rgba(255, 200, 100, 0.15);
+}
+.reward-tag .cat-icon { font-size: 14px; }
+.reward-tag .cat-name { color: var(--cat-color); }
+.reward-tag .cat-rarity { font-size: 10px; color: #c8cdd9; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.08); }
+.reward-tag.rarity-rare { box-shadow: 0 0 14px rgba(110, 163, 224, 0.4); }
+.reward-tag.rarity-epic { box-shadow: 0 0 18px rgba(192, 132, 252, 0.6); animation: epicPulse 2.4s ease-in-out infinite; }
+.reward-tag.rarity-legendary {
+  box-shadow: 0 0 22px rgba(243, 216, 120, 0.7);
+  animation: legGlow 2s ease-in-out infinite;
+}
+.reward-tag.rarity-rare .cat-rarity { background: rgba(110, 163, 224, 0.25); color: #93d8ff; }
+.reward-tag.rarity-epic .cat-rarity { background: rgba(192, 132, 252, 0.25); color: #d8b4fe; }
+.reward-tag.rarity-legendary .cat-rarity { background: rgba(243, 216, 120, 0.25); color: #fde68a; }
+
+@media (max-width: 600px), (pointer: coarse) {
+  #fork-options { grid-template-columns: 1fr; }
+  .path-icon { font-size: 40px; }
+}
+
+/* hp / gold 아이콘 색 (fork 카드 공유) */
 .hp-icon { color: #ff7777; }
 .gold-icon { color: #fde68a; font-weight: 800; }
 .back-btn {
@@ -207,76 +282,8 @@ button:active { transform: scale(0.96); }
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 12px;
-}
-
-.dungeon-map {
-  flex: 1;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 18px;
-  padding: 18px 0;
-  overflow-y: auto;
-}
-.dungeon-row {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  position: relative;
-}
-.dungeon-row::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  width: 2px;
-  height: 12px;
-  background: #5a3a4a;
-  transform: translateX(-50%);
-}
-.dungeon-row:last-child::before { display: none; }
-.node {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  background: #1a1218;
-  border: 2px solid #4a3040;
-  position: relative;
-  transition: all 0.15s;
-}
-.node.available {
-  border-color: #fde68a;
-  box-shadow: 0 0 18px rgba(243, 216, 120, 0.4);
-  animation: nodePulse 1.6s ease-in-out infinite;
-  cursor: pointer;
-}
-.node.available:hover { transform: scale(1.1); }
-@keyframes nodePulse {
-  0%, 100% { box-shadow: 0 0 18px rgba(243, 216, 120, 0.4); }
-  50% { box-shadow: 0 0 28px rgba(243, 216, 120, 0.7); }
-}
-.node.done { opacity: 0.4; border-color: #5a4040; }
-.node.current {
-  border-color: #fff;
-  background: #2a1a2a;
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-}
-.node[data-type="combat"] { background: radial-gradient(circle, #3a1010 0%, #1a0a0a 100%); }
-.node[data-type="elite"] { background: radial-gradient(circle, #5a1a4a 0%, #2a0a1a 100%); border-color: #c084fc; }
-.node[data-type="boon"] { background: radial-gradient(circle, #1a3a2a 0%, #0a1a14 100%); border-color: #6ea3e0; }
-.node[data-type="rest"] { background: radial-gradient(circle, #4a3010 0%, #1a1208 100%); }
-.node[data-type="boss"] {
-  width: 84px; height: 84px;
-  background: radial-gradient(circle, #5a0a0a 0%, #2a0000 100%);
-  border-color: #ff3030;
-  font-size: 32px;
-  box-shadow: 0 0 30px rgba(255, 30, 30, 0.5);
+  color: #fff;
+  margin-top: 8px;
 }
 
 /* ============================================================
@@ -302,22 +309,48 @@ button:active { transform: scale(0.96); }
   background: repeating-linear-gradient(45deg, rgba(0,0,0,0) 0 30px, rgba(255, 100, 40, 0.03) 30px 31px);
 }
 
-.battle-top {
+.mini-hud {
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 14px 18px;
+  align-items: center;
+  padding: 8px 14px;
   z-index: 5;
   position: relative;
-  font-size: 12px;
-  color: #c8cdd9;
+  font-size: 11px;
+  background: rgba(10, 6, 14, 0.7);
+  border-bottom: 1px solid #3a2030;
+  gap: 8px;
 }
-.round-info {
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  color: #fde68a;
+.hud-progress, .hud-stats {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hud-label {
+  color: #8a7080;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-size: 10px;
 }
+.hud-label-mini { color: #8a7080; font-size: 10px; margin-right: 3px; }
+.hud-val { font-weight: 800; color: #fde68a; font-size: 13px; }
+.hud-sep { color: #4a3040; }
+.hud-chip {
+  background: rgba(40, 22, 30, 0.6);
+  border: 1px solid #3a2030;
+  border-radius: 10px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  color: #fff;
+  font-size: 12px;
+}
+.hud-chip .hp-icon { color: #ff7777; }
+.hud-chip .gold-icon { color: #fde68a; }
 
 .battle-stage {
   flex: 1;
