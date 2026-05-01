@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>이그니아의 화염</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="../icon.svg">
+  <meta name="theme-color" content="#1a0a14">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== 메인 메뉴 ===== -->
+    <div id="menu" class="screen">
+      <div class="menu-header">
+        <h1>IGNIA</h1>
+        <p class="subtitle">화염의 대마법사 — 로그라이크 RPG</p>
+        <div class="essence">
+          <span class="essence-icon">◆</span>
+          <span id="meta-essence">0</span>
+          <span class="essence-label">정수</span>
+        </div>
+      </div>
+
+      <div class="menu-hero">
+        <img src="../assets/heroes/mage.png" alt="이그니아" class="big-portrait">
+        <div class="menu-hero-info">
+          <h2>이그니아</h2>
+          <p class="flavor">검은 머리 위로 불꽃을 다스리는 매혹의 화염 대마법사. 그녀의 손끝에서 세상이 타오른다.</p>
+          <div class="stats">
+            <div class="stat"><span class="k">HP</span><span class="v" id="menu-hp">100</span></div>
+            <div class="stat"><span class="k">공격</span><span class="v" id="menu-atk">18</span></div>
+            <div class="stat"><span class="k">마법</span><span class="v" id="menu-mag">28</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-actions">
+        <button id="start-btn" class="big primary">⚔ 던전 탐험 ⚔</button>
+        <button id="fountain-btn" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
+        <button id="hard-reset-btn" class="small reset-btn">전체 초기화</button>
+      </div>
+    </div>
+
+    <!-- ===== 던전 진행 (지도) ===== -->
+    <div id="dungeon" class="screen hidden">
+      <div class="dungeon-header">
+        <button class="back-btn" id="dungeon-quit">포기</button>
+        <h2>층 <span id="floor-num">1</span></h2>
+        <div class="dungeon-status">
+          <span class="hp-icon">♥</span>
+          <span id="dungeon-hp">100</span>/<span id="dungeon-max-hp">100</span>
+          <span class="gold-icon">G</span>
+          <span id="dungeon-gold">0</span>
+        </div>
+      </div>
+      <div class="dungeon-map" id="dungeon-map"></div>
+    </div>
+
+    <!-- ===== 전투 화면 ===== -->
+    <div id="battle" class="screen hidden">
+      <div class="battle-bg"></div>
+
+      <div class="battle-top">
+        <div class="round-info">턴 <span id="turn-num">1</span></div>
+        <div class="dungeon-status mini">
+          <span class="gold-icon">G</span>
+          <span id="battle-gold">0</span>
+        </div>
+      </div>
+
+      <div class="battle-stage">
+        <div class="combatant hero" id="hero-side">
+          <div class="aura"></div>
+          <img id="hero-img" src="../assets/heroes/mage-sprite.png" alt="">
+          <div class="hp-bar">
+            <div class="hp-fill" id="hero-hp-fill"></div>
+            <div class="hp-text"><span id="hero-hp">100</span>/<span id="hero-max-hp">100</span></div>
+          </div>
+          <div class="combatant-name">이그니아</div>
+          <div class="status-list" id="hero-status"></div>
+        </div>
+
+        <div class="vs-divider">VS</div>
+
+        <div class="combatant enemy" id="enemy-side">
+          <div class="enemy-art" id="enemy-art"></div>
+          <div class="hp-bar">
+            <div class="hp-fill enemy-fill" id="enemy-hp-fill"></div>
+            <div class="hp-text"><span id="enemy-hp">30</span>/<span id="enemy-max-hp">30</span></div>
+          </div>
+          <div class="combatant-name" id="enemy-name">고블린</div>
+          <div class="status-list" id="enemy-status"></div>
+        </div>
+      </div>
+
+      <div class="battle-log" id="battle-log"></div>
+
+      <div class="actions" id="actions">
+        <button class="action-btn" data-action="attack">
+          <span class="ico">⚔</span>
+          <span class="label">공격</span>
+          <span class="sub">기본 공격</span>
+        </button>
+        <button class="action-btn skill" data-action="skill">
+          <span class="ico">🔥</span>
+          <span class="label">화염구</span>
+          <span class="sub" id="skill-cd-label">강한 마법</span>
+        </button>
+        <button class="action-btn" data-action="defend">
+          <span class="ico">🛡</span>
+          <span class="label">방어</span>
+          <span class="sub">데미지 -50%</span>
+        </button>
+        <button class="action-btn" data-action="flee">
+          <span class="ico">🏃</span>
+          <span class="label">도망</span>
+          <span class="sub">위험</span>
+        </button>
+      </div>
+
+      <div id="dmg-layer"></div>
+
+      <!-- 스킬 cut-in -->
+      <div id="cutin">
+        <div class="cutin-bg"></div>
+        <img id="cutin-img" alt="">
+        <div id="cutin-quote"></div>
+        <div id="cutin-name"></div>
+      </div>
+    </div>
+
+    <!-- ===== 가호 선택 ===== -->
+    <div id="boon-screen" class="screen hidden">
+      <div class="boon-card">
+        <h2>가호를 선택하세요</h2>
+        <p class="subtitle"><span id="boon-context">전투 승리!</span></p>
+        <div id="boon-choices"></div>
+        <button id="boon-skip" class="small">건너뛰기 (+30 골드)</button>
+      </div>
+    </div>
+
+    <!-- 가호 확인 다이얼로그 -->
+    <div id="boon-confirm">
+      <div id="boon-confirm-card" class="boon-confirm-card">
+        <div class="rarity-big" id="bc-rarity"></div>
+        <div class="name-big" id="bc-name"></div>
+        <div class="desc-big" id="bc-desc"></div>
+        <div class="boon-confirm-actions">
+          <button id="boon-confirm-no">취소</button>
+          <button id="boon-confirm-yes">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="boon-flash"></div>
+
+    <!-- ===== 휴식 ===== -->
+    <div id="rest-screen" class="screen hidden">
+      <div class="rest-card">
+        <h2>🔥 모닥불 🔥</h2>
+        <p class="subtitle">던전 한 켠의 작은 모닥불</p>
+        <div class="rest-actions">
+          <button id="rest-heal" class="big">치유 (+30 HP)</button>
+          <button id="rest-skip" class="small">그냥 지나가기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 결과 ===== -->
+    <div id="result" class="screen hidden">
+      <h1 id="result-title"></h1>
+      <p id="result-text"></p>
+      <div class="result-stats" id="result-stats"></div>
+      <button id="back-to-menu" class="big primary">메뉴로</button>
+    </div>
+
+    <!-- ===== 영원의 샘 ===== -->
+    <div id="fountain" class="screen hidden">
+      <div class="fountain-header">
+        <button class="back-btn" id="fountain-back">← 메뉴로</button>
+        <h1>⚜ 영원의 샘 ⚜</h1>
+        <p class="subtitle">정수로 영구 강화</p>
+        <div class="essence inline">
+          <span class="essence-icon">◆</span>
+          <span id="fountain-essence">0</span>
+        </div>
+      </div>
+      <div id="fountain-upgrades"></div>
+    </div>
+
+  </div>
+
+  <script src="./game.js"></script>
+</body>
+</html>

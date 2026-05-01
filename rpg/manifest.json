@@ -1,0 +1,14 @@
+{
+  "name": "이그니아의 화염",
+  "short_name": "IGNIA",
+  "description": "화염의 대마법사 이그니아의 로그라이크 RPG",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0612",
+  "theme_color": "#1a0a14",
+  "icons": [
+    { "src": "../icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
