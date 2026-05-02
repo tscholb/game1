@@ -10,7 +10,13 @@ html, body {
   touch-action: manipulation;
 }
 
-#app { height: 100vh; width: 100vw; position: relative; overflow: hidden; }
+#app {
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+}
 .screen {
   position: absolute;
   inset: 0;
@@ -38,55 +44,35 @@ button:active { transform: scale(0.96); }
   position: relative;
   overflow: hidden;
   justify-content: flex-end;
-  padding-bottom: 24px;
+  padding: 0 16px max(24px, env(safe-area-inset-bottom));
 }
 .title-bg {
   position: absolute;
   inset: 0;
   background-image: url('./title.png');
   background-size: cover;
-  background-position: center;
+  background-position: center center;
+  background-repeat: no-repeat;
   background-color: #0a0612;
-  image-rendering: pixelated;
 }
+/* 버튼 가독성용 살짝의 어둠만 — 더 이상 하단을 통째로 덮지 않음 */
 .title-bg::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(10,6,18,0) 0%, rgba(10,6,18,0) 55%, rgba(10,6,18,0.85) 85%, rgba(10,6,18,1) 100%);
+  left: 0; right: 0; bottom: 0;
+  height: 45%;
+  background: linear-gradient(180deg, rgba(10,6,18,0) 0%, rgba(10,6,18,0.35) 55%, rgba(10,6,18,0.7) 100%);
+  pointer-events: none;
 }
 .title-content {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 480px;
-  padding: 0 24px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-}
-.title-name {
-  font-size: clamp(60px, 14vw, 96px);
-  font-weight: 900;
-  letter-spacing: 0.25em;
-  background: linear-gradient(180deg, #fff3a0 0%, #ff8a3a 35%, #dc2626 70%, #5a1010 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 60px rgba(255, 100, 40, 0.7);
-  animation: titlePulse 4s ease-in-out infinite;
-}
-@keyframes titlePulse {
-  0%, 100% { filter: brightness(1) drop-shadow(0 0 24px rgba(255, 100, 40, 0.4)); }
-  50%      { filter: brightness(1.15) drop-shadow(0 0 36px rgba(255, 100, 40, 0.7)); }
-}
-.title-subtitle {
-  color: #c8a890;
-  font-size: 13px;
-  letter-spacing: 0.2em;
-  text-align: center;
-  text-transform: uppercase;
+  gap: 12px;
 }
 .title-actions {
   display: flex;
@@ -94,25 +80,29 @@ button:active { transform: scale(0.96); }
   gap: 10px;
   width: 100%;
   max-width: 360px;
-  margin-top: 16px;
 }
 .title-actions .big {
   padding: 14px 20px;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.05em;
-  border-radius: 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 200, 120, 0.3);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
 }
 .title-essence {
-  margin-top: 6px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(40, 20, 60, 0.6);
+  background: rgba(20, 10, 30, 0.7);
   border: 1px solid #6a3a8a;
   padding: 6px 14px;
   border-radius: 16px;
   font-size: 14px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 /* ============================================================
