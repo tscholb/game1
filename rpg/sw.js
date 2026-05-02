@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v22-witch-intro';
+const CACHE = 'ignia-v23-dragon-art';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,7 @@ const ASSETS = [
   '../assets/story/prologue-3-cave.png',
   '../assets/bosses/dryad.png',
   '../assets/bosses/witch.png',
+  '../assets/bosses/dragon-human.png',
   '../assets/scenes/spring.png',
   '../assets/scenes/chest.png',
 ];

@@ -57,7 +57,7 @@ const ENEMIES = {
   // 보스
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
-  dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true },
+  dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
 };
 
 // ===== 스킬 카탈로그 =====
@@ -373,17 +373,19 @@ const BOSS_STORIES = {
   // 3층 — 심연의 드래곤
   dragon: {
     intro: [
-      { img: null,
-        text: '동굴의 끝 — 검은 비늘이 어둠 속에서 천천히 꿈틀거린다.\n어둠보다 더 짙은 무언가가 그곳에 도사리고 있었다.' },
-      { img: null,
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '동굴의 가장 깊은 곳…\n공기 자체가 짓눌릴 만큼 묵직해진다.\n\n— 이그니아의 손끝 불꽃마저 숨을 죽인다.' },
+      { img: '../assets/bosses/dragon-human.png',
+        text: '어둠 속에서 한 명의 여인이 걸어나왔다.\n뿔과 푸른 화염을 두른, 인간이라 부르기엔 너무 위태로운 자.' },
+      { img: '../assets/bosses/dragon-human.png',
         text: '심연의 드래곤 — "작은 불꽃아…\n이 어둠은, 너 따위가 감히 만질 수 있는 것이 아니다."' },
-      { img: null,
-        text: '이그니아 — "그래?\n\n그럼 — 직접 확인해보자!"' },
+      { img: '../assets/bosses/dragon-human.png',
+        text: '이그니아 — "그래?\n\n그럼 — 직접 확인해보자."' },
     ],
     outro: [
-      { img: null,
-        text: '드래곤의 마지막 숨이 어둠을 토해내며 잦아든다.' },
-      { img: null,
+      { img: '../assets/bosses/dragon-human.png',
+        text: '푸른 화염이 잦아들며, 인간의 형상도 함께 무너진다.' },
+      { img: '../assets/bosses/dragon-human.png',
         text: '이그니아 — "끝났다…\n\n아니, 시작이다.\n어둠은, 아직 남아있으니까."' },
     ],
   },
