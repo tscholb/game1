@@ -54,9 +54,9 @@ const ENEMIES = {
   drone:    { name: '드론',     hp: 50,  atk: 12, emoji: '🦟', tier: 3 },
   knight:   { name: '흑기사',   hp: 110, atk: 16, emoji: '⚔️', tier: 3 },
   // 보스
-  giant:    { name: '폐허의 거인', hp: 280, atk: 22, emoji: '🗿', boss: true },
-  lich:     { name: '리치왕',     hp: 240, atk: 26, emoji: '💀', boss: true },
-  dragon:   { name: '심연의 드래곤', hp: 380, atk: 30, emoji: '🐉', boss: true },
+  giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
+  lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
+  dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true },
 };
 
 // ===== 스킬 카탈로그 =====
@@ -518,9 +518,17 @@ function startBattle(kind, node) {
     over: false,
   };
   $('enemy-name').textContent = def.name + (kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '');
-  $('enemy-art').textContent = def.emoji;
-  if (def.boss) $('enemy-art').style.fontSize = '90px';
-  else $('enemy-art').style.fontSize = '70px';
+  const art = $('enemy-art');
+  if (def.sprite) {
+    art.classList.add('with-sprite');
+    art.innerHTML = `<img class="enemy-sprite" src="${def.sprite}" alt="${def.name}">`;
+    art.style.fontSize = '';
+  } else {
+    art.classList.remove('with-sprite');
+    art.innerHTML = '';
+    art.textContent = def.emoji;
+    art.style.fontSize = def.boss ? '90px' : '70px';
+  }
   $('hero-img').src = HERO.sprite;
   refreshBattleUI();
   $('battle-log').innerHTML = '';

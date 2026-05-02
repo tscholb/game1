@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v14-prologue';
+const CACHE = 'ignia-v15-bosses';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,8 @@ const ASSETS = [
   '../assets/skills/ignia-flamethrower.png',
   '../assets/story/prologue-1-darkness.png',
   '../assets/story/prologue-3-cave.png',
+  '../assets/bosses/dryad.png',
+  '../assets/bosses/witch.png',
 ];
 
 self.addEventListener('install', e => {
