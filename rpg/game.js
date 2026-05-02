@@ -16,6 +16,7 @@ const HEROES = [
     skill: { name: '화염구', quote: '타올라라 — 이 세계마저!', cooldown: 3, burnDmg: 6, burnTurns: 3 },
     portrait: '../assets/heroes/mage.png',
     sprite: '../assets/heroes/mage.png',
+    defaultSkill: 'fireball',
   },
   {
     id: 'luna', name: '루나', title: '달빛 궁수',
@@ -58,6 +59,61 @@ const ENEMIES = {
   dragon:   { name: '심연의 드래곤', hp: 380, atk: 30, emoji: '🐉', boss: true },
 };
 
+// ===== 스킬 카탈로그 =====
+// hits: 타격 횟수, mul: 1타당 mag 배율, burnDmg/burnTurns: 화상, critBonus: 추가 치명타 확률
+const SKILLS = {
+  fireball: {
+    id: 'fireball', name: '화염구', icon: '🔥',
+    cooldown: 3,
+    hits: 1, mul: 1.0,
+    burnDmg: 6, burnTurns: 3,
+    critBonus: 0,
+    desc: '단일 강타 + 화상 3턴',
+    quote: '타올라라 — 이 세계마저!',
+    cutin: '../assets/heroes/mage.png',
+  },
+  flamethrower: {
+    id: 'flamethrower', name: '화염방사', icon: '🜂',
+    cooldown: 4,
+    hits: 5, mul: 0.45,
+    burnDmg: 8, burnTurns: 4,
+    critBonus: 0,
+    desc: '5회 연속 화염 + 강한 화상',
+    quote: '재가 될 때까지 — 끝나지 않아!',
+    cutin: '../assets/skills/ignia-flamethrower.png',
+  },
+  firestorm: {
+    id: 'firestorm', name: '화염 폭풍', icon: '🌪',
+    cooldown: 4,
+    hits: 3, mul: 0.7,
+    burnDmg: 5, burnTurns: 2,
+    critBonus: 0.1,
+    desc: '3회 연타 + 가벼운 화상',
+    quote: '폭풍이여, 휘몰아쳐라!',
+    cutin: '../assets/skills/ignia-fireball.png',
+  },
+  meteor: {
+    id: 'meteor', name: '메테오', icon: '☄',
+    cooldown: 6,
+    hits: 1, mul: 2.4,
+    burnDmg: 0, burnTurns: 0,
+    critBonus: 0.3,
+    desc: '한 방 초강타, 높은 치명타',
+    quote: '하늘이 무너지리라 — 메테오!',
+    cutin: '../assets/skills/ignia-fireball.png',
+  },
+  inferno: {
+    id: 'inferno', name: '지옥불', icon: '👹',
+    cooldown: 5,
+    hits: 1, mul: 1.1,
+    burnDmg: 14, burnTurns: 5,
+    critBonus: 0,
+    desc: '맹렬한 화상 5턴',
+    quote: '지옥의 불꽃을 받아라!',
+    cutin: '../assets/skills/ignia-flame-finger.png',
+  },
+};
+
 // ===== 가호 카테고리 =====
 const CATEGORIES = {
   attack: { name: '공격', icon: '⚔', color: '#ff7a4a', desc: '근접 공격력 / 치명타 / 추가 공격' },
@@ -85,15 +141,17 @@ const BOONS = [
 
   // epic
   { id: 'b-vamp',      cat: 'attack',  name: '흡혈',     desc: '공격 시 데미지의 30% HP로 회복',      rarity: 'epic',   mod: { lifesteal: 0.3 } },
-  { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '화염구가 연속 2회 발동',              rarity: 'epic',   mod: { skillMulti: 2 } },
-  { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '화염구 화상 데미지 ×2, 지속 +2턴',     rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
+  { id: 'b-flamethrower', cat: 'magic', name: '화염방사', desc: '새 스킬 「화염방사」 획득 — 5회 연속 화염',  rarity: 'epic',   mod: { grantSkill: 'flamethrower' } },
+  { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '새 스킬 「화염 폭풍」 획득 — 3회 연타',     rarity: 'epic',   mod: { grantSkill: 'firestorm' } },
+  { id: 'b-inferno',   cat: 'magic',   name: '지옥불',   desc: '새 스킬 「지옥불」 획득 — 맹렬한 화상',     rarity: 'epic',   mod: { grantSkill: 'inferno' } },
+  { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
   { id: 'b-double',    cat: 'attack',  name: '쌍수',     desc: '공격이 2회 발동',                    rarity: 'epic',   mod: { atkMulti: 2 } },
   { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 100% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
   { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
 
   // legendary
   { id: 'b-phoenix',   cat: 'defend',  name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
-  { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '화염구가 5턴마다 자동 발동',          rarity: 'legendary', mod: { autoMeteor: true } },
+  { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
   { id: 'b-overpower', cat: 'attack',  name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
   { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
 ];
@@ -198,12 +256,12 @@ function newRun() {
     roomNum: 0,
     roomsPerFloor: 7,
     pendingFork: null,
-    skillCdMax: HERO.skill.cooldown + bonus.startCd,
-    skillCd: 0,
+    skills: [HERO.defaultSkill || 'fireball'],
+    skillCds: {},               // { skillId: turnsRemaining }
+    skillStartCdReduce: bonus.startCd,
     enemiesDefeated: 0,
     bossesDefeated: 0,
     phoenixUsed: false,
-    autoMeteorTimer: 0,
     history: [],
   };
   // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
@@ -358,7 +416,6 @@ function startBattle(kind, node) {
       burnDmg: 0,
     },
     turn: 1,
-    skillCdNow: game.run.skillCd,
     heroDefend: 0,
     heroBurn: 0,
     log: [],
@@ -393,15 +450,8 @@ function refreshBattleUI() {
   $('hud-rooms').textContent = r.roomsPerFloor;
   $('hud-hp').textContent = r.hp;
   $('hud-gold').textContent = r.gold;
-  // 스킬 cooldown 표시
-  const skillBtn = document.querySelector('[data-action="skill"]');
-  if (b.skillCdNow > 0) {
-    skillBtn.disabled = true;
-    skillBtn.querySelector('.sub').textContent = `${b.skillCdNow}턴 후`;
-  } else {
-    skillBtn.disabled = false;
-    skillBtn.querySelector('.sub').textContent = '강한 마법';
-  }
+  // 스킬 버튼 표시
+  refreshSkillButton();
   // 상태 표시
   const heroStatus = $('hero-status');
   heroStatus.innerHTML = '';
@@ -452,14 +502,83 @@ function hitFlash(side) {
 // ===== 전투 액션 =====
 function heroAction(action) {
   if (game.run.battle.over) return;
-  const b = game.run.battle;
   if (action === 'attack') doAttack();
-  else if (action === 'skill') {
-    if (b.skillCdNow > 0) return;
-    doSkill();
-  }
+  else if (action === 'skill') openSkillPicker();
   else if (action === 'defend') doDefend();
   else if (action === 'flee') doFlee();
+}
+
+// ===== 스킬 헬퍼 =====
+function getSkillCooldown(skillId) {
+  const base = SKILLS[skillId].cooldown;
+  const startCd = game.run.skillStartCdReduce || 0;   // 음수
+  const reduce = getBoonModSum('skillCdReduce');
+  return Math.max(1, base + startCd - reduce);
+}
+
+function getSkillCdNow(skillId) {
+  return game.run.skillCds[skillId] || 0;
+}
+
+function refreshSkillButton() {
+  const r = game.run;
+  const skillBtn = document.querySelector('[data-action="skill"]');
+  if (!skillBtn) return;
+  // 1개 보유: 그 스킬 정보 표시 / 2개+: '스킬' 라벨 + 사용가능 개수
+  if (r.skills.length === 1) {
+    const s = SKILLS[r.skills[0]];
+    const cd = getSkillCdNow(s.id);
+    skillBtn.querySelector('.ico').textContent = s.icon;
+    skillBtn.querySelector('.label').textContent = s.name;
+    skillBtn.querySelector('.sub').textContent = cd > 0 ? `${cd}턴 후` : s.desc;
+    skillBtn.disabled = cd > 0;
+  } else {
+    const ready = r.skills.filter(id => getSkillCdNow(id) === 0).length;
+    skillBtn.querySelector('.ico').textContent = '✦';
+    skillBtn.querySelector('.label').textContent = '스킬';
+    skillBtn.querySelector('.sub').textContent = `${ready}/${r.skills.length} 사용가능`;
+    skillBtn.disabled = ready === 0;
+  }
+}
+
+function openSkillPicker() {
+  const r = game.run;
+  if (r.battle.over) return;
+  // 1개만 보유 + 사용가능 → 바로 시전
+  if (r.skills.length === 1) {
+    if (getSkillCdNow(r.skills[0]) > 0) return;
+    castSkill(r.skills[0]);
+    return;
+  }
+  // 다중 → 모달
+  const modal = $('skill-picker');
+  const wrap = $('skill-picker-list');
+  wrap.innerHTML = '';
+  for (const id of r.skills) {
+    const s = SKILLS[id];
+    const cd = getSkillCdNow(id);
+    const cdMax = getSkillCooldown(id);
+    const card = document.createElement('button');
+    card.className = 'skill-card' + (cd > 0 ? ' on-cd' : '');
+    card.disabled = cd > 0;
+    card.innerHTML = `
+      <div class="sc-ico">${s.icon}</div>
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-desc">${s.desc}</div>
+      <div class="sc-cd">${cd > 0 ? `${cd}턴 후` : `쿨 ${cdMax}턴`}</div>`;
+    if (cd === 0) {
+      card.addEventListener('click', () => {
+        modal.classList.remove('active');
+        castSkill(id);
+      });
+    }
+    wrap.appendChild(card);
+  }
+  modal.classList.add('active');
+}
+
+function closeSkillPicker() {
+  $('skill-picker').classList.remove('active');
 }
 
 function effectiveStat(stat) {
@@ -519,34 +638,42 @@ function doAttack() {
   endTurnHero();
 }
 
-function doSkill() {
+function castSkill(skillId) {
   const r = game.run;
   const b = r.battle;
-  // cut-in
-  playCutin(HERO.skill.name, HERO.skill.quote);
+  const s = SKILLS[skillId];
+  if (!s) return;
+  if (getSkillCdNow(skillId) > 0) return;
+  // cut-in (스킬별 일러스트)
+  playCutin(s.name, s.quote, s.cutin);
   setTimeout(() => {
-    const skillMulti = hasBoonMod('skillMulti') ? hasBoonMod('skillMulti').mod.skillMulti : 1;
-    for (let i = 0; i < skillMulti; i++) {
+    const burnMul = hasBoonMod('burnMul') ? hasBoonMod('burnMul').mod.burnMul : 1;
+    const burnBonus = getBoonModSum('burnTurnsBonus');
+    const burnDmg = Math.round(s.burnDmg * burnMul);
+    const burnTurns = s.burnTurns + burnBonus;
+    const critBase = getBoonModSum('critChance');
+    let totalDmg = 0;
+    for (let i = 0; i < s.hits; i++) {
       if (b.enemy.hp <= 0) break;
-      let dmg = effectiveStat('mag');
-      const burnMul = hasBoonMod('burnMul') ? hasBoonMod('burnMul').mod.burnMul : 1;
-      const burnBonus = getBoonModSum('burnTurnsBonus');
-      const burnDmg = Math.round(HERO.skill.burnDmg * burnMul);
-      const burnTurns = HERO.skill.burnTurns + burnBonus;
-      // 치명타
+      let dmg = Math.round(effectiveStat('mag') * s.mul);
       let crit = false;
-      const critC = getBoonModSum('critChance');
-      if (Math.random() < critC) { dmg = Math.round(dmg * 1.5); crit = true; }
+      const critChance = critBase + (s.critBonus || 0);
+      if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
       dealDamageToEnemy(dmg, crit ? 'crit' : '');
-      // 화상 적용
-      b.enemy.burns = Math.max(b.enemy.burns, burnTurns);
-      b.enemy.burnDmg = Math.max(b.enemy.burnDmg, burnDmg);
-      log(`화염구! → ${dmg}${crit ? ' (치명타!)' : ''} + 화상`, 'hero');
+      totalDmg += dmg;
       // 흡혈
       const ls = getBoonModSum('lifesteal');
       if (ls > 0) healHero(Math.round(dmg * ls));
     }
-    b.skillCdNow = r.skillCdMax;
+    // 화상 적용 (있으면)
+    if (burnTurns > 0 && burnDmg > 0 && b.enemy.hp > 0) {
+      b.enemy.burns = Math.max(b.enemy.burns, burnTurns);
+      b.enemy.burnDmg = Math.max(b.enemy.burnDmg, burnDmg);
+      log(`${s.name}! → 총 ${totalDmg} (${s.hits}타) + 화상`, 'hero');
+    } else {
+      log(`${s.name}! → 총 ${totalDmg} (${s.hits}타)`, 'hero');
+    }
+    r.skillCds[skillId] = getSkillCooldown(skillId);
     endTurnHero();
   }, 800);
 }
@@ -639,18 +766,6 @@ function endTurnHero(skipDefense) {
     b.enemy.burns--;
     refreshBattleUI();
   }
-  // 자동 메테오
-  if (hasBoonMod('autoMeteor')) {
-    game.run.autoMeteorTimer++;
-    if (game.run.autoMeteorTimer >= 5 && b.enemy.hp > 0) {
-      game.run.autoMeteorTimer = 0;
-      const meteorDmg = Math.round(effectiveStat('mag') * 1.8);
-      setTimeout(() => {
-        log('☄ 메테오 강림!', 'system');
-        dealDamageToEnemy(meteorDmg, 'crit');
-      }, 600);
-    }
-  }
   if (b.enemy.hp <= 0) {
     setTimeout(() => onEnemyDefeat(), 500);
     return;
@@ -672,7 +787,10 @@ function enemyTurn() {
   // 방어 해제
   b.heroDefend = 0;
   b.turn++;
-  if (b.skillCdNow > 0) b.skillCdNow--;
+  // 모든 스킬 쿨다운 -1
+  for (const id of Object.keys(game.run.skillCds)) {
+    if (game.run.skillCds[id] > 0) game.run.skillCds[id]--;
+  }
   setTimeout(() => refreshBattleUI(), 100);
 }
 
@@ -691,8 +809,6 @@ function onEnemyDefeat() {
     game.run.hp = game.run.maxHp;
     log('영혼 흡수! 최대 HP +5, 완전 회복', 'system');
   }
-  // 스킬 cd 저장
-  game.run.skillCd = b.skillCdNow;
   // 보스 처치 시 정수 +
   if (b.enemy.def.boss) {
     game.run.bossesDefeated++;
@@ -805,9 +921,13 @@ function openBoonConfirm(boon) {
 function applyBoon(boon) {
   game.run.boons.push(boon);
   if (boon.apply) boon.apply(game.run);
-  // 쿨다운 강화 즉시 반영
-  if (boon.mod && boon.mod.skillCdReduce) {
-    game.run.skillCdMax = Math.max(1, game.run.skillCdMax - boon.mod.skillCdReduce);
+  // 새 스킬 획득
+  if (boon.mod && boon.mod.grantSkill) {
+    const sid = boon.mod.grantSkill;
+    if (!game.run.skills.includes(sid)) {
+      game.run.skills.push(sid);
+      game.run.skillCds[sid] = 0;
+    }
   }
 }
 
@@ -866,9 +986,9 @@ function openRest(node) {
 // ============================================================
 // 스킬 cut-in
 // ============================================================
-function playCutin(name, quote) {
+function playCutin(name, quote, image) {
   const cut = $('cutin');
-  $('cutin-img').src = HERO.portrait;
+  $('cutin-img').src = image || HERO.portrait;
   $('cutin-quote').textContent = quote || SKILL_QUOTES[Math.floor(Math.random() * SKILL_QUOTES.length)];
   $('cutin-name').textContent = name;
   cut.classList.remove('active');
@@ -983,6 +1103,9 @@ function boot() {
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => heroAction(btn.dataset.action));
   });
+  // 스킬 picker 닫기
+  $('skill-picker-close').addEventListener('click', closeSkillPicker);
+  $('skill-picker-backdrop').addEventListener('click', closeSkillPicker);
   // 보스/가호 후 진행
   $('boon-skip').addEventListener('click', () => {
     game.run.gold += 30;

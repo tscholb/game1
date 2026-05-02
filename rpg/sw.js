@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v11-title-art-fix';
+const CACHE = 'ignia-v12-multi-skill';
 const ASSETS = [
   './',
   './index.html',
@@ -9,6 +9,9 @@ const ASSETS = [
   '../assets/heroes/mage.png',
   '../assets/heroes/archer.png',
   '../assets/heroes/merchant.png',
+  '../assets/skills/ignia-fireball.png',
+  '../assets/skills/ignia-flame-finger.png',
+  '../assets/skills/ignia-flamethrower.png',
 ];
 
 self.addEventListener('install', e => {
