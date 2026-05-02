@@ -110,6 +110,18 @@ const SKILLS = {
     critBonus: 0,
     desc: '맹렬한 화상 5턴',
     quote: '지옥의 불꽃을 받아라!',
+    cutin: '../assets/skills/ignia-fireball.png',
+  },
+  firedom: {
+    id: 'firedom', name: '불의 지배', icon: '👁',
+    cooldown: 7,
+    hits: 0, mul: 0,                  // 즉시 데미지 없음
+    burnDmg: 0, burnTurns: 0,
+    critBonus: 0,
+    delay: 2,                         // 2턴 후 폭발
+    delayMul: 3.4,                    // 폭발 시 mag × 3.4
+    desc: '2턴 후 강력한 화염 폭발',
+    quote: '내 손짓 한 번에 — 모든 것이 잿더미.',
     cutin: '../assets/skills/ignia-flame-finger.png',
   },
 };
@@ -152,6 +164,7 @@ const BOONS = [
   // legendary
   { id: 'b-phoenix',   cat: 'defend',  name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
   { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
+  { id: 'b-firedom',   cat: 'magic',   name: '불의 지배', desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
   { id: 'b-overpower', cat: 'attack',  name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
   { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
 ];
@@ -458,7 +471,8 @@ function refreshBattleUI() {
   if (b.heroDefend > 0) heroStatus.innerHTML = '<span class="status-chip defend">방어</span>';
   const enemyStatus = $('enemy-status');
   enemyStatus.innerHTML = '';
-  if (b.enemy.burns > 0) enemyStatus.innerHTML = `<span class="status-chip burn">화상 ${b.enemy.burns}턴</span>`;
+  if (b.enemy.burns > 0) enemyStatus.innerHTML += `<span class="status-chip burn">화상 ${b.enemy.burns}턴</span>`;
+  if (b.enemy.dominion) enemyStatus.innerHTML += `<span class="status-chip dominion">🔥 ${b.enemy.dominion.delay}턴 후 폭발</span>`;
 }
 
 function log(text, kind = '') {
@@ -646,6 +660,17 @@ function castSkill(skillId) {
   if (getSkillCdNow(skillId) > 0) return;
   // cut-in (스킬별 일러스트)
   playCutin(s.name, s.quote, s.cutin);
+  // 지연 폭발 스킬 (불의 지배 등)
+  if (s.delay) {
+    setTimeout(() => {
+      const dmg = Math.round(effectiveStat('mag') * s.delayMul);
+      b.enemy.dominion = { delay: s.delay, dmg, name: s.name };
+      log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})`, 'hero');
+      r.skillCds[skillId] = getSkillCooldown(skillId);
+      endTurnHero();
+    }, 800);
+    return;
+  }
   setTimeout(() => {
     const burnMul = hasBoonMod('burnMul') ? hasBoonMod('burnMul').mod.burnMul : 1;
     const burnBonus = getBoonModSum('burnTurnsBonus');
@@ -790,6 +815,25 @@ function enemyTurn() {
   // 모든 스킬 쿨다운 -1
   for (const id of Object.keys(game.run.skillCds)) {
     if (game.run.skillCds[id] > 0) game.run.skillCds[id]--;
+  }
+  // 불의 지배 등 지연 폭발 처리
+  if (b.enemy.dominion && b.enemy.hp > 0) {
+    b.enemy.dominion.delay--;
+    if (b.enemy.dominion.delay <= 0) {
+      const ddmg = b.enemy.dominion.dmg;
+      const name = b.enemy.dominion.name;
+      b.enemy.dominion = null;
+      setTimeout(() => {
+        log(`🔥 ${name} 폭발! → ${ddmg}`, 'system');
+        dealDamageToEnemy(ddmg, 'crit');
+        if (b.enemy.hp <= 0) {
+          setTimeout(() => onEnemyDefeat(), 500);
+        } else {
+          refreshBattleUI();
+        }
+      }, 400);
+      return;
+    }
   }
   setTimeout(() => refreshBattleUI(), 100);
 }

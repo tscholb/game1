@@ -723,6 +723,16 @@ button:active { transform: scale(0.96); }
 }
 .status-chip.defend { background: rgba(80, 130, 200, 0.3); border-color: #6ea3e0; color: #93d8ff; }
 .status-chip.burn { background: rgba(220, 80, 40, 0.4); border-color: #ff7733; color: #ffaa66; }
+.status-chip.dominion {
+  background: rgba(180, 30, 80, 0.5);
+  border-color: #ff3a8a;
+  color: #ffb3d6;
+  animation: dominionPulse 0.9s ease-in-out infinite;
+}
+@keyframes dominionPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 58, 138, 0); }
+  50%      { box-shadow: 0 0 14px rgba(255, 58, 138, 0.7); }
+}
 
 .vs-divider {
   font-size: 16px;

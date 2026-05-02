@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v12-multi-skill';
+const CACHE = 'ignia-v13-firedom';
 const ASSETS = [
   './',
   './index.html',
