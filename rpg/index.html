@@ -20,6 +20,7 @@
         <div class="title-actions">
           <button id="title-start" class="big primary">⚔ 게임 시작 ⚔</button>
           <button id="title-fountain" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
+          <button id="title-prologue" class="small prologue-btn">📖 이야기 다시 보기</button>
           <button id="title-reset" class="small reset-btn">전체 초기화</button>
         </div>
         <div class="title-essence">
@@ -27,6 +28,22 @@
           <span id="title-essence">0</span>
           <span class="essence-label">정수</span>
         </div>
+      </div>
+    </div>
+
+    <!-- ===== 프롤로그 ===== -->
+    <div id="prologue" class="screen hidden">
+      <img id="pr-img" class="pr-img" alt="">
+      <div class="pr-vignette"></div>
+      <div class="pr-text-box">
+        <p id="pr-text" class="pr-text"></p>
+      </div>
+      <div class="pr-controls">
+        <button id="pr-skip" class="pr-skip">건너뛰기 ▶▶</button>
+        <button id="pr-next" class="pr-next">다음 ▶</button>
+      </div>
+      <div class="pr-progress">
+        <span id="pr-step"></span>
       </div>
     </div>
 

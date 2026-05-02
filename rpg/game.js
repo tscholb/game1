@@ -216,10 +216,93 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['title', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
+  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
+}
+
+// ============================================================
+// 프롤로그
+// ============================================================
+const PROLOGUE = [
+  {
+    img: '../assets/story/prologue-1-darkness.png',
+    text: '어린 시절, 검은 그림자가 마을을 삼켰다.\n비명도, 빛도, 모든 것이 어둠 속으로 빨려들어 갔다.\n\n— 그 어둠이 아빠를 데려갔다.',
+  },
+  {
+    img: '../assets/story/prologue-1-darkness.png',
+    text: '검은 손길이 그녀의 목을 조였다.\n죽음 직전, 가슴 깊은 곳에서 작은 불꽃이 깨어났다.\n\n그 불꽃이 어둠을 잠시 밀어냈고 — 그녀는 살아남았다.',
+  },
+  {
+    img: null,                   // 텍스트 only (검은 화면)
+    text: '그 후 수년의 어둠 속에서, 그녀는 불꽃을 키웠다.\n복수를 위한 불꽃.\n어둠을 모조리 태워버릴 불꽃.\n\n사람들은 그녀를 「화염의 대마법사 — 이그니아」라 부르기 시작했다.',
+  },
+  {
+    img: '../assets/story/prologue-3-cave.png',
+    text: '그러던 어느 날, 검은 짐승이 깨어났다는 소문이 들려왔다.\n어두운 궤도(軌道) — 그자의 둥지로 연결된 동굴.\n\n그녀는 망설이지 않았다.',
+  },
+  {
+    img: '../assets/story/prologue-3-cave.png',
+    text: '"기다려라, 어둠.\n오늘 밤, 네 그림자마저 잿더미로 만들어주마."\n\n— 작은 불꽃을 손에 든 채, 그녀는 어둠 속으로 걸어 들어갔다.',
+  },
+];
+
+let prState = { index: 0, onDone: null };
+
+function startPrologue(onDone) {
+  prState.index = 0;
+  prState.onDone = onDone || (() => { renderMenu(); showScreen('menu'); });
+  showScreen('prologue');
+  renderPrologueScene();
+}
+
+function renderPrologueScene() {
+  const scene = PROLOGUE[prState.index];
+  if (!scene) return finishPrologue();
+  const img = $('pr-img');
+  const text = $('pr-text');
+  // 이미지
+  if (scene.img) {
+    if (img.getAttribute('src') !== scene.img) {
+      img.classList.remove('shown');
+      img.onload = () => img.classList.add('shown');
+      img.src = scene.img;
+    } else {
+      img.classList.add('shown');
+    }
+  } else {
+    img.classList.remove('shown');
+  }
+  // 텍스트 (재시작 애니메이션)
+  text.style.animation = 'none';
+  void text.offsetWidth;
+  text.style.animation = '';
+  text.textContent = scene.text;
+  // 단계 표시
+  $('pr-step').textContent = `${prState.index + 1} / ${PROLOGUE.length}`;
+  // 마지막이면 다음 버튼 라벨 변경
+  $('pr-next').textContent = (prState.index === PROLOGUE.length - 1) ? '시작 ⚔' : '다음 ▶';
+}
+
+function nextPrologueScene() {
+  prState.index++;
+  if (prState.index >= PROLOGUE.length) {
+    finishPrologue();
+  } else {
+    renderPrologueScene();
+  }
+}
+
+function finishPrologue() {
+  try { localStorage.setItem('ignia-prologue-seen', '1'); } catch (e) {}
+  const cb = prState.onDone;
+  prState.onDone = null;
+  if (cb) cb();
+}
+
+function hasSeenPrologue() {
+  try { return localStorage.getItem('ignia-prologue-seen') === '1'; } catch (e) { return false; }
 }
 
 // ============================================================
@@ -1135,9 +1218,22 @@ function hardReset() {
 // ============================================================
 function boot() {
   // 타이틀
-  $('title-start').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+  $('title-start').addEventListener('click', () => {
+    if (hasSeenPrologue()) {
+      renderMenu();
+      showScreen('menu');
+    } else {
+      startPrologue(() => { renderMenu(); showScreen('menu'); });
+    }
+  });
+  $('title-prologue').addEventListener('click', () => {
+    startPrologue(() => { renderTitle(); showScreen('title'); });
+  });
   $('title-fountain').addEventListener('click', openFountain);
   $('title-reset').addEventListener('click', hardReset);
+  // 프롤로그 컨트롤
+  $('pr-next').addEventListener('click', nextPrologueScene);
+  $('pr-skip').addEventListener('click', finishPrologue);
   // 영웅 선택
   $('select-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   $('start-btn').addEventListener('click', newRun);

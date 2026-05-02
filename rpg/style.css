@@ -111,6 +111,118 @@ button:active { transform: scale(0.96); }
 }
 
 /* ============================================================
+   프롤로그
+   ============================================================ */
+#prologue {
+  background: #03020a;
+  overflow: hidden;
+  justify-content: flex-end;
+  padding: 0;
+}
+.pr-img {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: auto;
+  max-height: 65vh;
+  object-fit: contain;
+  object-position: top center;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.55s ease-in-out;
+}
+.pr-img.shown { opacity: 1; }
+.pr-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, transparent 50%, rgba(0,0,0,0.6) 100%),
+    linear-gradient(180deg, rgba(3,2,10,0) 0%, rgba(3,2,10,0) 45%, rgba(3,2,10,0.95) 75%, rgba(3,2,10,1) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.pr-text-box {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 20px 22px 12px;
+  text-align: center;
+}
+.pr-text {
+  font-size: clamp(15px, 4.4vw, 19px);
+  font-weight: 500;
+  line-height: 1.7;
+  color: #f0e6d8;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.7);
+  white-space: pre-line;
+  opacity: 0;
+  animation: prTextIn 0.7s ease-out forwards;
+}
+@keyframes prTextIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.pr-controls {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 0 22px max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pr-skip, .pr-next {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.pr-skip {
+  background: rgba(40, 30, 50, 0.6);
+  color: #b8a8c0;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.pr-skip:hover { background: rgba(60, 45, 70, 0.7); color: #fff; }
+.pr-next {
+  background: linear-gradient(180deg, #b13030 0%, #6a1010 100%);
+  color: #fff3a0;
+  border: 1px solid rgba(255, 200, 120, 0.35);
+  box-shadow: 0 4px 18px rgba(180, 30, 30, 0.4);
+}
+.pr-next:hover { filter: brightness(1.15); }
+.pr-progress {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.15em;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.prologue-btn {
+  background: rgba(20, 10, 30, 0.7) !important;
+  color: #c8a890 !important;
+  border: 1px solid rgba(200, 168, 144, 0.25) !important;
+}
+.prologue-btn:hover { color: #fff !important; background: rgba(40, 20, 50, 0.8) !important; }
+
+/* ============================================================
    영웅 선택
    ============================================================ */
 #menu {
