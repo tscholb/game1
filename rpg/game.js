@@ -352,12 +352,16 @@ const BOSS_STORIES = {
   // 2층 — 보랏빛 마녀
   lich: {
     intro: [
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '동굴의 끝…\n그곳에는, 은색 단발의 여자가 있었다.' },
       { img: '../assets/bosses/witch.png',
-        text: '동굴이 점점 차가워진다 — 이그니아의 손끝 불꽃마저 잠시 흔들린다.' },
+        text: '마녀 — "누구지?"\n\n이그니아 — "이 냄새는…\n또 어둠이다."' },
       { img: '../assets/bosses/witch.png',
-        text: '보랏빛 마녀 — "호오… 또 한 명의 불나방이 찾아왔구나.\n그자께서 어찌나 많은 영혼을 끌어들이시는지."' },
+        text: '이그니아 — "또다시 어둠의 힘을 쓰는 녀석인가."\n\n마녀 — "불꽃…?\n불꽃은 이미 다 제거했다고 생각했는데?"' },
       { img: '../assets/bosses/witch.png',
-        text: '이그니아 — "그자… 어디 있지?"\n\n보랏빛 마녀 — "후훗 —\n너의 재가 길을 알려줄 거야."' },
+        text: '이그니아 — "…불의 마법을 알아?"\n\n마녀 — "싹을 다 잘라버렸다고 생각했는데…\n잔재인가?"' },
+      { img: '../assets/bosses/witch.png',
+        text: '이그니아의 손끝에 불꽃이 일어선다 — 그 어떤 때보다도 거세게.\n\n이그니아 — "너…!"\n\n마녀 — "어둠이여… 나에게 힘을."' },
     ],
     outro: [
       { img: '../assets/bosses/witch.png',
