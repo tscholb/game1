@@ -168,6 +168,14 @@ const BOONS = [
   { id: 'b-firedom',   cat: 'magic',   name: '불의 지배', desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
   { id: 'b-overpower', cat: 'attack',  name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
   { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
+
+  // unstable — 메리트 + 디메리트 동시
+  { id: 'b-time-warp',  cat: 'magic',  name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2 } },
+  { id: 'b-soul-trade', cat: 'utility', name: '영혼 거래',  desc: '◆ 같은 카테고리 한 단계 위 가호 즉시 획득 ◇ 기존 가호 1개 무작위 삭제', rarity: 'unstable',
+    apply: g => { applyUnstableSoulTrade(g); } },
+  { id: 'b-starve',     cat: 'attack', name: '굶주린 칼날', desc: '◆ 공격력 +18 ◇ 최대 HP -30',         rarity: 'unstable', mod: { atk: 18 }, apply: g => { g.maxHp = Math.max(20, g.maxHp - 30); g.hp = Math.min(g.hp, g.maxHp); } },
+  { id: 'b-mad-flame',  cat: 'magic',  name: '광기의 화염', desc: '◆ 마법력 +25 ◇ 매 턴 시작 시 자신 HP -3', rarity: 'unstable', mod: { mag: 25, recoil: 3 } },
+  { id: 'b-equiv',      cat: 'utility', name: '등가 교환',  desc: '◆ 골드 +200 ◇ 최대 HP -25',          rarity: 'unstable', apply: g => { g.gold += 200; g.maxHp = Math.max(20, g.maxHp - 25); g.hp = Math.min(g.hp, g.maxHp); } },
 ];
 
 // ===== 상태 =====
@@ -422,6 +430,7 @@ function decorateNode(tmpl, avoidCat) {
 }
 
 function bumpRarity(r) {
+  if (r === 'unstable') return 'unstable';
   return r === 'common' ? 'rare' : r === 'rare' ? 'epic' : r === 'epic' ? 'legendary' : 'legendary';
 }
 
@@ -517,6 +526,7 @@ function startBattle(kind, node) {
       burnDmg: 0,
     },
     turn: 1,
+    attackCd: 0,
     heroDefend: 0,
     heroBurn: 0,
     log: [],
@@ -561,6 +571,17 @@ function refreshBattleUI() {
   $('hud-gold').textContent = r.gold;
   // 스킬 버튼 표시
   refreshSkillButton();
+  // 공격 버튼 (쿨다운 표시)
+  const atkBtn = document.querySelector('[data-action="attack"]');
+  if (atkBtn) {
+    if (b.attackCd > 0) {
+      atkBtn.disabled = true;
+      atkBtn.querySelector('.sub').textContent = `${b.attackCd}턴 후`;
+    } else {
+      atkBtn.disabled = false;
+      atkBtn.querySelector('.sub').textContent = '기본 공격';
+    }
+  }
   // 상태 표시
   const heroStatus = $('hero-status');
   heroStatus.innerHTML = '';
@@ -611,8 +632,12 @@ function hitFlash(side) {
 
 // ===== 전투 액션 =====
 function heroAction(action) {
-  if (game.run.battle.over) return;
-  if (action === 'attack') doAttack();
+  const b = game.run.battle;
+  if (b.over) return;
+  if (action === 'attack') {
+    if (b.attackCd > 0) return;
+    doAttack();
+  }
   else if (action === 'skill') openSkillPicker();
   else if (action === 'defend') doDefend();
   else if (action === 'flee') doFlee();
@@ -623,7 +648,9 @@ function getSkillCooldown(skillId) {
   const base = SKILLS[skillId].cooldown;
   const startCd = game.run.skillStartCdReduce || 0;   // 음수
   const reduce = getBoonModSum('skillCdReduce');
-  return Math.max(1, base + startCd - reduce);
+  let cd = base + startCd - reduce;
+  if (hasBoonMod('skillCdHalf')) cd = Math.ceil(cd / 2);
+  return Math.max(1, cd);
 }
 
 function getSkillCdNow(skillId) {
@@ -745,6 +772,9 @@ function doAttack() {
     log(`이그니아의 공격 → ${dmg}${crit ? ' (치명타!)' : ''}`, 'hero');
     if (b.enemy.hp <= 0) break;
   }
+  // 시간 왜곡 — 공격 쿨다운 발동
+  const aCd = hasBoonMod('attackCdMax') ? hasBoonMod('attackCdMax').mod.attackCdMax : 0;
+  if (aCd > 0) b.attackCd = aCd;
   endTurnHero();
 }
 
@@ -912,6 +942,14 @@ function enemyTurn() {
   for (const id of Object.keys(game.run.skillCds)) {
     if (game.run.skillCds[id] > 0) game.run.skillCds[id]--;
   }
+  // 공격 쿨다운 -1 (시간 왜곡 가호)
+  if (b.attackCd > 0) b.attackCd--;
+  // 매 턴 recoil HP 손실 (광기의 화염 등)
+  const recoil = getBoonModSum('recoil');
+  if (recoil > 0 && game.run.hp > 1) {
+    game.run.hp = Math.max(1, game.run.hp - recoil);
+    log(`광기의 대가 — HP -${recoil}`, 'system');
+  }
   // 불의 지배 등 지연 폭발 처리
   if (b.enemy.dominion && b.enemy.hp > 0) {
     b.enemy.dominion.delay--;
@@ -983,11 +1021,11 @@ function onHeroDefeat() {
 // ============================================================
 function rollBoonChoices(category, rarityFloor = 'common') {
   const weights = {
-    common:    { common: 60, rare: 30, epic: 10, legendary: 0 },
-    rare:      { common: 30, rare: 50, epic: 18, legendary: 2 },
-    epic:      { common: 0,  rare: 30, epic: 55, legendary: 15 },
-    legendary: { common: 0,  rare: 0,  epic: 40, legendary: 60 },
-  }[rarityFloor] || { common: 60, rare: 30, epic: 10, legendary: 0 };
+    common:    { common: 56, rare: 28, epic: 9,  legendary: 0,  unstable: 7 },
+    rare:      { common: 28, rare: 47, epic: 16, legendary: 2,  unstable: 7 },
+    epic:      { common: 0,  rare: 28, epic: 51, legendary: 14, unstable: 7 },
+    legendary: { common: 0,  rare: 0,  epic: 38, legendary: 55, unstable: 7 },
+  }[rarityFloor] || { common: 56, rare: 28, epic: 9, legendary: 0, unstable: 7 };
   const owned = new Set(game.run.boons.map(b => b.id));
   // 카테고리 매칭: 카테고리 지정 시 해당 카테고리 우선
   let pool = BOONS.filter(b => !owned.has(b.id));
@@ -996,7 +1034,7 @@ function rollBoonChoices(category, rarityFloor = 'common') {
   for (let i = 0; i < 3; i++) {
     let r = Math.random() * 100;
     let chosenRarity = 'common';
-    for (const k of ['legendary', 'epic', 'rare', 'common']) {
+    for (const k of ['unstable', 'legendary', 'epic', 'rare', 'common']) {
       if (r < weights[k]) { chosenRarity = k; break; }
       r -= weights[k];
     }
@@ -1021,7 +1059,7 @@ function openBoonScreen(context, category, rarityFloor) {
   for (const b of choices) {
     const el = document.createElement('div');
     el.className = `boon-choice ${b.rarity}`;
-    const lbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[b.rarity];
+    const lbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설', unstable: '불안정' }[b.rarity];
     el.innerHTML = `
       <div class="rarity">${lbl}</div>
       <div class="name">${b.name}</div>
@@ -1035,7 +1073,7 @@ function openBoonScreen(context, category, rarityFloor) {
 function openBoonConfirm(boon) {
   const card = $('boon-confirm-card');
   card.className = 'boon-confirm-card ' + boon.rarity;
-  $('bc-rarity').textContent = `◆ ${{common:'일반',rare:'희귀',epic:'영웅',legendary:'전설'}[boon.rarity]} 가호 ◆`;
+  $('bc-rarity').textContent = `◆ ${{common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정'}[boon.rarity]} 가호 ◆`;
   $('bc-name').textContent = boon.name;
   $('bc-desc').textContent = boon.desc;
   $('boon-confirm').classList.add('active');
@@ -1067,6 +1105,46 @@ function applyBoon(boon) {
     if (!game.run.skills.includes(sid)) {
       game.run.skills.push(sid);
       game.run.skillCds[sid] = 0;
+    }
+  }
+}
+
+// 영혼 거래: 기존 가호 하나 삭제 + 같은 카테고리 한 단계 위 가호 획득
+function applyUnstableSoulTrade(g) {
+  // 자신(불안정 가호) 제외한 다른 보유 가호
+  const others = g.boons.filter(x => x.id !== 'b-soul-trade');
+  if (others.length === 0) return;
+  const sacrificed = others[Math.floor(Math.random() * others.length)];
+  // 삭제 — boons 배열에서 제거 (mod 효과는 매 호출마다 boons 를 순회하므로 자동 무효화)
+  g.boons = g.boons.filter(b => b.id !== sacrificed.id);
+  // 같은 카테고리, 한 단계 높은 등급의 미보유 가호 풀
+  const owned = new Set(g.boons.map(b => b.id));
+  const targetRarity = bumpRarity(sacrificed.rarity);
+  let candidates = BOONS.filter(b =>
+    b.cat === sacrificed.cat &&
+    b.rarity === targetRarity &&
+    !b.unstable &&
+    b.rarity !== 'unstable' &&
+    !owned.has(b.id)
+  );
+  // 후보 없으면 같은 카테고리 같은 등급으로 폴백
+  if (candidates.length === 0) {
+    candidates = BOONS.filter(b =>
+      b.cat === sacrificed.cat &&
+      b.rarity === sacrificed.rarity &&
+      b.rarity !== 'unstable' &&
+      !owned.has(b.id)
+    );
+  }
+  if (candidates.length === 0) return;
+  const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+  g.boons.push(replacement);
+  if (replacement.apply) replacement.apply(g);
+  if (replacement.mod && replacement.mod.grantSkill) {
+    const sid = replacement.mod.grantSkill;
+    if (!g.skills.includes(sid)) {
+      g.skills.push(sid);
+      g.skillCds[sid] = 0;
     }
   }
 }

@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v18-chest';
+const CACHE = 'ignia-v19-unstable';
 const ASSETS = [
   './',
   './index.html',

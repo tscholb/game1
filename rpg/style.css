@@ -1268,6 +1268,51 @@ button:active { transform: scale(0.96); }
   50% { transform: scale(1.3) rotate(180deg); opacity: 1; }
 }
 
+/* 불안정 가호 — 메리트 + 디메리트 동시 */
+.boon-choice.unstable {
+  background: linear-gradient(135deg, rgba(180, 30, 30, 0.55) 0%, rgba(20, 20, 50, 0.55) 50%, rgba(180, 30, 130, 0.55) 100%);
+  background-size: 200% 200%;
+  border: 2px solid #ff5a8a;
+  position: relative;
+  overflow: hidden;
+  animation: unstableShift 3.5s ease-in-out infinite, unstableGlow 1.6s ease-in-out infinite;
+}
+.boon-choice.unstable::before {
+  content: '⚠';
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 20px;
+  color: #ffcc40;
+  text-shadow: 0 0 10px rgba(255, 200, 60, 0.85);
+  animation: unstableWarn 1.1s ease-in-out infinite;
+}
+.boon-choice.unstable:hover {
+  border-color: #ff9ec0;
+  box-shadow: 0 0 36px rgba(255, 90, 138, 0.6);
+  transform: translateY(-5px) scale(1.02);
+}
+.boon-choice.unstable .rarity { color: #ffcc40; text-shadow: 0 0 12px rgba(255, 180, 60, 0.85); }
+.boon-choice.unstable .name { color: #ffd0e0; }
+.boon-choice.unstable .desc { color: #f0e0e8; }
+@keyframes unstableShift {
+  0%, 100% { background-position: 0% 0%; }
+  50%      { background-position: 100% 100%; }
+}
+@keyframes unstableGlow {
+  0%, 100% { box-shadow: 0 0 22px rgba(255, 90, 138, 0.35), 0 0 6px rgba(255, 200, 60, 0.25); }
+  50%      { box-shadow: 0 0 34px rgba(255, 90, 138, 0.55), 0 0 14px rgba(255, 200, 60, 0.5); }
+}
+@keyframes unstableWarn {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.25); opacity: 1; }
+}
+
+.boon-confirm-card.unstable {
+  border: 2px solid #ff5a8a;
+  box-shadow: 0 0 70px rgba(255, 90, 138, 0.55), 0 0 30px rgba(255, 200, 60, 0.3);
+  background: linear-gradient(135deg, rgba(180, 30, 30, 0.85) 0%, rgba(20, 20, 50, 0.9) 50%, rgba(180, 30, 130, 0.85) 100%);
+}
+
 #boon-skip {
   background: #2a1a2a;
   border: 1px solid #5a3a4a;
