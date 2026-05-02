@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v7-title-mobile-fit';
+const CACHE = 'ignia-v8-title-position-fix';
 const ASSETS = [
   './',
   './index.html',

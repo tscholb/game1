@@ -41,7 +41,6 @@ button:active { transform: scale(0.96); }
    타이틀 화면 (첫 진입)
    ============================================================ */
 #title {
-  position: relative;
   overflow: hidden;
   justify-content: flex-end;
   padding: 0 16px max(24px, env(safe-area-inset-bottom));
