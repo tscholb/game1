@@ -20,7 +20,8 @@ const HERO = {
     burnTurns: 3,
   },
   portrait: '../assets/heroes/mage.png',
-  sprite: '../assets/heroes/mage-sprite.png',
+  // 인게임도 배경 있는 일러스트 사용 (알파 처리 부담 X)
+  sprite: '../assets/heroes/mage.png',
 };
 
 const SKILL_QUOTES = [
@@ -250,15 +251,13 @@ function renderFork() {
   wrap.innerHTML = '';
   for (const node of game.run.pendingFork) {
     const card = document.createElement('div');
-    // 노드 타입은 미공개 — 카테고리만 보여줌
-    card.className = `path-card mystery rarity-${node.rewardRarity}`;
+    // 등급도 숨김 — 카테고리 색상/이름만 노출
+    card.className = `path-card mystery`;
     const cat = CATEGORIES[node.rewardCat];
-    const rLbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[node.rewardRarity];
     card.style.setProperty('--cat-color', cat.color);
     card.innerHTML = `
       <div class="path-mystery">?</div>
       <div class="path-cat-name">${cat.icon} ${cat.name}</div>
-      <div class="path-rarity">${rLbl} 가호</div>
       <div class="path-hint">길이 끝에 무엇이 기다릴지 모른다</div>`;
     card.addEventListener('click', () => chooseFork(node));
     wrap.appendChild(card);

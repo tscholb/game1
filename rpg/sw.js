@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v4-mystery-progress';
+const CACHE = 'ignia-v5-portrait-frame';
 const ASSETS = [
   './',
   './index.html',
