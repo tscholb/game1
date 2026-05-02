@@ -231,39 +231,63 @@ button:active { transform: scale(0.96); }
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(243, 216, 120, 0.3);
 }
-.path-card.path-combat { border-color: #6a3030; }
-.path-card.path-elite { border-color: #7c3aed; }
-.path-card.path-elite:hover { box-shadow: 0 12px 30px rgba(192, 132, 252, 0.5); }
-.path-card.path-boon { border-color: #4070a0; }
-.path-card.path-rest { border-color: #6a4a20; }
-.path-card.path-treasure { border-color: #c0a040; }
-.path-card.path-treasure:hover { box-shadow: 0 12px 30px rgba(243, 216, 120, 0.5); }
-
-.path-icon { font-size: 48px; line-height: 1; }
-.path-name { font-size: 17px; font-weight: 800; color: #fff; }
-.path-desc { font-size: 11px; color: #aaa; letter-spacing: 0.05em; min-height: 30px; }
-.reward-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1.5px solid var(--cat-color, #fde68a);
-  border-radius: 14px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 6px;
-  box-shadow: 0 0 12px rgba(255, 200, 100, 0.15);
+/* 미스터리 카드 — 노드 종류 미공개, 카테고리만 */
+.path-card.mystery { border-color: var(--cat-color, #fde68a); }
+.path-mystery {
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--cat-color, #fde68a);
+  text-shadow: 0 0 20px var(--cat-color, #fde68a);
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+  animation: mysteryFloat 2.4s ease-in-out infinite;
 }
-.reward-tag .cat-icon { font-size: 14px; }
-.reward-tag .cat-name { color: var(--cat-color); }
-.reward-tag .cat-rarity { font-size: 10px; color: #c8cdd9; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,0.08); }
-.reward-tag.rarity-rare { box-shadow: 0 0 14px rgba(110, 163, 224, 0.4); }
-.reward-tag.rarity-epic { box-shadow: 0 0 18px rgba(192, 132, 252, 0.6); animation: epicPulse 2.4s ease-in-out infinite; }
-.reward-tag.rarity-legendary {
-  box-shadow: 0 0 22px rgba(243, 216, 120, 0.7);
+@keyframes mysteryFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.path-cat-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--cat-color, #fde68a);
+  letter-spacing: 0.05em;
+}
+.path-rarity {
+  font-size: 13px;
+  font-weight: 700;
+  color: #c8cdd9;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--cat-color, #fde68a);
+  border-radius: 14px;
+  padding: 4px 14px;
+  margin-top: 4px;
+}
+.path-hint {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* 카드 등급별 글로우 */
+.path-card.rarity-common { box-shadow: 0 0 14px rgba(200, 200, 200, 0.15); }
+.path-card.rarity-rare { box-shadow: 0 0 18px rgba(110, 163, 224, 0.4); }
+.path-card.rarity-epic { box-shadow: 0 0 24px rgba(192, 132, 252, 0.55); animation: epicPulse 2.4s ease-in-out infinite; }
+.path-card.rarity-legendary {
+  box-shadow: 0 0 30px rgba(243, 216, 120, 0.7);
   animation: legGlow 2s ease-in-out infinite;
 }
+.path-card.rarity-legendary::before {
+  content: '★';
+  position: absolute;
+  top: 8px; right: 12px;
+  color: #fde68a;
+  font-size: 18px;
+  text-shadow: 0 0 12px rgba(253, 230, 138, 0.9);
+  animation: legStar 1.4s ease-in-out infinite;
+  z-index: 2;
+}
+.path-card { position: relative; overflow: hidden; }
 .reward-tag.rarity-rare .cat-rarity { background: rgba(110, 163, 224, 0.25); color: #93d8ff; }
 .reward-tag.rarity-epic .cat-rarity { background: rgba(192, 132, 252, 0.25); color: #d8b4fe; }
 .reward-tag.rarity-legendary .cat-rarity { background: rgba(243, 216, 120, 0.25); color: #fde68a; }
@@ -322,11 +346,122 @@ button:active { transform: scale(0.96); }
   border-bottom: 1px solid #3a2030;
   gap: 8px;
 }
-.hud-progress, .hud-stats {
+.hud-progress-btn {
   display: flex;
   gap: 6px;
   align-items: center;
   flex-wrap: wrap;
+  background: rgba(40, 22, 30, 0.7);
+  border: 1px solid #3a2030;
+  border-radius: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #fff;
+}
+.hud-progress-btn:hover { background: rgba(60, 32, 40, 0.8); border-color: #fde68a; }
+.hud-arrow { font-size: 13px; opacity: 0.75; margin-left: 2px; }
+.hud-stats {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 진행도 모달 */
+#progress-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 240;
+}
+#progress-modal.active { display: flex; }
+.progress-card {
+  width: min(560px, 92vw);
+  max-height: 80vh;
+  background: linear-gradient(180deg, #1a0e1a 0%, #0a0612 100%);
+  border: 2px solid #5a3a4a;
+  border-radius: 14px;
+  padding: 20px 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.progress-card h3 {
+  font-size: 20px;
+  letter-spacing: 0.15em;
+  color: #fde68a;
+  text-transform: uppercase;
+}
+#progress-trail {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 14px 8px;
+  justify-content: center;
+  background: rgba(0,0,0,0.4);
+  border-radius: 8px;
+  border: 1px solid #2a1a2a;
+}
+.trail-node {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1a1218;
+  border: 2px solid #4a3040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  position: relative;
+}
+.trail-node.current {
+  border-color: #fde68a;
+  background: #2a1a2a;
+  box-shadow: 0 0 16px rgba(243, 216, 120, 0.6);
+  animation: nodePulse 1.4s ease-in-out infinite;
+  transform: scale(1.15);
+}
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(243, 216, 120, 0.6); }
+  50% { box-shadow: 0 0 26px rgba(243, 216, 120, 0.9); }
+}
+.trail-node.boss { border-color: #dc2626; box-shadow: 0 0 16px rgba(220, 40, 40, 0.5); }
+.trail-node.elite { border-color: #c084fc; }
+.trail-node.treasure { border-color: #fde68a; }
+.trail-node.rest { border-color: #6aaa5a; }
+.trail-node.combat { border-color: #6a3030; }
+.trail-node.floor {
+  width: 100%;
+  height: 28px;
+  background: linear-gradient(90deg, transparent, #5a3a4a 30%, #5a3a4a 70%, transparent);
+  border: none;
+  border-radius: 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #fde68a;
+  text-transform: uppercase;
+  margin: 8px 0 4px;
+}
+.trail-arrow {
+  align-self: center;
+  color: #5a3a4a;
+  font-size: 14px;
+}
+#progress-close {
+  background: linear-gradient(180deg, #4a3a8a 0%, #2a1a5a 100%);
+  border: 1px solid #c084fc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 700;
 }
 .hud-label {
   color: #8a7080;
@@ -632,27 +767,33 @@ button:active { transform: scale(0.96); }
     repeating-linear-gradient(115deg, rgba(255, 100, 40, 0.05) 0 4px, transparent 4px 12px);
 }
 #cutin-img {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 2;
-  height: 88vh;
-  max-height: 720px;
-  margin-left: -3vw;
+  height: min(80vh, 600px);
+  max-width: 60vw;
+  object-fit: contain;
+  object-position: left center;
+  margin-left: 0;
   filter: drop-shadow(0 0 30px rgba(255, 100, 40, 0.6));
   image-rendering: pixelated;
   animation: cutSlide 1.6s ease-out;
 }
 @keyframes cutSlide {
-  0%   { transform: translateX(-100%) scale(1.05); }
-  10%  { transform: translateX(0) scale(1); }
-  85%  { transform: translateX(0) scale(1); }
-  100% { transform: translateX(-30%) scale(0.95); }
+  0%   { left: -100%; }
+  10%  { left: 0; }
+  85%  { left: 0; }
+  100% { left: -30%; opacity: 0.7; }
 }
 #cutin-quote {
-  position: relative;
+  position: absolute;
   z-index: 3;
-  margin-left: 4vw;
+  left: 45vw;
+  top: 38vh;
   max-width: 50vw;
-  font-size: clamp(22px, 4.5vw, 44px);
+  font-size: clamp(20px, 4vw, 38px);
   font-weight: 800;
   color: #fff3a0;
   text-shadow: 0 0 20px rgba(255, 100, 40, 0.8), 0 4px 12px rgba(0,0,0,0.9), 2px 2px 0 #5a1010;
@@ -660,21 +801,22 @@ button:active { transform: scale(0.96); }
   line-height: 1.3;
   animation: cutQuote 1.6s ease-out;
 }
-@keyframes cutQuote {
-  0%, 100% { opacity: 0; }
-  20%, 85% { opacity: 1; }
-}
 #cutin-name {
   position: absolute;
-  bottom: 12vh;
-  right: 6vw;
+  bottom: 10vh;
+  right: 4vw;
   z-index: 3;
-  font-size: clamp(20px, 4vw, 36px);
+  font-size: clamp(18px, 3.5vw, 32px);
   font-weight: 900;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.3em;
   text-shadow: 0 0 20px rgba(255, 100, 40, 0.9), 0 4px 8px rgba(0,0,0,0.9);
+}
+@media (max-width: 600px), (pointer: coarse) {
+  #cutin-img { height: 60vh; max-width: 70vw; }
+  #cutin-quote { left: auto; right: 4vw; top: auto; bottom: 26vh; max-width: 60vw; text-align: right; }
+  #cutin-name { bottom: 16vh; }
 }
 
 /* ============================================================

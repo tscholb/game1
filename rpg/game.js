@@ -155,6 +155,7 @@ function newRun() {
     bossesDefeated: 0,
     phoenixUsed: false,
     autoMeteorTimer: 0,
+    history: [],
   };
   // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
   enterFirstRoom();
@@ -162,52 +163,51 @@ function newRun() {
 
 function enterFirstRoom() {
   game.run.roomNum = 1;
-  // 첫 방은 그냥 일반 전투
+  game.run.history.push({ type: 'combat', kind: 'normal', icon: '⚔', name: '시작' });
   startBattle('normal', { id: 'first', type: 'combat', kind: 'normal' });
 }
 
 // ============================================================
 // 분기점 노드 생성 / 표시
 // ============================================================
-const NODE_TEMPLATES = [
-  { type: 'combat', kind: 'normal',  weight: 4, icon: '⚔', name: '적 조우',     desc: '평범한 적과의 전투' },
-  { type: 'elite',  kind: 'elite',   weight: 1, icon: '☠', name: '엘리트',     desc: '강한 적, 더 좋은 보상' },
-  { type: 'boon',   kind: 'boon',    weight: 1, icon: '✦', name: '신비한 사당', desc: '전투 없이 가호 1개' },
-  { type: 'rest',   kind: 'rest',    weight: 1, icon: '🔥', name: '모닥불',     desc: 'HP 회복 또는 통과' },
-  { type: 'treasure', kind: 'treasure', weight: 1, icon: '💰', name: '보물',     desc: '큰 골드 + 가호' },
-];
+// 가중치: 적 80% (그중 엘리트 20% = 전체 16%), 보물 10%, 샘물(휴식) 10%
+const NODE_TEMPLATES = {
+  combat:   { type: 'combat',   kind: 'normal',   icon: '⚔', name: '적 조우' },
+  elite:    { type: 'elite',    kind: 'elite',    icon: '☠', name: '엘리트' },
+  treasure: { type: 'treasure', kind: 'treasure', icon: '💰', name: '보물' },
+  rest:     { type: 'rest',     kind: 'rest',     icon: '🔥', name: '샘물' },
+};
 
 function rollNodeTemplate() {
-  const total = NODE_TEMPLATES.reduce((s, t) => s + t.weight, 0);
-  let r = Math.random() * total;
-  for (const t of NODE_TEMPLATES) {
-    if (r < t.weight) return t;
-    r -= t.weight;
+  const r = Math.random();
+  if (r < 0.80) {
+    // 적 — 그중 20%가 엘리트
+    return Math.random() < 0.20 ? NODE_TEMPLATES.elite : NODE_TEMPLATES.combat;
   }
-  return NODE_TEMPLATES[0];
+  if (r < 0.90) return NODE_TEMPLATES.treasure;
+  return NODE_TEMPLATES.rest;
 }
 
 function generateFork() {
-  // 두 갈래 — 가능한 다르게 (같은 타입 안 나오게 시도)
-  let a = rollNodeTemplate();
-  let b = rollNodeTemplate();
-  let tries = 0;
-  while (a.type === b.type && tries++ < 6) b = rollNodeTemplate();
-  return [decorateNode(a), decorateNode(b)];
+  // 두 갈래 — 같은 타입이어도 보상 카테고리는 다르게
+  const a = rollNodeTemplate();
+  const b = rollNodeTemplate();
+  return [decorateNode(a), decorateNode(b, decorateNode(a).rewardCat)];
 }
 
-function decorateNode(tmpl) {
-  // 보상 카테고리 + 등급 미리 결정
+function decorateNode(tmpl, avoidCat) {
+  // 보상 카테고리 + 등급 미리 결정 (사용자에게 보임)
   const categories = ['attack', 'magic', 'defend', 'utility'];
+  const pool = avoidCat ? categories.filter(c => c !== avoidCat) : categories;
+  const cat = pool[Math.floor(Math.random() * pool.length)];
+
   let rarityFloor = 'common';
   if (tmpl.kind === 'elite') rarityFloor = 'rare';
   if (tmpl.kind === 'treasure') rarityFloor = 'rare';
-  if (tmpl.kind === 'boon') rarityFloor = 'rare';
-  // run 후반일수록 등급 ↑
+  // 후반 등급 상승
   const f = game.run.floor;
-  if (f >= 2 && Math.random() < 0.3) rarityFloor = bumpRarity(rarityFloor);
-  if (f >= 3 && Math.random() < 0.3) rarityFloor = bumpRarity(rarityFloor);
-  const cat = categories[Math.floor(Math.random() * categories.length)];
+  if (f >= 2 && Math.random() < 0.35) rarityFloor = bumpRarity(rarityFloor);
+  if (f >= 3 && Math.random() < 0.35) rarityFloor = bumpRarity(rarityFloor);
   return {
     ...tmpl,
     rewardCat: cat,
@@ -226,13 +226,16 @@ function nextStep() {
     r.floor++;
     if (r.floor > 3) { endRun(true); return; }
     r.roomNum = 1;
-    // 새 층 첫 전투 바로
+    // 다음 층 시작 표시
+    r.history.push({ type: 'floor', kind: 'floor', icon: '🏛', name: '층 ' + r.floor });
+    r.history.push({ type: 'combat', kind: 'normal', icon: '⚔', name: '시작' });
     startBattle('normal', { id: 'first', type: 'combat', kind: 'normal' });
     return;
   }
   r.roomNum++;
   // 마지막 방 → 보스
   if (r.roomNum > r.roomsPerFloor) {
+    r.history.push({ type: 'boss', kind: 'boss', icon: '👑', name: '보스' });
     startBattle('boss', { id: 'boss', type: 'combat', kind: 'boss', rewardCat: 'utility', rewardRarity: 'legendary' });
     return;
   }
@@ -247,18 +250,16 @@ function renderFork() {
   wrap.innerHTML = '';
   for (const node of game.run.pendingFork) {
     const card = document.createElement('div');
-    card.className = `path-card path-${node.type}`;
+    // 노드 타입은 미공개 — 카테고리만 보여줌
+    card.className = `path-card mystery rarity-${node.rewardRarity}`;
     const cat = CATEGORIES[node.rewardCat];
     const rLbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설' }[node.rewardRarity];
+    card.style.setProperty('--cat-color', cat.color);
     card.innerHTML = `
-      <div class="path-icon">${node.icon}</div>
-      <div class="path-name">${node.name}</div>
-      <div class="path-desc">${node.desc}</div>
-      <div class="reward-tag rarity-${node.rewardRarity}" style="--cat-color:${cat.color}">
-        <span class="cat-icon">${cat.icon}</span>
-        <span class="cat-name">${cat.name}</span>
-        <span class="cat-rarity">${rLbl}</span>
-      </div>`;
+      <div class="path-mystery">?</div>
+      <div class="path-cat-name">${cat.icon} ${cat.name}</div>
+      <div class="path-rarity">${rLbl} 가호</div>
+      <div class="path-hint">길이 끝에 무엇이 기다릴지 모른다</div>`;
     card.addEventListener('click', () => chooseFork(node));
     wrap.appendChild(card);
   }
@@ -266,6 +267,9 @@ function renderFork() {
 
 function chooseFork(node) {
   game.run.pendingFork = null;
+  // 진행 기록
+  game.run.history = game.run.history || [];
+  game.run.history.push({ type: node.type, kind: node.kind, icon: node.icon, name: node.name, rewardCat: node.rewardCat, rewardRarity: node.rewardRarity });
   if (node.type === 'combat') startBattle('normal', node);
   else if (node.type === 'elite') startBattle('elite', node);
   else if (node.type === 'boon') openBoonScreen('신비한 사당', node.rewardCat, node.rewardRarity);
@@ -770,6 +774,42 @@ function boonFlash(rarity) {
 }
 
 // ============================================================
+// 진행도 모달
+// ============================================================
+function openProgressModal() {
+  const trail = $('progress-trail');
+  trail.innerHTML = '';
+  const history = game.run.history || [];
+  history.forEach((h, i) => {
+    if (h.type === 'floor') {
+      const sep = document.createElement('div');
+      sep.className = 'trail-node floor';
+      sep.textContent = h.name;
+      trail.appendChild(sep);
+      return;
+    }
+    const node = document.createElement('div');
+    let cls = 'trail-node ' + (h.type || h.kind);
+    if (i === history.length - 1) cls += ' current';
+    node.className = cls;
+    node.textContent = h.icon || '?';
+    node.title = h.name || '';
+    trail.appendChild(node);
+    if (i < history.length - 1 && history[i + 1].type !== 'floor') {
+      const arrow = document.createElement('span');
+      arrow.className = 'trail-arrow';
+      arrow.textContent = '→';
+      trail.appendChild(arrow);
+    }
+  });
+  $('progress-modal').classList.add('active');
+}
+
+function closeProgressModal() {
+  $('progress-modal').classList.remove('active');
+}
+
+// ============================================================
 // 휴식
 // ============================================================
 function openRest(node) {
@@ -915,6 +955,12 @@ function boot() {
   // 분기점 포기
   $('fork-quit').addEventListener('click', () => {
     if (confirm('던전을 포기합니까?')) endRun(false);
+  });
+  // 진행도 모달
+  $('hud-progress-btn').addEventListener('click', openProgressModal);
+  $('progress-close').addEventListener('click', closeProgressModal);
+  $('progress-modal').addEventListener('click', e => {
+    if (e.target.id === 'progress-modal') closeProgressModal();
   });
   // 결과
   $('back-to-menu').addEventListener('click', () => { renderMenu(); showScreen('menu'); });

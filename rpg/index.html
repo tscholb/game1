@@ -60,13 +60,14 @@
       <div class="battle-bg"></div>
 
       <div class="mini-hud">
-        <div class="hud-progress">
+        <button class="hud-progress-btn" id="hud-progress-btn">
           <span class="hud-label">층</span>
           <span class="hud-val" id="hud-floor">1</span>
           <span class="hud-sep">·</span>
           <span class="hud-label">방</span>
           <span class="hud-val" id="hud-room">1</span>/<span class="hud-val" id="hud-rooms">7</span>
-        </div>
+          <span class="hud-arrow">📜</span>
+        </button>
         <div class="hud-stats">
           <span class="hud-chip"><span class="hp-icon">♥</span><span id="hud-hp">100</span></span>
           <span class="hud-chip"><span class="gold-icon">G</span><span id="hud-gold">0</span></span>
@@ -159,6 +160,15 @@
     </div>
 
     <div id="boon-flash"></div>
+
+    <!-- 진행도 모달 -->
+    <div id="progress-modal">
+      <div class="progress-card">
+        <h3>탐험 기록</h3>
+        <div id="progress-trail"></div>
+        <button id="progress-close" class="big">닫기</button>
+      </div>
+    </div>
 
     <!-- ===== 휴식 ===== -->
     <div id="rest-screen" class="screen hidden">
