@@ -256,18 +256,34 @@ const PROLOGUE = [
   },
 ];
 
-let prState = { index: 0, onDone: null };
+let prState = { scenes: [], index: 0, onDone: null, isPrologue: false, finalLabel: '시작 ⚔' };
 
-function startPrologue(onDone) {
+// 일반화된 스토리 시퀀스 재생 (프롤로그 / 보스 인트로 / 보스 아웃트로 공유)
+function playStorySequence(scenes, onDone, opts = {}) {
+  prState.scenes = scenes;
   prState.index = 0;
-  prState.onDone = onDone || (() => { renderMenu(); showScreen('menu'); });
+  prState.onDone = onDone || (() => {});
+  prState.isPrologue = !!opts.prologue;
+  prState.finalLabel = opts.finalLabel || '계속 ▶';
   showScreen('prologue');
-  renderPrologueScene();
+  renderStoryScene();
 }
 
-function renderPrologueScene() {
-  const scene = PROLOGUE[prState.index];
-  if (!scene) return finishPrologue();
+function startPrologue(onDone) {
+  playStorySequence(
+    PROLOGUE,
+    () => {
+      try { localStorage.setItem('ignia-prologue-seen', '1'); } catch (e) {}
+      if (onDone) onDone();
+      else { renderMenu(); showScreen('menu'); }
+    },
+    { prologue: true, finalLabel: '시작 ⚔' }
+  );
+}
+
+function renderStoryScene() {
+  const scene = prState.scenes[prState.index];
+  if (!scene) return finishStory();
   const img = $('pr-img');
   const text = $('pr-text');
   // 이미지
@@ -288,25 +304,90 @@ function renderPrologueScene() {
   text.style.animation = '';
   text.textContent = scene.text;
   // 단계 표시
-  $('pr-step').textContent = `${prState.index + 1} / ${PROLOGUE.length}`;
+  $('pr-step').textContent = `${prState.index + 1} / ${prState.scenes.length}`;
   // 마지막이면 다음 버튼 라벨 변경
-  $('pr-next').textContent = (prState.index === PROLOGUE.length - 1) ? '시작 ⚔' : '다음 ▶';
+  $('pr-next').textContent = (prState.index === prState.scenes.length - 1) ? prState.finalLabel : '다음 ▶';
 }
 
-function nextPrologueScene() {
+function nextStoryScene() {
   prState.index++;
-  if (prState.index >= PROLOGUE.length) {
-    finishPrologue();
+  if (prState.index >= prState.scenes.length) {
+    finishStory();
   } else {
-    renderPrologueScene();
+    renderStoryScene();
   }
 }
 
-function finishPrologue() {
-  try { localStorage.setItem('ignia-prologue-seen', '1'); } catch (e) {}
+function finishStory() {
   const cb = prState.onDone;
   prState.onDone = null;
   if (cb) cb();
+}
+
+// ============================================================
+// 보스 스토리 (인트로 / 아웃트로)
+// ============================================================
+const BOSS_STORIES = {
+  // 1층 — 어둠의 드리아드
+  giant: {
+    intro: [
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '으슥한 동굴 안, 갑작스럽게 싱그러운 풀냄새가 코를 찌른다.\n\n이그니아 — "낯선 냄새가 나는군…"' },
+      { img: '../assets/bosses/dryad.png',
+        text: '뒤틀린 뿌리들이 일어서고, 보랏빛 안개가 스며 나온다.\n어머니 같던 모습은 어디에도 없다 — 어둠이 그녀를 삼킨 것이다.' },
+      { img: '../assets/bosses/dryad.png',
+        text: '이그니아 — "어둠…\n내가 그토록 찾던 그 냄새였구나!!"\n\n드리아드 — "불…? 뜨거워…???\n당장 사라져…!!"' },
+      { img: '../assets/bosses/dryad.png',
+        text: '이그니아 — "사라져?\n\n— 그래.\n일단 죽을만큼 불태워주고… 질문은 그다음으로 하지!"' },
+    ],
+    outro: [
+      { img: '../assets/bosses/dryad.png',
+        text: '뒤틀린 뿌리들이 잿더미로 무너져 내린다.\n그 사이로, 흐릿한 한 마디가 새어나온다.\n\n드리아드 — "고맙…다…\n날… 고통에서…"' },
+      { img: '../assets/bosses/dryad.png',
+        text: '이그니아 — "그냥 이용당한 녀석인가…\n하지만…"' },
+      { img: '../assets/bosses/dryad.png',
+        text: '이그니아의 눈이 차갑게 빛난다.\n\n이그니아 — "찾았다 — 어둠."' },
+    ],
+  },
+  // 2층 — 보랏빛 마녀
+  lich: {
+    intro: [
+      { img: '../assets/bosses/witch.png',
+        text: '동굴이 점점 차가워진다 — 이그니아의 손끝 불꽃마저 잠시 흔들린다.' },
+      { img: '../assets/bosses/witch.png',
+        text: '보랏빛 마녀 — "호오… 또 한 명의 불나방이 찾아왔구나.\n그자께서 어찌나 많은 영혼을 끌어들이시는지."' },
+      { img: '../assets/bosses/witch.png',
+        text: '이그니아 — "그자… 어디 있지?"\n\n보랏빛 마녀 — "후훗 —\n너의 재가 길을 알려줄 거야."' },
+    ],
+    outro: [
+      { img: '../assets/bosses/witch.png',
+        text: '보랏빛 화염이 사그라들며 마녀가 무릎을 꿇는다.' },
+      { img: '../assets/bosses/witch.png',
+        text: '보랏빛 마녀 — "너… 정말로 그자에게… 닿으려는 거니…?"\n\n이그니아 — "끝까지.\n어둠이 다 타버릴 때까지."' },
+    ],
+  },
+  // 3층 — 심연의 드래곤
+  dragon: {
+    intro: [
+      { img: null,
+        text: '동굴의 끝 — 검은 비늘이 어둠 속에서 천천히 꿈틀거린다.\n어둠보다 더 짙은 무언가가 그곳에 도사리고 있었다.' },
+      { img: null,
+        text: '심연의 드래곤 — "작은 불꽃아…\n이 어둠은, 너 따위가 감히 만질 수 있는 것이 아니다."' },
+      { img: null,
+        text: '이그니아 — "그래?\n\n그럼 — 직접 확인해보자!"' },
+    ],
+    outro: [
+      { img: null,
+        text: '드래곤의 마지막 숨이 어둠을 토해내며 잦아든다.' },
+      { img: null,
+        text: '이그니아 — "끝났다…\n\n아니, 시작이다.\n어둠은, 아직 남아있으니까."' },
+    ],
+  },
+};
+
+function getBossStoryByFloor(floor) {
+  const id = ['giant', 'lich', 'dragon'][floor - 1] || 'dragon';
+  return BOSS_STORIES[id];
 }
 
 function hasSeenPrologue() {
@@ -465,7 +546,13 @@ function nextStep() {
   // 마지막 방 → 보스
   if (r.roomNum > r.roomsPerFloor) {
     r.history.push({ type: 'boss', kind: 'boss', icon: '👑', name: '보스' });
-    startBattle('boss', { id: 'boss', type: 'combat', kind: 'boss', rewardCat: 'utility', rewardRarity: 'legendary' });
+    const node = { id: 'boss', type: 'combat', kind: 'boss', rewardCat: 'utility', rewardRarity: 'legendary' };
+    const story = getBossStoryByFloor(r.floor);
+    if (story && story.intro && story.intro.length) {
+      playStorySequence(story.intro, () => startBattle('boss', node), { finalLabel: '전투 ⚔' });
+    } else {
+      startBattle('boss', node);
+    }
     return;
   }
   // 분기점 두 갈래
@@ -1047,14 +1134,24 @@ function onEnemyDefeat() {
     let context = '전투 승리!';
     let cat = node.rewardCat;
     let rarity = node.rewardRarity || 'common';
+    let isBoss = false;
     if (b.enemy.kind === 'boss') {
       context = '보스 처치!';
       rarity = 'epic';
+      isBoss = true;
     } else if (b.enemy.kind === 'elite') {
       context = '엘리트 처치!';
       rarity = node.rewardRarity || 'rare';
     } else if (node.id === 'first') {
       context = '첫 전투 승리!';
+    }
+    // 보스 처치 시 아웃트로 → 가호 화면
+    if (isBoss) {
+      const story = getBossStoryByFloor(game.run.floor);
+      if (story && story.outro && story.outro.length) {
+        playStorySequence(story.outro, () => openBoonScreen(context, cat, rarity), { finalLabel: '계속 ▶' });
+        return;
+      }
     }
     openBoonScreen(context, cat, rarity);
   }, 800);
@@ -1442,8 +1539,8 @@ function boot() {
   $('title-fountain').addEventListener('click', openFountain);
   $('title-reset').addEventListener('click', hardReset);
   // 프롤로그 컨트롤
-  $('pr-next').addEventListener('click', nextPrologueScene);
-  $('pr-skip').addEventListener('click', finishPrologue);
+  $('pr-next').addEventListener('click', nextStoryScene);
+  $('pr-skip').addEventListener('click', finishStory);
   // 영웅 선택
   $('select-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   $('start-btn').addEventListener('click', newRun);
