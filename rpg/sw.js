@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v17-spring';
+const CACHE = 'ignia-v18-chest';
 const ASSETS = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ const ASSETS = [
   '../assets/bosses/dryad.png',
   '../assets/bosses/witch.png',
   '../assets/scenes/spring.png',
+  '../assets/scenes/chest.png',
 ];
 
 self.addEventListener('install', e => {

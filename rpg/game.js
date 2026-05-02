@@ -53,6 +53,7 @@ const ENEMIES = {
   shield:   { name: '방패병',   hp: 70,  atk: 9,  emoji: '🛡️', tier: 2, defReduce: 0.4 },
   drone:    { name: '드론',     hp: 50,  atk: 12, emoji: '🦟', tier: 3 },
   knight:   { name: '흑기사',   hp: 110, atk: 16, emoji: '⚔️', tier: 3 },
+  mimic:    { name: '미믹',     hp: 80,  atk: 14, emoji: '🪤', tier: 2 },
   // 보스
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
@@ -216,7 +217,7 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
+  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
@@ -373,22 +374,24 @@ function enterFirstRoom() {
 // ============================================================
 // 분기점 노드 생성 / 표시
 // ============================================================
-// 가중치: 적 80% (그중 엘리트 20% = 전체 16%), 보물 10%, 샘물(휴식) 10%
+// 가중치: 적 76% (그중 엘리트 20%), 보물 8%, 샘물 8%, 상자 8%
 const NODE_TEMPLATES = {
   combat:   { type: 'combat',   kind: 'normal',   icon: '⚔', name: '적 조우' },
   elite:    { type: 'elite',    kind: 'elite',    icon: '☠', name: '엘리트' },
   treasure: { type: 'treasure', kind: 'treasure', icon: '💰', name: '보물' },
   rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
+  chest:    { type: 'chest',    kind: 'chest',    icon: '📦', name: '의문의 상자' },
 };
 
 function rollNodeTemplate() {
   const r = Math.random();
-  if (r < 0.80) {
+  if (r < 0.76) {
     // 적 — 그중 20%가 엘리트
     return Math.random() < 0.20 ? NODE_TEMPLATES.elite : NODE_TEMPLATES.combat;
   }
-  if (r < 0.90) return NODE_TEMPLATES.treasure;
-  return NODE_TEMPLATES.rest;
+  if (r < 0.84) return NODE_TEMPLATES.treasure;
+  if (r < 0.92) return NODE_TEMPLATES.rest;
+  return NODE_TEMPLATES.chest;
 }
 
 function generateFork() {
@@ -476,6 +479,7 @@ function chooseFork(node) {
   else if (node.type === 'boon') openBoonScreen('신비한 사당', node.rewardCat, node.rewardRarity);
   else if (node.type === 'rest') openRest(node);
   else if (node.type === 'treasure') openTreasure(node);
+  else if (node.type === 'chest') openChest(node);
 }
 
 function openTreasure(node) {
@@ -494,7 +498,8 @@ function startBattle(kind, node) {
   if (kind === 'normal') ePool = ['goblin', 'orc', 'rogue', 'shield', 'drone'];
   else if (kind === 'elite') ePool = ['knight', 'shield', 'drone'];
   else if (kind === 'boss') ePool = [['giant', 'lich', 'dragon'][f - 1] || 'dragon'];
-  const eid = ePool[Math.floor(Math.random() * ePool.length)];
+  else if (kind === 'mimic') ePool = ['mimic'];
+  const eid = (node && node.forceEnemy) ? node.forceEnemy : ePool[Math.floor(Math.random() * ePool.length)];
   const def = ENEMIES[eid];
   game.run.currentNode = node || { kind, rewardCat: null, rewardRarity: null };
   // 층/엘리트 스케일링
@@ -1120,6 +1125,35 @@ function openRest(node) {
 }
 
 // ============================================================
+// 상자방
+// ============================================================
+function openChest(node) {
+  game.run.pendingChest = node;
+  showScreen('chest-screen');
+}
+
+function resolveChestOpen() {
+  const node = game.run.pendingChest;
+  game.run.pendingChest = null;
+  // 50/50 — 가호 or 미믹
+  if (Math.random() < 0.5) {
+    const cat = node ? node.rewardCat : null;
+    const rarity = bumpRarity(node ? node.rewardRarity : 'common');
+    openBoonScreen('상자의 가호', cat, rarity);
+  } else {
+    // 미믹 전투 — 승리 시 rare 가호 보장
+    startBattle('mimic', {
+      id: 'mimic-chest',
+      type: 'combat',
+      kind: 'normal',
+      forceEnemy: 'mimic',
+      rewardCat: node ? node.rewardCat : null,
+      rewardRarity: bumpRarity(node ? node.rewardRarity : 'common'),
+    });
+  }
+}
+
+// ============================================================
 // 스킬 cut-in
 // ============================================================
 function playCutin(name, quote, image) {
@@ -1270,6 +1304,12 @@ function boot() {
   });
   $('rest-skip').addEventListener('click', () => {
     game.run.pendingRest = null;
+    nextStep();
+  });
+  // 상자 — 연다 / 지나간다
+  $('chest-open').addEventListener('click', resolveChestOpen);
+  $('chest-skip').addEventListener('click', () => {
+    game.run.pendingChest = null;
     nextStep();
   });
   // 분기점 포기

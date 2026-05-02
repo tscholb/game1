@@ -631,7 +631,8 @@ button:active { transform: scale(0.96); }
 .trail-node.boss { border-color: #dc2626; box-shadow: 0 0 16px rgba(220, 40, 40, 0.5); }
 .trail-node.elite { border-color: #c084fc; }
 .trail-node.treasure { border-color: #fde68a; }
-.trail-node.rest { border-color: #6aaa5a; }
+.trail-node.rest { border-color: #5aaad8; }
+.trail-node.chest { border-color: #ffb13a; box-shadow: 0 0 14px rgba(255, 160, 40, 0.4); }
 .trail-node.combat { border-color: #6a3030; }
 .trail-node.floor {
   width: 100%;
@@ -1438,6 +1439,42 @@ button:active { transform: scale(0.96); }
   color: #a8b0c8;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* ============================================================
+   상자
+   ============================================================ */
+#chest-screen {
+  background: #050310;
+  padding: 0;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.chest-bg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  object-position: top center;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  animation: chestGlow 3.2s ease-in-out infinite;
+}
+@keyframes chestGlow {
+  0%, 100% { filter: brightness(1) drop-shadow(0 0 12px rgba(255,200,80,0.0)); }
+  50%      { filter: brightness(1.1) drop-shadow(0 0 18px rgba(255,200,80,0.25)); }
+}
+#chest-screen .spring-card h2 {
+  color: #ffd76a;
+  text-shadow: 0 0 16px rgba(255, 180, 60, 0.5), 0 2px 6px rgba(0,0,0,0.85);
+}
+.chest-open-btn {
+  background: linear-gradient(180deg, #c8941a 0%, #7a5810 100%) !important;
+  border: 1px solid #ffd76a !important;
+  box-shadow: 0 4px 22px rgba(220, 160, 40, 0.45) !important;
+  color: #fff8d8 !important;
 }
 
 /* ============================================================
