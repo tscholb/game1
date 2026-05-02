@@ -58,8 +58,8 @@ const ENEMIES = {
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
-  // 3층 보스 페이즈 2 — 진정한 드래곤 모습 (페이지 2 아트 도착 시 sprite 추가 예정)
-  'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true },
+  // 3층 보스 페이즈 2 — 진정한 드래곤 모습
+  'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-true.png' },
 };
 
 // ===== 스킬 카탈로그 =====
@@ -288,12 +288,13 @@ function renderStoryScene() {
   if (!scene) return finishStory();
   const img = $('pr-img');
   const text = $('pr-text');
-  // 이미지
-  if (scene.img) {
-    if (img.getAttribute('src') !== scene.img) {
+  // 이미지: speaker 가 있으면 화자 일러스트가 우선
+  const imgSrc = (scene.speaker && SPEAKERS[scene.speaker]) || scene.img;
+  if (imgSrc) {
+    if (img.getAttribute('src') !== imgSrc) {
       img.classList.remove('shown');
       img.onload = () => img.classList.add('shown');
-      img.src = scene.img;
+      img.src = imgSrc;
     } else {
       img.classList.add('shown');
     }
@@ -329,25 +330,39 @@ function finishStory() {
 // ============================================================
 // 보스 스토리 (인트로 / 아웃트로)
 // ============================================================
+// 대화 화자 → 삽화 매핑. scene 에 speaker 가 있으면 해당 캐릭터 일러스트가 우선 표시된다.
+const SPEAKERS = {
+  ignia:  '../assets/heroes/mage.png',
+  dryad:  '../assets/bosses/dryad.png',
+  witch:  '../assets/bosses/witch.png',
+  dragon: '../assets/bosses/dragon-human.png',
+};
+
 const BOSS_STORIES = {
   // 1층 — 어둠의 드리아드
   giant: {
     intro: [
       { img: '../assets/story/prologue-3-cave.png',
-        text: '으슥한 동굴 안, 갑작스럽게 싱그러운 풀냄새가 코를 찌른다.\n\n이그니아 — "낯선 냄새가 나는군…"' },
+        text: '으슥한 동굴 안, 갑작스럽게 싱그러운 풀냄새가 코를 찌른다.' },
+      { speaker: 'ignia',
+        text: '이그니아 — "낯선 냄새가 나는군…"' },
       { img: '../assets/bosses/dryad.png',
         text: '뒤틀린 뿌리들이 일어서고, 보랏빛 안개가 스며 나온다.\n어머니 같던 모습은 어디에도 없다 — 어둠이 그녀를 삼킨 것이다.' },
-      { img: '../assets/bosses/dryad.png',
-        text: '이그니아 — "어둠…\n내가 그토록 찾던 그 냄새였구나!!"\n\n드리아드 — "불…? 뜨거워…???\n당장 사라져…!!"' },
-      { img: '../assets/bosses/dryad.png',
+      { speaker: 'ignia',
+        text: '이그니아 — "어둠…\n내가 그토록 찾던 그 냄새였구나!!"' },
+      { speaker: 'dryad',
+        text: '드리아드 — "불…? 뜨거워…???\n당장 사라져…!!"' },
+      { speaker: 'ignia',
         text: '이그니아 — "사라져?\n\n— 그래.\n일단 죽을만큼 불태워주고… 질문은 그다음으로 하지!"' },
     ],
     outro: [
       { img: '../assets/bosses/dryad.png',
-        text: '뒤틀린 뿌리들이 잿더미로 무너져 내린다.\n그 사이로, 흐릿한 한 마디가 새어나온다.\n\n드리아드 — "고맙…다…\n날… 고통에서…"' },
-      { img: '../assets/bosses/dryad.png',
+        text: '뒤틀린 뿌리들이 잿더미로 무너져 내린다.\n그 사이로, 흐릿한 한 마디가 새어나온다.' },
+      { speaker: 'dryad',
+        text: '드리아드 — "고맙…다…\n날… 고통에서…"' },
+      { speaker: 'ignia',
         text: '이그니아 — "그냥 이용당한 녀석인가…\n하지만…"' },
-      { img: '../assets/bosses/dryad.png',
+      { speaker: 'ignia',
         text: '이그니아의 눈이 차갑게 빛난다.\n\n이그니아 — "찾았다 — 어둠."' },
     ],
   },
@@ -356,20 +371,30 @@ const BOSS_STORIES = {
     intro: [
       { img: '../assets/story/prologue-3-cave.png',
         text: '동굴의 끝…\n그곳에는, 은색 단발의 여자가 있었다.' },
-      { img: '../assets/bosses/witch.png',
-        text: '마녀 — "누구지?"\n\n이그니아 — "이 냄새는…\n또 어둠이다."' },
-      { img: '../assets/bosses/witch.png',
-        text: '이그니아 — "또다시 어둠의 힘을 쓰는 녀석인가."\n\n마녀 — "불꽃…?\n불꽃은 이미 다 제거했다고 생각했는데?"' },
-      { img: '../assets/bosses/witch.png',
-        text: '이그니아 — "…불의 마법을 알아?"\n\n마녀 — "싹을 다 잘라버렸다고 생각했는데…\n잔재인가?"' },
-      { img: '../assets/bosses/witch.png',
-        text: '이그니아의 손끝에 불꽃이 일어선다 — 그 어떤 때보다도 거세게.\n\n이그니아 — "너…!"\n\n마녀 — "어둠이여… 나에게 힘을."' },
+      { speaker: 'witch',
+        text: '마녀 — "누구지?"' },
+      { speaker: 'ignia',
+        text: '이그니아 — "이 냄새는…\n또 어둠이다."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "또다시 어둠의 힘을 쓰는 녀석인가."' },
+      { speaker: 'witch',
+        text: '마녀 — "불꽃…?\n불꽃은 이미 다 제거했다고 생각했는데?"' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…불의 마법을 알아?"' },
+      { speaker: 'witch',
+        text: '마녀 — "싹을 다 잘라버렸다고 생각했는데…\n잔재인가?"' },
+      { speaker: 'ignia',
+        text: '이그니아의 손끝에 불꽃이 일어선다 — 그 어떤 때보다도 거세게.\n\n이그니아 — "너…!"' },
+      { speaker: 'witch',
+        text: '마녀 — "어둠이여… 나에게 힘을."' },
     ],
     outro: [
       { img: '../assets/bosses/witch.png',
         text: '보랏빛 화염이 사그라들며 마녀가 무릎을 꿇는다.' },
-      { img: '../assets/bosses/witch.png',
-        text: '보랏빛 마녀 — "너… 정말로 그자에게… 닿으려는 거니…?"\n\n이그니아 — "끝까지.\n어둠이 다 타버릴 때까지."' },
+      { speaker: 'witch',
+        text: '보랏빛 마녀 — "너… 정말로 그자에게… 닿으려는 거니…?"' },
+      { speaker: 'ignia',
+        text: '이그니아 — "끝까지.\n어둠이 다 타버릴 때까지."' },
     ],
   },
   // 3층 — 심연의 드래곤
@@ -379,33 +404,33 @@ const BOSS_STORIES = {
         text: '동굴의 가장 깊은 곳…\n공기 자체가 짓눌릴 만큼 묵직해진다.\n\n— 이그니아의 손끝 불꽃마저 숨을 죽인다.' },
       { img: '../assets/bosses/dragon-human.png',
         text: '어둠 속에서 한 명의 여인이 걸어나왔다.\n뿔과 푸른 화염을 두른, 인간이라 부르기엔 너무 위태로운 자.' },
-      { img: '../assets/bosses/dragon-human.png',
+      { speaker: 'dragon',
         text: '심연의 드래곤 — "작은 불꽃아…\n이 어둠은, 너 따위가 감히 만질 수 있는 것이 아니다."' },
-      { img: '../assets/bosses/dragon-human.png',
+      { speaker: 'ignia',
         text: '이그니아 — "그래?\n\n그럼 — 직접 확인해보자."' },
     ],
     // 1페이즈 처치 후 → 부활/변신 트랜지션 (이 outro 끝나면 자동으로 페이즈 2 전투 시작)
     outro: [
       { img: '../assets/bosses/dragon-human.png',
         text: '푸른 화염이 잦아들며, 인간의 형상이 무너져 내린다.' },
-      { img: null,
+      { speaker: 'ignia',
         text: '이그니아 — "끝났다…\n\n아니, 시작이다.\n어둠은, 아직 남아있으니—"' },
       { img: null,
         text: '— 그 순간.' },
       { img: '../assets/bosses/dragon-human.png',
         text: '쓰러져있던 형상이 다시 일어선다.\n살이 부풀어오르고, 뼈가 비명을 지르며 비틀린다.\n푸른 화염이 두 배, 세 배로 폭발한다.' },
-      { img: null,
+      { speaker: 'dragon',
         text: '심연의 드래곤 — "이대로 — 끝낼 수 있을 줄 알았느냐!?\n작은 불꽃이… 감히 — !!"' },
-      { img: null,
+      { img: '../assets/bosses/dragon-true.png',
         text: '인간의 형상은 사라지고, 그 자리에 거대한 어둠의 비룡이 솟아오른다.\n\n— 진정한 심연의 드래곤이, 이제야 모습을 드러냈다.' },
     ],
     phase2: {
       enemyId: 'dragon-true',
       // 페이즈 2 처치 후 진짜 엔딩 outro
       finalOutro: [
-        { img: null,
+        { img: '../assets/bosses/dragon-true.png',
           text: '거대한 어둠의 비룡이 마지막 비명을 토하며 잿더미가 된다.\n\n동굴이 — 처음으로, 조용해졌다.' },
-        { img: null,
+        { speaker: 'ignia',
           text: '이그니아 — "이게 끝이다.\n\n정말로 — 끝이다."' },
       ],
     },
