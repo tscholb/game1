@@ -136,21 +136,20 @@ const CATEGORIES = {
 };
 
 // ===== 가호 데이터 (cat: 카테고리) =====
+// ※ 단순 스탯 +N 류는 모두 제거 — 능력치 강화는 상인을 통해 구매
 const BOONS = [
-  // common
-  { id: 'b-vigor',     cat: 'defend',  name: '활력',     desc: '최대 HP +20',                        rarity: 'common', apply: g => { g.maxHp += 20; g.hp += 20; } },
-  { id: 'b-strength',  cat: 'attack',  name: '근력',     desc: '공격력 +4',                          rarity: 'common', mod: { atk: 4 } },
-  { id: 'b-magic',     cat: 'magic',   name: '마법 숙련', desc: '마법 데미지 +6',                     rarity: 'common', mod: { mag: 6 } },
-  { id: 'b-heal',      cat: 'utility', name: '치유의 빛', desc: 'HP +30 즉시 회복',                   rarity: 'common', apply: g => { g.hp = Math.min(g.maxHp, g.hp + 30); } },
-  { id: 'b-coin',      cat: 'utility', name: '동전 자루', desc: '골드 +30',                          rarity: 'common', apply: g => { g.gold += 30; } },
+  // common — 메커니즘 기반
+  { id: 'b-warmup',    cat: 'attack',  name: '예열',     desc: '매 전투 첫 공격 데미지 +60%',         rarity: 'common', mod: { firstAtkBonus: 0.6 } },
+  { id: 'b-bulwark',   cat: 'defend',  name: '굳건한 자세', desc: '매 전투 첫 피격 데미지 -50%',       rarity: 'common', mod: { firstHitReduce: 0.5 } },
+  { id: 'b-spark',     cat: 'magic',   name: '점화',     desc: '전투 시작 시 적에 화상 6/3턴 자동 부여', rarity: 'common', mod: { startBurn: { dmg: 6, turns: 3 } } },
+  { id: 'b-bargain',   cat: 'utility', name: '상인의 눈',  desc: '획득 골드 +30%',                      rarity: 'common', mod: { goldMul: 0.3 } },
 
-  // rare
-  { id: 'b-iron',      cat: 'defend',  name: '강철 의지', desc: '최대 HP +40, HP 완전 회복',          rarity: 'rare',   apply: g => { g.maxHp += 40; g.hp = g.maxHp; } },
-  { id: 'b-fury',      cat: 'attack',  name: '광기',     desc: '공격력 +8, 마법력 +8',               rarity: 'rare',   mod: { atk: 8, mag: 8 } },
-  { id: 'b-crit',      cat: 'attack',  name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',     rarity: 'rare',   mod: { critChance: 0.25 } },
-  { id: 'b-thorns',    cat: 'defend',  name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',         rarity: 'rare',   mod: { thorns: 8 } },
-  { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '화염구 쿨다운 -1',                  rarity: 'rare',   mod: { skillCdReduce: 1 } },
-  { id: 'b-flame',     cat: 'magic',   name: '불꽃 친화', desc: '마법력 +12',                         rarity: 'rare',   mod: { mag: 12 } },
+  // rare — 메커니즘 기반
+  { id: 'b-overheat',  cat: 'magic',   name: '과열',     desc: 'HP 50% 이하 시 마법 데미지 +50%',      rarity: 'rare',   mod: { lowHpMagBonus: 0.5 } },
+  { id: 'b-bloodlust', cat: 'attack',  name: '광폭',     desc: 'HP 30% 이하 시 공격력 +60%',           rarity: 'rare',   mod: { lowHpAtkBonus: 0.6 } },
+  { id: 'b-crit',      cat: 'attack',  name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',      rarity: 'rare',   mod: { critChance: 0.25 } },
+  { id: 'b-thorns',    cat: 'defend',  name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',          rarity: 'rare',   mod: { thorns: 8 } },
+  { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '모든 스킬 쿨다운 -1',                 rarity: 'rare',   mod: { skillCdReduce: 1 } },
 
   // epic
   { id: 'b-vamp',      cat: 'attack',  name: '흡혈',     desc: '공격 시 데미지의 30% HP로 회복',      rarity: 'epic',   mod: { lifesteal: 0.3 } },
@@ -166,7 +165,7 @@ const BOONS = [
   { id: 'b-phoenix',   cat: 'defend',  name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
   { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
   { id: 'b-firedom',   cat: 'magic',   name: '불의 지배', desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
-  { id: 'b-overpower', cat: 'attack',  name: '폭주',     desc: '공격력 ×2, 마법력 ×2',                rarity: 'legendary', mod: { atkMul: 2, magMul: 2 } },
+  { id: 'b-flame-lord', cat: 'magic',  name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',   rarity: 'legendary', mod: { eternalBurn: true } },
   { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
 
   // unstable — 메리트 + 디메리트 동시
@@ -225,7 +224,7 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'result', 'fountain']) {
+  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
@@ -355,7 +354,7 @@ function newRun() {
     hp: HERO.baseHp + bonus.hp,
     atk: HERO.baseAtk + bonus.atk,
     mag: HERO.baseMag + bonus.mag,
-    gold: bonus.startGold,
+    gold: bonus.startGold + 30,    // 상인 시드 골드
     boons: [],
     floor: 1,
     roomNum: 0,
@@ -382,25 +381,40 @@ function enterFirstRoom() {
 // ============================================================
 // 분기점 노드 생성 / 표시
 // ============================================================
-// 가중치: 적 76% (그중 엘리트 20%), 보물 8%, 샘물 8%, 상자 8%
+// 가중치: 적 70% (그중 엘리트 20%), 보물 8%, 샘물 8%, 상자 7%, 상인 7%
 const NODE_TEMPLATES = {
   combat:   { type: 'combat',   kind: 'normal',   icon: '⚔', name: '적 조우' },
   elite:    { type: 'elite',    kind: 'elite',    icon: '☠', name: '엘리트' },
   treasure: { type: 'treasure', kind: 'treasure', icon: '💰', name: '보물' },
   rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
   chest:    { type: 'chest',    kind: 'chest',    icon: '📦', name: '의문의 상자' },
+  shop:     { type: 'shop',     kind: 'shop',     icon: '🏪', name: '방랑 상인' },
 };
 
 function rollNodeTemplate() {
   const r = Math.random();
-  if (r < 0.76) {
+  if (r < 0.70) {
     // 적 — 그중 20%가 엘리트
     return Math.random() < 0.20 ? NODE_TEMPLATES.elite : NODE_TEMPLATES.combat;
   }
-  if (r < 0.84) return NODE_TEMPLATES.treasure;
-  if (r < 0.92) return NODE_TEMPLATES.rest;
-  return NODE_TEMPLATES.chest;
+  if (r < 0.78) return NODE_TEMPLATES.treasure;
+  if (r < 0.86) return NODE_TEMPLATES.rest;
+  if (r < 0.93) return NODE_TEMPLATES.chest;
+  return NODE_TEMPLATES.shop;
 }
+
+// ===== 상점 아이템 =====
+const SHOP_ITEMS = [
+  { id: 'shop-heal',     name: '회복 물약',   icon: '🧪', desc: 'HP +30',         price: 30, apply: g => { g.hp = Math.min(g.maxHp, g.hp + 30); } },
+  { id: 'shop-fullheal', name: '대정수',      icon: '💎', desc: 'HP 완전 회복',   price: 80, apply: g => { g.hp = g.maxHp; } },
+  { id: 'shop-maxhp',    name: '체력의 비석', icon: '🩸', desc: '최대 HP +20',    price: 70, apply: g => { g.maxHp += 20; g.hp += 20; } },
+  { id: 'shop-atk',      name: '강철검',      icon: '⚔',  desc: '공격력 +3',      price: 55, apply: g => { g.atk += 3; } },
+  { id: 'shop-mag',      name: '마력 결정',   icon: '✨', desc: '마법력 +4',      price: 55, apply: g => { g.mag += 4; } },
+  { id: 'shop-crit',     name: '행운 부적',   icon: '🍀', desc: '치명타 +5%',     price: 70, apply: g => {
+    g.boons.push({ id: 'shop-crit-' + Date.now() + '-' + Math.floor(Math.random()*1e6), rarity: 'shop', mod: { critChance: 0.05 }, name: '행운 부적', desc: '치명타 +5%' });
+  }},
+  { id: 'shop-skillcd',  name: '시계 톱니',   icon: '⏱', desc: '스킬 시작 쿨다운 -1', price: 90, apply: g => { g.skillStartCdReduce -= 1; } },
+];
 
 function generateFork() {
   // 두 갈래 — 같은 타입이어도 보상 카테고리는 다르게
@@ -489,6 +503,7 @@ function chooseFork(node) {
   else if (node.type === 'rest') openRest(node);
   else if (node.type === 'treasure') openTreasure(node);
   else if (node.type === 'chest') openChest(node);
+  else if (node.type === 'shop') openShop(node);
 }
 
 function openTreasure(node) {
@@ -527,6 +542,8 @@ function startBattle(kind, node) {
     },
     turn: 1,
     attackCd: 0,
+    firstAtkUsed: false,
+    firstHitReduced: false,
     heroDefend: 0,
     heroBurn: 0,
     log: [],
@@ -545,9 +562,16 @@ function startBattle(kind, node) {
     art.style.fontSize = def.boss ? '90px' : '70px';
   }
   $('hero-img').src = HERO.sprite;
+  // 점화 가호 — 전투 시작 시 자동 화상
+  const sb = hasBoonMod('startBurn');
+  if (sb && sb.mod && sb.mod.startBurn) {
+    game.run.battle.enemy.burns = sb.mod.startBurn.turns;
+    game.run.battle.enemy.burnDmg = sb.mod.startBurn.dmg;
+  }
   refreshBattleUI();
   $('battle-log').innerHTML = '';
   log(`${def.name} 출현!`, 'system');
+  if (sb) log('점화! 적이 불타기 시작한다', 'hero');
   showScreen('battle');
 }
 
@@ -747,10 +771,20 @@ function getBoonModSum(key) {
 
 function doAttack() {
   const b = game.run.battle;
+  const r = game.run;
   const atkMulti = hasBoonMod('atkMulti') ? hasBoonMod('atkMulti').mod.atkMulti : 1;
   for (let i = 0; i < atkMulti; i++) {
     if (b.enemy.hp <= 0) break;
     let dmg = effectiveStat('atk');
+    // 광폭 — HP 30% 이하 시 공격력 부스트
+    const lowAtk = getBoonModSum('lowHpAtkBonus');
+    if (lowAtk > 0 && r.hp / r.maxHp < 0.3) dmg = Math.round(dmg * (1 + lowAtk));
+    // 예열 — 매 전투 첫 공격 부스트 (atkMulti 첫 hit 만)
+    if (!b.firstAtkUsed) {
+      const fab = getBoonModSum('firstAtkBonus');
+      if (fab > 0) dmg = Math.round(dmg * (1 + fab));
+      b.firstAtkUsed = true;
+    }
     // 회피
     if (b.enemy.def.dodge && Math.random() < b.enemy.def.dodge) {
       log(`이그니아의 공격 — 회피됨!`, 'enemy');
@@ -807,6 +841,9 @@ function castSkill(skillId) {
     for (let i = 0; i < s.hits; i++) {
       if (b.enemy.hp <= 0) break;
       let dmg = Math.round(effectiveStat('mag') * s.mul);
+      // 과열 — HP 50% 이하 시 마법 부스트
+      const lowMag = getBoonModSum('lowHpMagBonus');
+      if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
       let crit = false;
       const critChance = critBase + (s.critBonus || 0);
       if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
@@ -881,6 +918,15 @@ function healHero(amount) {
 function dealDamageToHero(dmg) {
   const r = game.run;
   const b = r.battle;
+  // 굳건한 자세 — 매 전투 첫 피격 감소
+  if (!b.firstHitReduced) {
+    const fhr = getBoonModSum('firstHitReduce');
+    if (fhr > 0) {
+      dmg = Math.round(dmg * (1 - fhr));
+      b.firstHitReduced = true;
+      log('굳건한 자세 — 첫 피격 감소', 'system');
+    }
+  }
   // 방어
   if (b.heroDefend > 0) dmg = Math.round(dmg * (1 - b.heroDefend));
   r.hp = Math.max(0, r.hp - dmg);
@@ -914,7 +960,8 @@ function endTurnHero(skipDefense) {
     b.enemy.hp = Math.max(0, b.enemy.hp - burn);
     showDmgNum('enemy', burn, 'burn');
     log(`화상 → ${burn}`, 'system');
-    b.enemy.burns--;
+    // 화염의 군주 — 화상 영구 지속
+    if (!hasBoonMod('eternalBurn')) b.enemy.burns--;
     refreshBattleUI();
   }
   if (b.enemy.hp <= 0) {
@@ -979,6 +1026,8 @@ function onEnemyDefeat() {
   game.run.enemiesDefeated++;
   // 보상 골드
   let gold = 10 + game.run.floor * 5 + (b.enemy.kind === 'elite' ? 25 : 0) + (b.enemy.def.boss ? 60 : 0);
+  const goldMul = getBoonModSum('goldMul');
+  if (goldMul > 0) gold = Math.round(gold * (1 + goldMul));
   game.run.gold += gold;
   log(`+${gold} 골드`, 'system');
   // 영혼 흡수
@@ -1210,6 +1259,46 @@ function openChest(node) {
   showScreen('chest-screen');
 }
 
+// ============================================================
+// 상점
+// ============================================================
+function openShop(node) {
+  game.run.pendingShop = node;
+  // 가게에서 4개 무작위 매물
+  const shuffled = [...SHOP_ITEMS].sort(() => Math.random() - 0.5).slice(0, 4);
+  game.run.shopOffer = shuffled.map(item => ({ ...item, sold: false }));
+  renderShop();
+  showScreen('shop-screen');
+}
+
+function renderShop() {
+  $('shop-gold').textContent = game.run.gold;
+  const wrap = $('shop-items');
+  wrap.innerHTML = '';
+  for (const item of game.run.shopOffer) {
+    const card = document.createElement('button');
+    card.className = 'shop-item';
+    const canAfford = game.run.gold >= item.price;
+    if (item.sold) card.classList.add('sold');
+    if (!canAfford && !item.sold) card.classList.add('cant-afford');
+    card.disabled = item.sold || !canAfford;
+    card.innerHTML = `
+      <div class="si-ico">${item.icon}</div>
+      <div class="si-name">${item.name}</div>
+      <div class="si-desc">${item.desc}</div>
+      <div class="si-price">${item.sold ? '판매됨' : `${item.price} 골드`}</div>`;
+    if (!item.sold && canAfford) {
+      card.addEventListener('click', () => {
+        game.run.gold -= item.price;
+        item.apply(game.run);
+        item.sold = true;
+        renderShop();
+      });
+    }
+    wrap.appendChild(card);
+  }
+}
+
 function resolveChestOpen() {
   const node = game.run.pendingChest;
   game.run.pendingChest = null;
@@ -1388,6 +1477,12 @@ function boot() {
   $('chest-open').addEventListener('click', resolveChestOpen);
   $('chest-skip').addEventListener('click', () => {
     game.run.pendingChest = null;
+    nextStep();
+  });
+  // 상점 — 떠나간다
+  $('shop-leave').addEventListener('click', () => {
+    game.run.pendingShop = null;
+    game.run.shopOffer = null;
     nextStep();
   });
   // 분기점 포기

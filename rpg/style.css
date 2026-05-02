@@ -633,6 +633,7 @@ button:active { transform: scale(0.96); }
 .trail-node.treasure { border-color: #fde68a; }
 .trail-node.rest { border-color: #5aaad8; }
 .trail-node.chest { border-color: #ffb13a; box-shadow: 0 0 14px rgba(255, 160, 40, 0.4); }
+.trail-node.shop { border-color: #b89048; box-shadow: 0 0 12px rgba(184, 144, 72, 0.5); }
 .trail-node.combat { border-color: #6a3030; }
 .trail-node.floor {
   width: 100%;
@@ -1485,6 +1486,107 @@ button:active { transform: scale(0.96); }
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
+
+/* ============================================================
+   방랑 상인
+   ============================================================ */
+#shop-screen {
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(140, 80, 30, 0.25) 0%, transparent 60%),
+    linear-gradient(180deg, #18100a 0%, #0a0608 100%);
+  padding: 24px 18px;
+  justify-content: flex-start;
+  overflow-y: auto;
+}
+.shop-header {
+  text-align: center;
+  margin-bottom: 18px;
+  padding-top: 8px;
+}
+.shop-title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: #ffd28a;
+  text-shadow: 0 0 20px rgba(255, 180, 80, 0.55), 0 2px 6px rgba(0,0,0,0.85);
+  margin-bottom: 10px;
+}
+.shop-flavor {
+  font-size: 13px;
+  color: #c8a890;
+  font-style: italic;
+  margin-bottom: 14px;
+  letter-spacing: 0.02em;
+}
+.shop-gold-bar {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: rgba(60, 40, 20, 0.65);
+  border: 1px solid #b89048;
+  color: #ffe8a0;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.shop-items {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.shop-item {
+  background: linear-gradient(180deg, rgba(60, 40, 20, 0.7) 0%, rgba(30, 20, 10, 0.8) 100%);
+  border: 1px solid #8a6028;
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  color: #f0e2c8;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+}
+.shop-item:hover:not(:disabled) {
+  border-color: #ffd28a;
+  box-shadow: 0 0 24px rgba(255, 180, 80, 0.4);
+  transform: translateY(-3px);
+}
+.shop-item.cant-afford {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.5);
+}
+.shop-item.sold {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.8);
+}
+.shop-item .si-ico { font-size: 32px; margin-bottom: 4px; }
+.shop-item .si-name { font-size: 14px; font-weight: 800; color: #ffd28a; margin-bottom: 4px; }
+.shop-item .si-desc { font-size: 11px; color: #c8a890; min-height: 28px; line-height: 1.35; }
+.shop-item .si-price {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffe8a0;
+  letter-spacing: 0.05em;
+}
+.shop-item.cant-afford .si-price { color: #ff8a7a; }
+.shop-actions {
+  margin-top: 22px;
+  text-align: center;
+}
+.shop-actions .small {
+  padding: 10px 24px;
+  font-size: 13px;
+  background: rgba(40, 25, 15, 0.7);
+  border: 1px solid rgba(184, 144, 72, 0.35);
+  border-radius: 8px;
+  color: #c8a890;
+  letter-spacing: 0.08em;
+}
+.shop-actions .small:hover { color: #fff; background: rgba(60, 40, 20, 0.85); }
 
 /* ============================================================
    상자
