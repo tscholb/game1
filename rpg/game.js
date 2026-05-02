@@ -130,8 +130,9 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['menu', 'dungeon', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
-    $(id).classList.toggle('hidden', id !== name);
+  for (const id of ['menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
+    const el = $(id);
+    if (el) el.classList.toggle('hidden', id !== name);
   }
 }
 
@@ -896,12 +897,6 @@ function boot() {
   $('fountain-btn').addEventListener('click', openFountain);
   $('hard-reset-btn').addEventListener('click', hardReset);
   $('fountain-back').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
-  // 던전
-  $('dungeon-quit').addEventListener('click', () => {
-    if (confirm('던전을 포기합니까? 현재 진행이 사라집니다.')) {
-      endRun(false);
-    }
-  });
   // 전투
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => heroAction(btn.dataset.action));
