@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v23-dragon-art';
+const CACHE = 'ignia-v24-dragon-phase2';
 const ASSETS = [
   './',
   './index.html',

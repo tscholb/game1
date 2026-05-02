@@ -58,6 +58,8 @@ const ENEMIES = {
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
+  // 3층 보스 페이즈 2 — 진정한 드래곤 모습 (페이지 2 아트 도착 시 sprite 추가 예정)
+  'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true },
 };
 
 // ===== 스킬 카탈로그 =====
@@ -382,12 +384,31 @@ const BOSS_STORIES = {
       { img: '../assets/bosses/dragon-human.png',
         text: '이그니아 — "그래?\n\n그럼 — 직접 확인해보자."' },
     ],
+    // 1페이즈 처치 후 → 부활/변신 트랜지션 (이 outro 끝나면 자동으로 페이즈 2 전투 시작)
     outro: [
       { img: '../assets/bosses/dragon-human.png',
-        text: '푸른 화염이 잦아들며, 인간의 형상도 함께 무너진다.' },
+        text: '푸른 화염이 잦아들며, 인간의 형상이 무너져 내린다.' },
+      { img: null,
+        text: '이그니아 — "끝났다…\n\n아니, 시작이다.\n어둠은, 아직 남아있으니—"' },
+      { img: null,
+        text: '— 그 순간.' },
       { img: '../assets/bosses/dragon-human.png',
-        text: '이그니아 — "끝났다…\n\n아니, 시작이다.\n어둠은, 아직 남아있으니까."' },
+        text: '쓰러져있던 형상이 다시 일어선다.\n살이 부풀어오르고, 뼈가 비명을 지르며 비틀린다.\n푸른 화염이 두 배, 세 배로 폭발한다.' },
+      { img: null,
+        text: '심연의 드래곤 — "이대로 — 끝낼 수 있을 줄 알았느냐!?\n작은 불꽃이… 감히 — !!"' },
+      { img: null,
+        text: '인간의 형상은 사라지고, 그 자리에 거대한 어둠의 비룡이 솟아오른다.\n\n— 진정한 심연의 드래곤이, 이제야 모습을 드러냈다.' },
     ],
+    phase2: {
+      enemyId: 'dragon-true',
+      // 페이즈 2 처치 후 진짜 엔딩 outro
+      finalOutro: [
+        { img: null,
+          text: '거대한 어둠의 비룡이 마지막 비명을 토하며 잿더미가 된다.\n\n동굴이 — 처음으로, 조용해졌다.' },
+        { img: null,
+          text: '이그니아 — "이게 끝이다.\n\n정말로 — 끝이다."' },
+      ],
+    },
   },
 };
 
@@ -1154,6 +1175,26 @@ function onEnemyDefeat() {
     // 보스 처치 시 아웃트로 → 가호 화면
     if (isBoss) {
       const story = getBossStoryByFloor(game.run.floor);
+      // 페이즈 2 가 정의된 보스
+      if (story && story.phase2) {
+        if (b.enemy.id !== story.phase2.enemyId) {
+          // 페이즈 1 클리어 — 트랜지션 outro 끝나면 페이즈 2 전투 자동 시작 (가호 화면 없음)
+          playStorySequence(story.outro, () => {
+            startBattle('boss', {
+              id: 'boss-p2', type: 'combat', kind: 'boss',
+              rewardCat: 'utility', rewardRarity: 'legendary',
+              forceEnemy: story.phase2.enemyId,
+            });
+          }, { finalLabel: '!! 전투 ⚔' });
+          return;
+        }
+        // 페이즈 2 클리어 — 진짜 outro 후 가호 화면
+        if (story.phase2.finalOutro && story.phase2.finalOutro.length) {
+          playStorySequence(story.phase2.finalOutro, () => openBoonScreen(context, cat, rarity), { finalLabel: '계속 ▶' });
+          return;
+        }
+      }
+      // 일반 보스 — 기존 outro 흐름
       if (story && story.outro && story.outro.length) {
         playStorySequence(story.outro, () => openBoonScreen(context, cat, rarity), { finalLabel: '계속 ▶' });
         return;
