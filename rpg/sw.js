@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v8-title-position-fix';
+const CACHE = 'ignia-v9-title-img-tag';
 const ASSETS = [
   './',
   './index.html',
