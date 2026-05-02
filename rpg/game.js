@@ -378,7 +378,7 @@ const NODE_TEMPLATES = {
   combat:   { type: 'combat',   kind: 'normal',   icon: '⚔', name: '적 조우' },
   elite:    { type: 'elite',    kind: 'elite',    icon: '☠', name: '엘리트' },
   treasure: { type: 'treasure', kind: 'treasure', icon: '💰', name: '보물' },
-  rest:     { type: 'rest',     kind: 'rest',     icon: '🔥', name: '샘물' },
+  rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
 };
 
 function rollNodeTemplate() {
@@ -1115,6 +1115,7 @@ function closeProgressModal() {
 // 휴식
 // ============================================================
 function openRest(node) {
+  game.run.pendingRest = node;
   showScreen('rest-screen');
 }
 
@@ -1259,12 +1260,18 @@ function boot() {
     game.run.gold += 30;
     nextStep();
   });
-  // 휴식
+  // 샘물 — 마신다 / 지나간다
   $('rest-heal').addEventListener('click', () => {
-    game.run.hp = Math.min(game.run.maxHp, game.run.hp + 30);
+    const node = game.run.pendingRest;
+    game.run.pendingRest = null;
+    const cat = node ? node.rewardCat : null;
+    const rarity = node ? node.rewardRarity : 'common';
+    openBoonScreen('샘물의 가호', cat, rarity);
+  });
+  $('rest-skip').addEventListener('click', () => {
+    game.run.pendingRest = null;
     nextStep();
   });
-  $('rest-skip').addEventListener('click', () => nextStep());
   // 분기점 포기
   $('fork-quit').addEventListener('click', () => {
     if (confirm('던전을 포기합니까?')) endRun(false);

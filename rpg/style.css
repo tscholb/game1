@@ -1359,40 +1359,85 @@ button:active { transform: scale(0.96); }
 #boon-flash.legendary { background: radial-gradient(circle at center, rgba(255,232,154,0.95) 0%, rgba(243,180,80,0.5) 30%, transparent 80%); }
 
 /* ============================================================
-   휴식
+   샘물
    ============================================================ */
 #rest-screen {
-  background: linear-gradient(180deg, #0a0612 0%, #1a1208 100%);
-  padding: 24px;
-  justify-content: center;
+  background: #050310;
+  padding: 0;
+  justify-content: flex-end;
+  overflow: hidden;
 }
-.rest-card {
-  width: min(420px, 90vw);
-  background: rgba(40, 25, 10, 0.9);
-  border: 1px solid #6a4a20;
-  border-radius: 14px;
-  padding: 32px 24px;
+.spring-bg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  object-position: top center;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  animation: springGlow 4s ease-in-out infinite;
+}
+@keyframes springGlow {
+  0%, 100% { filter: brightness(1) saturate(1); }
+  50%      { filter: brightness(1.12) saturate(1.15); }
+}
+.spring-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 35%, transparent 50%, rgba(5,3,16,0.55) 100%),
+    linear-gradient(180deg, rgba(5,3,16,0) 0%, rgba(5,3,16,0) 45%, rgba(5,3,16,0.95) 78%, #050310 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+.spring-card {
+  position: relative;
+  z-index: 2;
+  width: min(460px, 92vw);
+  margin: 0 auto;
+  padding: 18px 22px max(20px, env(safe-area-inset-bottom));
   text-align: center;
-  box-shadow: 0 0 40px rgba(255, 140, 40, 0.3);
 }
-.rest-card h2 { font-size: 26px; color: #fde68a; margin-bottom: 6px; }
-.rest-card .subtitle { color: #c8a890; font-size: 12px; margin-bottom: 24px; }
+.spring-card h2 {
+  font-size: 22px;
+  color: #b9d8ff;
+  margin-bottom: 12px;
+  letter-spacing: 0.15em;
+  text-shadow: 0 0 16px rgba(140, 180, 255, 0.55), 0 2px 6px rgba(0,0,0,0.8);
+}
+.spring-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #e2e6f0;
+  margin-bottom: 22px;
+  white-space: pre-line;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.95);
+  letter-spacing: 0.02em;
+}
 .rest-actions { display: flex; flex-direction: column; gap: 10px; }
 .rest-actions .big {
   padding: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  background: linear-gradient(180deg, #4a8a3a 0%, #2a6a1a 100%);
-  border: 1px solid #6aaa5a;
-  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  background: linear-gradient(180deg, #4a78c8 0%, #2a4a8a 100%);
+  border: 1px solid #7aaaff;
+  border-radius: 10px;
+  color: #f0f4ff;
+  box-shadow: 0 4px 22px rgba(80, 140, 240, 0.4);
 }
+.rest-actions .big:hover { filter: brightness(1.15); }
 .rest-actions .small {
   padding: 8px;
   font-size: 12px;
-  background: #2a1a1a;
-  border: 1px solid #5a3a3a;
+  background: rgba(20, 18, 30, 0.7);
+  border: 1px solid rgba(160, 168, 200, 0.25);
   border-radius: 6px;
-  color: #c8a890;
+  color: #a8b0c8;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* ============================================================
