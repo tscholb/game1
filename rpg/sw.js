@@ -1,12 +1,14 @@
-const CACHE = 'ignia-v5-portrait-frame';
+const CACHE = 'ignia-v6-title-splash';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './game.js',
   './manifest.json',
+  './title.png',
   '../assets/heroes/mage.png',
-  '../assets/heroes/mage-sprite.png',
+  '../assets/heroes/archer.png',
+  '../assets/heroes/merchant.png',
 ];
 
 self.addEventListener('install', e => {

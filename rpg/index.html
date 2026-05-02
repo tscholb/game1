@@ -12,35 +12,42 @@
 <body>
   <div id="app">
 
-    <!-- ===== 메인 메뉴 ===== -->
-    <div id="menu" class="screen">
-      <div class="menu-header">
-        <h1>IGNIA</h1>
-        <p class="subtitle">화염의 대마법사 — 로그라이크 RPG</p>
-        <div class="essence">
+    <!-- ===== 타이틀 (첫 진입) ===== -->
+    <div id="title" class="screen">
+      <div class="title-bg"></div>
+      <div class="title-content">
+        <div class="title-actions">
+          <button id="title-start" class="big primary">⚔ 게임 시작 ⚔</button>
+          <button id="title-fountain" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
+          <button id="title-reset" class="small reset-btn">전체 초기화</button>
+        </div>
+        <div class="title-essence">
           <span class="essence-icon">◆</span>
-          <span id="meta-essence">0</span>
+          <span id="title-essence">0</span>
           <span class="essence-label">정수</span>
         </div>
       </div>
+    </div>
 
-      <div class="menu-hero">
-        <img src="../assets/heroes/mage.png" alt="이그니아" class="big-portrait">
-        <div class="menu-hero-info">
-          <h2>이그니아</h2>
-          <p class="flavor">검은 머리 위로 불꽃을 다스리는 매혹의 화염 대마법사. 그녀의 손끝에서 세상이 타오른다.</p>
+    <!-- ===== 영웅 선택 ===== -->
+    <div id="menu" class="screen hidden">
+      <div class="menu-top">
+        <button class="back-btn" id="select-back">← 타이틀</button>
+        <h2>영웅 선택</h2>
+        <span></span>
+      </div>
+      <div class="hero-list" id="hero-list"></div>
+      <div class="hero-detail" id="hero-detail">
+        <div class="hero-info-large">
+          <h3 id="sel-name">이그니아</h3>
+          <p class="flavor" id="sel-flavor"></p>
           <div class="stats">
             <div class="stat"><span class="k">HP</span><span class="v" id="menu-hp">100</span></div>
             <div class="stat"><span class="k">공격</span><span class="v" id="menu-atk">18</span></div>
             <div class="stat"><span class="k">마법</span><span class="v" id="menu-mag">28</span></div>
           </div>
         </div>
-      </div>
-
-      <div class="menu-actions">
         <button id="start-btn" class="big primary">⚔ 던전 탐험 ⚔</button>
-        <button id="fountain-btn" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
-        <button id="hard-reset-btn" class="small reset-btn">전체 초기화</button>
       </div>
     </div>
 

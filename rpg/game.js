@@ -5,24 +5,38 @@
 const $ = id => document.getElementById(id);
 
 // ===== 영웅 데이터 =====
-const HERO = {
-  id: 'ignia',
-  name: '이그니아',
-  flavor: '검은 머리 위로 불꽃을 다스리는 매혹의 화염 대마법사.',
-  baseHp: 100,
-  baseAtk: 18,
-  baseMag: 28,
-  skill: {
-    name: '화염구',
-    quote: '타올라라 — 이 세계마저!',
-    cooldown: 3,
-    burnDmg: 6,
-    burnTurns: 3,
+const HEROES = [
+  {
+    id: 'ignia',
+    name: '이그니아',
+    title: '화염의 대마법사',
+    flavor: '검은 머리 위로 불꽃을 다스리는 매혹의 화염 대마법사. 그녀의 손끝에서 세상이 타오른다.',
+    locked: false,
+    baseHp: 100, baseAtk: 18, baseMag: 28,
+    skill: { name: '화염구', quote: '타올라라 — 이 세계마저!', cooldown: 3, burnDmg: 6, burnTurns: 3 },
+    portrait: '../assets/heroes/mage.png',
+    sprite: '../assets/heroes/mage.png',
   },
-  portrait: '../assets/heroes/mage.png',
-  // 인게임도 배경 있는 일러스트 사용 (알파 처리 부담 X)
-  sprite: '../assets/heroes/mage.png',
-};
+  {
+    id: 'luna', name: '루나', title: '달빛 궁수',
+    flavor: '달빛에 화살을 실어 보내는 침묵의 사냥꾼.',
+    locked: true,
+    baseHp: 90, baseAtk: 22, baseMag: 14,
+    portrait: '../assets/heroes/archer.png',
+    sprite: '../assets/heroes/archer.png',
+  },
+  {
+    id: 'reyna', name: '레이나', title: '대검 용병',
+    flavor: '대검 한 자루로 전장을 가르는 용병.',
+    locked: true,
+    baseHp: 130, baseAtk: 26, baseMag: 8,
+    portrait: '../assets/heroes/merchant.png',
+    sprite: '../assets/heroes/merchant.png',
+  },
+];
+
+// 현재 선택된 영웅 (전투/세이브 등에서 사용)
+let HERO = HEROES[0];
 
 const SKILL_QUOTES = [
   '타올라라 — 이 세계마저!',
@@ -131,10 +145,44 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
+  for (const id of ['title', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
+}
+
+// ============================================================
+// 타이틀 / 영웅 선택
+// ============================================================
+function renderTitle() {
+  $('title-essence').textContent = game.meta.essence;
+}
+
+function renderMenu() {
+  // 영웅 카드 목록
+  const list = $('hero-list');
+  list.innerHTML = '';
+  for (const h of HEROES) {
+    const card = document.createElement('div');
+    card.className = 'hero-card';
+    if (h.locked) card.classList.add('locked');
+    if (HERO.id === h.id && !h.locked) card.classList.add('selected');
+    card.innerHTML = `
+      <img src="${h.portrait}" alt="${h.name}">
+      <div class="h-name">${h.name}</div>
+      <div class="h-tag">${h.title}</div>`;
+    if (!h.locked) {
+      card.addEventListener('click', () => { HERO = h; renderMenu(); });
+    }
+    list.appendChild(card);
+  }
+  // 선택된 영웅 디테일
+  $('sel-name').textContent = HERO.name;
+  $('sel-flavor').textContent = HERO.flavor;
+  const bonus = metaBonus();
+  $('menu-hp').textContent = HERO.baseHp + bonus.hp;
+  $('menu-atk').textContent = HERO.baseAtk + bonus.atk;
+  $('menu-mag').textContent = HERO.baseMag + bonus.mag;
 }
 
 function newRun() {
@@ -901,16 +949,7 @@ function renderFountain() {
   });
 }
 
-// ============================================================
-// 메인 메뉴 갱신
-// ============================================================
-function renderMenu() {
-  $('meta-essence').textContent = game.meta.essence;
-  const bonus = metaBonus();
-  $('menu-hp').textContent = HERO.baseHp + bonus.hp;
-  $('menu-atk').textContent = HERO.baseAtk + bonus.atk;
-  $('menu-mag').textContent = HERO.baseMag + bonus.mag;
-}
+// renderMenu는 위에서 정의됨 (타이틀/선택 섹션)
 
 // ============================================================
 // 초기화
@@ -931,11 +970,15 @@ function hardReset() {
 // 부팅
 // ============================================================
 function boot() {
-  // 메뉴
+  // 타이틀
+  $('title-start').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+  $('title-fountain').addEventListener('click', openFountain);
+  $('title-reset').addEventListener('click', hardReset);
+  // 영웅 선택
+  $('select-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   $('start-btn').addEventListener('click', newRun);
-  $('fountain-btn').addEventListener('click', openFountain);
-  $('hard-reset-btn').addEventListener('click', hardReset);
-  $('fountain-back').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+  // 영원의 샘 → 타이틀로 복귀
+  $('fountain-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   // 전투
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => heroAction(btn.dataset.action));
@@ -962,10 +1005,10 @@ function boot() {
     if (e.target.id === 'progress-modal') closeProgressModal();
   });
   // 결과
-  $('back-to-menu').addEventListener('click', () => { renderMenu(); showScreen('menu'); });
+  $('back-to-menu').addEventListener('click', () => { renderTitle(); showScreen('title'); });
 
-  renderMenu();
-  showScreen('menu');
+  renderTitle();
+  showScreen('title');
 
   // SW 등록
   if ('serviceWorker' in navigator) {
