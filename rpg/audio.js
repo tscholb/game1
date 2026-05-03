@@ -26,6 +26,34 @@
       this.sfxGain = this.ctx.createGain();
       this.sfxGain.gain.value = this.sfxEnabled ? 0.70 : 0;
       this.sfxGain.connect(this.master);
+      // 백그라운드 → 음악 멈춤, 포그라운드 → 재개
+      if (!this._visBound) {
+        this._visBound = true;
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) this.pauseAll();
+          else this.resumeAll();
+        });
+        window.addEventListener('pagehide', () => this.pauseAll());
+        window.addEventListener('pageshow', () => this.resumeAll());
+        window.addEventListener('blur', () => this.pauseAll());
+        window.addEventListener('focus', () => this.resumeAll());
+      }
+    },
+    pauseAll() {
+      if (this.current && this.current.audio) {
+        try { this.current.audio.pause(); } catch (e) {}
+      }
+      if (this.ctx && this.ctx.state === 'running') {
+        try { this.ctx.suspend(); } catch (e) {}
+      }
+    },
+    resumeAll() {
+      if (this.ctx && this.ctx.state === 'suspended') {
+        try { this.ctx.resume(); } catch (e) {}
+      }
+      if (this.current && this.current.audio && this.musicEnabled) {
+        try { this.current.audio.play().catch(() => {}); } catch (e) {}
+      }
     },
     resume() {
       if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();

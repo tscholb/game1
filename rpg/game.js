@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v40-audio';
+const VERSION = 'v41-audio-bg';
 
 // ===== 영웅 데이터 =====
 const HEROES = [

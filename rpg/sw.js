@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v40-audio';
+const CACHE = 'ignia-v41-audio-bg';
 const ASSETS = [
   './',
   './index.html',
