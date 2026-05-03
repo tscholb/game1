@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v37-tools-longstage';
+const VERSION = 'v38-legend-reveal';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -1617,6 +1617,7 @@ function openBoonScreen(context, category, rarityFloor) {
   const choices = rollBoonChoices(category, rarityFloor);
   const wrap = $('boon-choices');
   wrap.innerHTML = '';
+  const legendaryEls = [];
   for (const b of choices) {
     const el = document.createElement('div');
     el.className = `boon-choice ${b.rarity}`;
@@ -1627,8 +1628,33 @@ function openBoonScreen(context, category, rarityFloor) {
       <div class="desc">${b.desc}</div>`;
     el.addEventListener('click', () => openBoonConfirm(b));
     wrap.appendChild(el);
+    if (b.rarity === 'legendary') legendaryEls.push(el);
   }
   showScreen('boon-screen');
+  // 전설 가호가 포함되면 등장 연출 (플래시 + 줌-인)
+  if (legendaryEls.length > 0) {
+    triggerLegendReveal(legendaryEls);
+  }
+}
+
+function triggerLegendReveal(els) {
+  const flash = $('legend-flash');
+  const rays  = $('legend-rays');
+  if (flash) {
+    flash.classList.remove('active');
+    void flash.offsetWidth;
+    flash.classList.add('active');
+  }
+  if (rays) {
+    rays.classList.remove('active');
+    void rays.offsetWidth;
+    rays.classList.add('active');
+  }
+  for (const el of els) {
+    el.classList.remove('legend-reveal');
+    void el.offsetWidth;
+    el.classList.add('legend-reveal');
+  }
 }
 
 function openBoonConfirm(boon) {

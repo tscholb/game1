@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v37-tools-longstage';
+const CACHE = 'ignia-v38-legend-reveal';
 const ASSETS = [
   './',
   './index.html',
