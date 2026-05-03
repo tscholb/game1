@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v42-bond-ult';
+const CACHE = 'ignia-v43-bond-event';
 const ASSETS = [
   './',
   './index.html',

@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v42-bond-ult';
+const VERSION = 'v43-bond-event';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -277,7 +277,7 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain', 'bond']) {
+  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
@@ -287,7 +287,7 @@ function showScreen(name) {
       title: 'title', menu: 'title',
       fork: 'explore', 'rest-screen': 'explore', 'chest-screen': 'explore',
       'shop-screen': 'shop', 'boon-screen': 'shop',
-      result: 'result', fountain: 'title', bond: 'title',
+      result: 'result', fountain: 'title',
     };
     // prologue 는 호출 컨텍스트에 따라 다름 — 음악 유지
     if (Object.prototype.hasOwnProperty.call(map, name)) AUDIO.music(map[name]);
@@ -408,6 +408,7 @@ const SPEAKERS = {
 
 // ===== 인연각성 (필살기) =====
 // 동시에 한 명만 계약, 한 층 당 1회 사용
+// 인연은 탐험 중 「인연 이벤트」 노드에서 무작위로 등장하여 결속을 제안
 const BONDS = {
   alice: {
     id: 'alice', name: '앨리스', title: '여행하는 상인', icon: '💰',
@@ -415,6 +416,22 @@ const BONDS = {
     skillName: '초특급 회복물약',
     quote: '앨리스 — "특별 손님이니까 — 이거, 받아."',
     desc: 'HP 100% 회복 + 회복량의 50% 보호막',
+    intro: [
+      { img: '../assets/scenes/merchant.png',
+        text: '먼지 자욱한 길 끝, 작은 등불 하나가 흔들리고 있다.' },
+      { speaker: 'alice',
+        text: '앨리스 — "어머나 — 또 만났네요. 인연인가 봐요."' },
+      { speaker: 'alice',
+        text: '앨리스 — "이번엔 뭔가… 더 깊은 이야기가 하고 싶어졌어요."' },
+      { speaker: 'alice',
+        text: '앨리스 — "단골 손님에게만 주는 — 「특별 약속」이 있어요. 받아보지 않을래요?"' },
+      { speaker: 'alice',
+        text: '앨리스 — "함께 다녀준다면, 정말로 위험할 때… 단 한 번, 「초특급 회복물약」을 따라드릴게요."' },
+    ],
+    promptText: '앨리스의 「특별 약속」을 받아들이시겠습니까?',
+    acceptScene: { speaker: 'alice', text: '앨리스 — "정말? — 후훗, 약속이에요. 잘 부탁해요, 손님."' },
+    rejectScene: { speaker: 'alice', text: '앨리스 — "그래요? — 그래도 가게는 항상 열려있어요. 또 와요."' },
+    farewellScene: { speaker: 'alice', text: '앨리스 — "어… 그래요. 단골 손님은 늘 떠나가네요… 또 와줄 거죠?"' },
   },
   arina: {
     id: 'arina', name: '아리나', title: '서큐버스', icon: '🦇',
@@ -422,6 +439,28 @@ const BONDS = {
     skillName: '거부할 수 없는 매혹',
     quote: '아리나 — "후훗 — 멈춰. 너는 지금부터 내 거야."',
     desc: '적이 3턴 동안 행동 불가',
+    intro: [
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '동굴 한구석 — 갑자기 짙은 향기가 코를 찌른다.\n달콤하면서도, 어딘가 아찔한 향.' },
+      { speaker: 'arina',
+        text: '— "어머나, 어머나. 이런 곳에 이렇게 예쁜 손님이 다 있다니."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…누구냐."' },
+      { speaker: 'arina',
+        text: '아리나 — "아리나라고 해. — 깜짝 놀랐어, 너처럼 곱고 단단한 얼굴은 정말 오랜만이거든."' },
+      { speaker: 'arina',
+        text: '아리나 — "그 흑발 사이로 비치는 눈매도, 잘록한 허리도, 새빨간 입술도 — 정말 위험할 정도로 아름답네."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "용건만 말해라."' },
+      { speaker: 'arina',
+        text: '아리나 — "후훗 — 차갑긴.\n— 「인연」 하나 맺지 않을래?\n위험할 땐 내가 적의 발을 묶어줄게."' },
+      { speaker: 'arina',
+        text: '아리나 — "아 — 그리고. 네가 쫓고 있는 「어둠」 말이야.\n그자가… 정말로 적이라고 생각해? 한 번쯤은 의심해봐도 좋을 거야."' },
+    ],
+    promptText: '아리나의 「인연」을 받아들이시겠습니까?',
+    acceptScene: { speaker: 'arina', text: '아리나 — "후훗 — 좋은 선택이야. — 너는 이제 내 거야."' },
+    rejectScene: { speaker: 'arina', text: '아리나 — "어머, 차갑긴. — 뭐, 언젠가는 또 만나게 되겠지."' },
+    farewellScene: { speaker: 'arina', text: '아리나 — "흥 — 다른 애한테 갈아탈 줄이야. — 후회하게 만들어줄지도 몰라?"' },
   },
   reyna: {
     id: 'reyna', name: '레이나', title: '대검 용병', icon: '⚔',
@@ -429,6 +468,20 @@ const BONDS = {
     skillName: '맹렬한 상처',
     quote: '레이나 — "한 번에 — 끝낸다."',
     desc: '공격력 500% 단발 + 적 공격력 3턴 -50%',
+    intro: [
+      { speaker: 'reyna',
+        text: '— 멀리서 들려오는 발소리. 등 뒤로 거대한 대검을 진 여자가 다가온다.' },
+      { speaker: 'reyna',
+        text: '레이나 — "…불꽃을 다루는 마법사로군. 소문은 들었다."' },
+      { speaker: 'reyna',
+        text: '레이나 — "혼자선 넘기 힘든 적이 있을 거다. — 부르기만 해. 한 번에 끝내주지."' },
+      { speaker: 'reyna',
+        text: '레이나 — "단, 한 사람만 — 그게 내 규칙이다."' },
+    ],
+    promptText: '레이나와의 「용병 계약」을 받아들이시겠습니까?',
+    acceptScene: { speaker: 'reyna', text: '레이나 — "거래 성립. — 한 번 부르면, 한 번에 베어준다."' },
+    rejectScene: { speaker: 'reyna', text: '레이나 — "…그런가. 후회하게 될 거다."' },
+    farewellScene: { speaker: 'reyna', text: '레이나 — "…해지인가. 뭐, 좋다. — 다음 번에 부르고 싶어진다면, 검값은 두 배다."' },
   },
   luna: {
     id: 'luna', name: '루나', title: '달빛 궁수', icon: '🌙',
@@ -436,6 +489,20 @@ const BONDS = {
     skillName: '바람의 메아리',
     quote: '루나 — "달빛이여 — 길을 비추어라."',
     desc: '마력 500% 단발 + 3턴간 스킬 시 일반공격 추가타',
+    intro: [
+      { speaker: 'luna',
+        text: '— 바람이 멈추고, 달빛 한 줄기가 길을 비춘다.' },
+      { speaker: 'luna',
+        text: '루나 — "…불꽃의 마법사. 너의 분노는 너무 시끄러워."' },
+      { speaker: 'luna',
+        text: '루나 — "하지만 — 그 분노에 「바람」이 더해진다면, 적은 흔적도 없이 사라질 거야."' },
+      { speaker: 'luna',
+        text: '루나 — "내 활을 빌려줄게. — 단, 한 명에게만."' },
+    ],
+    promptText: '루나의 「바람의 약속」을 받아들이시겠습니까?',
+    acceptScene: { speaker: 'luna', text: '루나 — "약속이야. — 네가 부르면, 달빛이 함께 갈게."' },
+    rejectScene: { speaker: 'luna', text: '루나 — "…알겠어. 바람은 강요하지 않으니까."' },
+    farewellScene: { speaker: 'luna', text: '루나 — "…그래. 바람은 잡아두는 게 아니지. — 잘 가."' },
   },
 };
 
@@ -467,44 +534,6 @@ const ALICE_INTRO = [
 ];
 
 // 아리나 — 첫 등장 컷씬 (런 당 1회)
-const ARINA_INTRO = [
-  { img: '../assets/story/prologue-3-cave.png',
-    text: '동굴 한구석 — 갑자기 짙은 향기가 코를 찌른다.\n달콤하면서도, 어딘가 아찔한 향.' },
-  { speaker: 'arina',
-    text: '— "어머나, 어머나. 이런 곳에 이렇게 예쁜 손님이 다 있다니."' },
-  { speaker: 'ignia',
-    text: '이그니아 — "…누구냐."' },
-  { speaker: 'arina',
-    text: '아리나 — "아리나라고 해. — 깜짝 놀랐어, 너처럼 곱고 단단한 얼굴은 정말 오랜만이거든."' },
-  { speaker: 'arina',
-    text: '아리나 — "그 흑발 사이로 비치는 눈매도, 잘록한 허리도, 새빨간 입술도 — 정말 위험할 정도로 아름답네."' },
-  { speaker: 'ignia',
-    text: '이그니아 — "용건만 말해라."' },
-  { speaker: 'arina',
-    text: '아리나 — "후훗 — 차갑긴. 그래, 용건이라면…\n네가 쫓고 있는 「어둠」 말이야."' },
-  { speaker: 'ignia',
-    text: '이그니아 — "…뭐?"' },
-  { speaker: 'arina',
-    text: '아리나 — "그자가… 정말로 적이라고 생각해?\n이 어둠의 진짜 시작이 누구인지, 너는 알고 있을까?"' },
-  { speaker: 'arina',
-    text: '아리나 — "혹시 — 네 안에서 타오르는 그 「불꽃」도\n원래는 누가 너에게 쥐여준 건지… 한 번쯤은 의심해봐도 좋을 거야."' },
-  { speaker: 'ignia',
-    text: '이그니아 — "…!"' },
-  { speaker: 'arina',
-    text: '아리나 — "오늘은 여기까지. 작은 선물 하나 두고 갈게.\n또 만나, 「불꽃」아."' },
-  { img: '../assets/scenes/arina.png',
-    text: '향기는 흩어지고, 그녀의 모습도 사라진다.\n남겨진 자리에 — 작게 빛나는 금화 한 줌.' },
-];
-
-// 아리나 — 재조우 시 무작위 한 줄
-const ARINA_LINES = [
-  '아리나 — "또 만났네, 「불꽃」. — 오늘도 어쩜 이렇게 곱지?"',
-  '아리나 — "그 눈동자 안의 흔들림 — 점점 짙어지고 있어. 슬슬 의심이 시작됐을까?"',
-  '아리나 — "조심해. 가장 가까운 곳에서 가장 깊은 어둠이 자라기도 하니까."',
-  '아리나 — "선물이야. — 받아주면 기쁠 텐데."',
-  '아리나 — "후훗 — 그렇게 노려봐도 무섭지 않아. 오히려 — 더 갖고 싶어질 뿐인걸."',
-];
-
 const BOSS_STORIES = {
   // 1층 — 어둠의 드리아드
   giant: {
@@ -669,7 +698,7 @@ function newRun() {
     history: [],
     shopsOfferedThisFloor: 0,
     tools: [],
-    arinaMet: false,
+    bondsMet: [],
     bond: game.meta.bond || null,
     bondUsedThisFloor: false,
   };
@@ -694,12 +723,12 @@ const NODE_TEMPLATES = {
   rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
   chest:    { type: 'chest',    kind: 'chest',    icon: '📦', name: '의문의 상자' },
   shop:     { type: 'shop',     kind: 'shop',     icon: '🏪', name: '앨리스의 가게' },
-  arina:    { type: 'event',    kind: 'arina',    icon: '🦇', name: '서큐버스 아리나' },
+  bond:     { type: 'event',    kind: 'bond',     icon: '🌟', name: '인연' },
 };
 
 function rollNodeTemplate() {
   const r = Math.random();
-  if (r < 0.05) return NODE_TEMPLATES.arina; // 무작위 이벤트 — 아리나
+  if (r < 0.08) return NODE_TEMPLATES.bond; // 무작위 이벤트 — 인연
   if (r < 0.72) {
     // 적 — 그중 20%가 엘리트
     return Math.random() < 0.20 ? NODE_TEMPLATES.elite : NODE_TEMPLATES.combat;
@@ -831,7 +860,7 @@ function renderFork() {
 
 function chooseFork(node) {
   if (window.AUDIO) {
-    if (node.type === 'event' && node.kind === 'arina') AUDIO.sfx('arina');
+    if (node.type === 'event' && node.kind === 'bond') AUDIO.sfx('arina');
     else if (node.type === 'rest') AUDIO.sfx('spring');
     else if (node.type === 'shop') AUDIO.sfx('shop');
     else if (node.type === 'treasure' || node.type === 'chest') AUDIO.sfx('coin');
@@ -848,7 +877,7 @@ function chooseFork(node) {
   else if (node.type === 'treasure') openTreasure(node);
   else if (node.type === 'chest') openChest(node);
   else if (node.type === 'shop') openShop(node);
-  else if (node.type === 'event' && node.kind === 'arina') openArinaEvent(node);
+  else if (node.type === 'event' && node.kind === 'bond') openBondEvent(node);
 }
 
 function openTreasure(node) {
@@ -2077,28 +2106,92 @@ function openChest(node) {
 // ============================================================
 // 아리나 이벤트
 // ============================================================
-function openArinaEvent(node) {
+// ===== 인연 이벤트 — 결속 제안 =====
+function openBondEvent(node) {
   const r = game.run;
-  // 보상 — 작은 선물 (50~100 골드 + 약간 회복)
-  const gold = 50 + Math.floor(Math.random() * 51) + r.floor * 10;
-  const heal = 12 + Math.floor(Math.random() * 9);
-  const grant = () => {
+  if (!r.bondsMet) r.bondsMet = [];
+  // 후보: 아직 만나지 않았고 + 현재 결속 중도 아닌 캐릭터
+  const candidates = Object.keys(BONDS).filter(id =>
+    !r.bondsMet.includes(id) && r.bond !== id
+  );
+  if (candidates.length === 0) {
+    // 만날 사람이 없다 — 작은 보상으로 대체
+    const gold = 30 + r.floor * 10;
     r.gold += gold;
-    r.hp = Math.min(r.maxHp, r.hp + heal);
-    // 50% 확률로 도구 1개 추가 선물
-    if (Math.random() < 0.5) addTool(r, randomToolId());
+    log(`길에서 작은 보따리를 발견했다. +${gold} 골드`, 'system');
+    nextStep();
+    return;
+  }
+  const chosenId = candidates[Math.floor(Math.random() * candidates.length)];
+  const bond = BONDS[chosenId];
+  r.bondsMet.push(chosenId);
+  // 인트로 컷씬 → 수락/거절 프롬프트
+  playStorySequence(bond.intro, () => promptBondAccept(bond), { finalLabel: '대답하기 ▶' });
+}
+
+function promptBondAccept(bond) {
+  const modal = $('bond-prompt');
+  $('bond-prompt-art').src = bond.art;
+  $('bond-prompt-title').textContent = `${bond.icon} ${bond.name} — ${bond.title}`;
+  $('bond-prompt-skill').textContent = `「${bond.skillName}」 — ${bond.desc}`;
+  $('bond-prompt-text').textContent = bond.promptText;
+  modal.classList.add('active');
+  const yes = $('bond-prompt-yes'), no = $('bond-prompt-no');
+  const close = () => modal.classList.remove('active');
+  const onYes = () => {
+    close();
+    cleanup();
+    acceptBond(bond);
   };
-  if (!r.arinaMet) {
-    r.arinaMet = true;
-    playStorySequence(ARINA_INTRO, () => { grant(); nextStep(); }, { finalLabel: '계속 ▶' });
-  } else {
-    const line = ARINA_LINES[Math.floor(Math.random() * ARINA_LINES.length)];
+  const onNo = () => {
+    close();
+    cleanup();
+    rejectBond(bond);
+  };
+  function cleanup() {
+    yes.removeEventListener('click', onYes);
+    no.removeEventListener('click', onNo);
+  }
+  yes.addEventListener('click', onYes);
+  no.addEventListener('click', onNo);
+}
+
+function acceptBond(bond) {
+  const r = game.run;
+  // 기존 결속이 있다면 — 해지된 영웅의 아쉬움
+  const old = r.bond && r.bond !== bond.id ? BONDS[r.bond] : null;
+  const finalize = () => {
+    r.bond = bond.id;
+    game.meta.bond = bond.id;
+    saveMeta();
+    if (window.AUDIO) AUDIO.sfx('legendary');
+    // 새 결속의 수락 대사
     playStorySequence(
-      [{ speaker: 'arina', text: line }],
-      () => { grant(); nextStep(); },
+      [bond.acceptScene],
+      () => nextStep(),
       { finalLabel: '계속 ▶' }
     );
+  };
+  if (old) {
+    // 옛 결속의 작별 대사
+    if (window.AUDIO) AUDIO.sfx('cancel');
+    playStorySequence(
+      [old.farewellScene],
+      finalize,
+      { finalLabel: '미안 ▶' }
+    );
+  } else {
+    finalize();
   }
+}
+
+function rejectBond(bond) {
+  if (window.AUDIO) AUDIO.sfx('cancel');
+  playStorySequence(
+    [bond.rejectScene],
+    () => nextStep(),
+    { finalLabel: '계속 ▶' }
+  );
 }
 
 function openShop(node) {
@@ -2219,54 +2312,6 @@ function openFountain() {
   showScreen('fountain');
 }
 
-function openBondPicker() {
-  renderBondPicker();
-  showScreen('bond');
-}
-
-function renderBondPicker() {
-  const wrap = $('bond-list');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  // 「계약 없음」 카드
-  const noneCard = document.createElement('div');
-  noneCard.className = 'bond-card none' + (!game.meta.bond ? ' active' : '');
-  noneCard.innerHTML = `
-    <div class="bc-art-placeholder">×</div>
-    <div class="bc-name">계약 없음</div>
-    <div class="bc-skill">— 인연각성 비활성 —</div>
-    <div class="bc-desc">동반자를 선택하지 않습니다.</div>`;
-  noneCard.addEventListener('click', () => {
-    game.meta.bond = null;
-    saveMeta();
-    if (window.AUDIO) AUDIO.sfx('cancel');
-    renderBondPicker();
-  });
-  wrap.appendChild(noneCard);
-  for (const id of Object.keys(BONDS)) {
-    const bond = BONDS[id];
-    const card = document.createElement('div');
-    card.className = 'bond-card' + (game.meta.bond === id ? ' active' : '');
-    card.innerHTML = `
-      <img class="bc-art" src="${bond.art}" alt="${bond.name}">
-      <div class="bc-overlay">
-        <div class="bc-icon">${bond.icon}</div>
-        <div class="bc-name">${bond.name}</div>
-        <div class="bc-title">${bond.title}</div>
-        <div class="bc-skill">— ${bond.skillName} —</div>
-        <div class="bc-desc">${bond.desc}</div>
-        <div class="bc-quote">${bond.quote.split('—').slice(1).join('—').trim() || bond.quote}</div>
-      </div>
-      ${game.meta.bond === id ? '<div class="bc-badge">✓ 계약 중</div>' : ''}`;
-    card.addEventListener('click', () => {
-      game.meta.bond = id;
-      saveMeta();
-      if (window.AUDIO) AUDIO.sfx('legendary');
-      renderBondPicker();
-    });
-    wrap.appendChild(card);
-  }
-}
 
 function renderFountain() {
   $('fountain-essence').textContent = game.meta.essence;
@@ -2390,8 +2435,6 @@ function boot() {
     startPrologue(() => { renderTitle(); showScreen('title'); });
   });
   $('title-fountain').addEventListener('click', openFountain);
-  $('title-bond').addEventListener('click', openBondPicker);
-  $('bond-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   $('title-reset').addEventListener('click', hardReset);
   // 프롤로그 컨트롤
   $('pr-next').addEventListener('click', nextStoryScene);
