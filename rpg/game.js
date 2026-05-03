@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v33-merchant-bless';
+const VERSION = 'v34-mystic-boons';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -109,6 +109,17 @@ const SKILLS = {
     quote: '하늘이 무너지리라 — 메테오!',
     cutin: '../assets/skills/ignia-meteor.png',
   },
+  ignite: {
+    id: 'ignite', name: '점화', icon: '🔆',
+    cooldown: 4,
+    special: 'detonateBurn',
+    hits: 0, mul: 0,
+    burnDmg: 0, burnTurns: 0,
+    critBonus: 0,
+    desc: '걸린 화상을 모두 소진해 큰 폭발 (스택당 마법력 ×1.5)',
+    quote: '터져라 — 화염!',
+    cutin: '../assets/skills/ignia-fireball.png',
+  },
   inferno: {
     id: 'inferno', name: '지옥불', icon: '👹',
     cooldown: 5,
@@ -170,20 +181,20 @@ const BOONS = [
   { id: 'b-phoenix',     cat: 'defend',  name: '불사조',     desc: 'HP 0이 되면 한 번 50%로 부활',         rarity: 'legendary', mod: { phoenix: true } },
   { id: 'b-vamp',        cat: 'attack',  name: '공격 흡혈',  desc: '일반 공격 데미지의 30% HP로 회복',     rarity: 'legendary', mod: { attackLifesteal: 0.3 } },
   { id: 'b-mag-vamp',    cat: 'magic',   name: '마법 흡혈',  desc: '스킬 데미지의 30% HP로 회복',          rarity: 'legendary', mod: { magLifesteal: 0.3 } },
-  { id: 'b-double',      cat: 'attack',  name: '쌍수',       desc: '공격이 2회 발동',                      rarity: 'legendary', mod: { atkMulti: 2 } },
-  { id: 'b-double-skill', cat: 'magic',  name: '이중 시전',  desc: '스킬이 2회 발동',                      rarity: 'legendary', mod: { skillMulti: 2 } },
+  { id: 'b-magic-knight', cat: 'attack', name: '마법기사',   desc: '마법 직후 공격 +50% / 공격 직후 마법 +50%', rarity: 'legendary', mod: { magicKnight: true } },
+  { id: 'b-flame-brand',  cat: 'attack', name: '화염낙인',   desc: '공격 데미지에 마법력이 합산되고 화상도 적용된다', rarity: 'legendary', mod: { flameBrand: true } },
+  { id: 'b-ignite-magic', cat: 'magic',  name: '점화 마법',   desc: '새 스킬 「점화」 획득 — 적의 모든 화상을 소진해 큰 폭발', rarity: 'legendary', mod: { grantSkill: 'ignite' } },
   { id: 'b-meteor',      cat: 'magic',   name: '메테오',     desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
   { id: 'b-firedom',     cat: 'magic',   name: '불의 지배',  desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
   { id: 'b-flame-lord',  cat: 'magic',   name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',     rarity: 'legendary', mod: { eternalBurn: true } },
   { id: 'b-soul',        cat: 'utility', name: '영혼 흡수',  desc: '적 처치 시 최대 HP +5, HP 완전 회복',  rarity: 'legendary', mod: { soulSteal: true } },
 
-  // unstable — 메리트 + 디메리트 동시 (메리트 강화 후)
-  { id: 'b-time-warp',  cat: 'magic',  name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 + 마법력 +12 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2, mag: 12 } },
-  { id: 'b-soul-trade', cat: 'utility', name: '영혼 거래',  desc: '◆ 같은 카테고리 두 단계 위 가호 즉시 획득 ◇ 기존 가호 1개 무작위 삭제', rarity: 'unstable',
+  // unstable — 메리트 + 디메리트 (모두 메커니즘 기반)
+  { id: 'b-time-warp',   cat: 'magic',   name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2 } },
+  { id: 'b-soul-trade',  cat: 'utility', name: '영혼 거래',  desc: '◆ 같은 카테고리 두 단계 위 가호 즉시 획득 ◇ 기존 가호 1개 무작위 삭제', rarity: 'unstable',
     apply: g => { applyUnstableSoulTrade(g); } },
-  { id: 'b-starve',     cat: 'attack', name: '굶주린 칼날', desc: '◆ 공격력 +28 ◇ 최대 HP -30',         rarity: 'unstable', mod: { atk: 28 }, apply: g => { g.maxHp = Math.max(20, g.maxHp - 30); g.hp = Math.min(g.hp, g.maxHp); } },
-  { id: 'b-mad-flame',  cat: 'magic',  name: '광기의 화염', desc: '◆ 마법력 +40 ◇ 매 턴 시작 시 자신 HP -3', rarity: 'unstable', mod: { mag: 40, recoil: 3 } },
-  { id: 'b-equiv',      cat: 'utility', name: '등가 교환',  desc: '◆ 골드 +350 ◇ 최대 HP -25',          rarity: 'unstable', apply: g => { g.gold += 350; g.maxHp = Math.max(20, g.maxHp - 25); g.hp = Math.min(g.hp, g.maxHp); } },
+  { id: 'b-double',       cat: 'attack', name: '쌍수',       desc: '◆ 공격이 2회 발동 ◇ 모든 스킬 쿨다운 ×2', rarity: 'unstable', mod: { atkMulti: 2, skillCdMul: 2 } },
+  { id: 'b-double-skill', cat: 'magic',  name: '이중 시전',  desc: '◆ 스킬이 2회 발동 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillMulti: 2, attackCdMax: 2 } },
 ];
 
 // ===== 상태 =====
@@ -729,8 +740,7 @@ function startBattle(kind, node) {
       atk: Math.round(def.atk * scale),
       def: def,
       kind,
-      burns: 0,
-      burnDmg: 0,
+      burnStacks: [],
     },
     turn: 1,
     attackCd: 0,
@@ -738,6 +748,7 @@ function startBattle(kind, node) {
     firstHitReduced: false,
     heroDefend: 0,
     heroBurn: 0,
+    lastAction: null,
     log: [],
     over: false,
   };
@@ -758,8 +769,7 @@ function startBattle(kind, node) {
   // 점화 가호 — 전투 시작 시 자동 화상
   const sb = hasBoonMod('startBurn');
   if (sb && sb.mod && sb.mod.startBurn) {
-    game.run.battle.enemy.burns = sb.mod.startBurn.turns;
-    game.run.battle.enemy.burnDmg = sb.mod.startBurn.dmg;
+    applyBurn(game.run.battle.enemy, sb.mod.startBurn.dmg, sb.mod.startBurn.turns);
   }
   refreshBattleUI();
   $('battle-log').innerHTML = '';
@@ -814,7 +824,11 @@ function refreshBattleUI() {
   if (b.heroDefend > 0) heroStatus.innerHTML = '<span class="status-chip defend">방어</span>';
   const enemyStatus = $('enemy-status');
   enemyStatus.innerHTML = '';
-  if (b.enemy.burns > 0) enemyStatus.innerHTML += `<span class="status-chip burn">화상 ${b.enemy.burns}턴</span>`;
+  const stacks = b.enemy.burnStacks || [];
+  if (stacks.length > 0) {
+    const dot = stacks.reduce((s, st) => s + st.dmg, 0);
+    enemyStatus.innerHTML += `<span class="status-chip burn">🔥 화상 ${stacks.length}중첩 (${dot}/턴)</span>`;
+  }
   if (b.enemy.dominion) enemyStatus.innerHTML += `<span class="status-chip dominion">🔥 ${b.enemy.dominion.delay}턴 후 폭발</span>`;
 }
 
@@ -876,6 +890,9 @@ function getSkillCooldown(skillId) {
   const reduce = getBoonModSum('skillCdReduce');
   let cd = base + startCd - reduce;
   if (hasBoonMod('skillCdHalf')) cd = Math.ceil(cd / 2);
+  // 쌍수 — 스킬 쿨다운 ×N 페널티
+  const cdMul = hasBoonMod('skillCdMul') ? hasBoonMod('skillCdMul').mod.skillCdMul : 1;
+  if (cdMul > 1) cd = Math.ceil(cd * cdMul);
   return Math.max(1, cd);
 }
 
@@ -944,6 +961,32 @@ function closeSkillPicker() {
   $('skill-picker').classList.remove('active');
 }
 
+// ===== 화상 (스택형) =====
+function applyBurn(target, dmg, turns) {
+  if (!dmg || !turns) return;
+  if (!target.burnStacks) target.burnStacks = [];
+  target.burnStacks.push({ dmg: Math.round(dmg), turns });
+}
+
+function tickBurns(target) {
+  const stacks = target.burnStacks || [];
+  if (stacks.length === 0) return 0;
+  let total = 0;
+  for (const st of stacks) total += st.dmg;
+  if (!hasBoonMod('eternalBurn')) {
+    for (const st of stacks) st.turns--;
+    target.burnStacks = stacks.filter(s => s.turns > 0);
+  }
+  return total;
+}
+
+function detonateBurns(target) {
+  const stacks = target.burnStacks || [];
+  const count = stacks.length;
+  target.burnStacks = [];
+  return count;
+}
+
 function effectiveStat(stat) {
   const r = game.run;
   // mod 계산
@@ -975,9 +1018,14 @@ function doAttack() {
   const b = game.run.battle;
   const r = game.run;
   const atkMulti = hasBoonMod('atkMulti') ? hasBoonMod('atkMulti').mod.atkMulti : 1;
+  const flameBrand = !!hasBoonMod('flameBrand');
+  const knightCombo = !!hasBoonMod('magicKnight') && b.lastAction === 'magic';
   for (let i = 0; i < atkMulti; i++) {
     if (b.enemy.hp <= 0) break;
-    let dmg = effectiveStat('atk');
+    // 화염낙인 — 공격에 마법력 합산
+    let dmg = effectiveStat('atk') + (flameBrand ? effectiveStat('mag') : 0);
+    // 마법기사 콤보 — 직전이 마법이면 +50%
+    if (knightCombo) dmg = Math.round(dmg * 1.5);
     // 광폭 — HP 30% 이하 시 공격력 부스트
     const lowAtk = getBoonModSum('lowHpAtkBonus');
     if (lowAtk > 0 && r.hp / r.maxHp < 0.3) dmg = Math.round(dmg * (1 + lowAtk));
@@ -1005,10 +1053,19 @@ function doAttack() {
       const heal = Math.round(dmg * ls);
       healHero(heal);
     }
-    log(`이그니아의 공격 → ${dmg}${crit ? ' (치명타!)' : ''}`, 'hero');
+    // 화염낙인 — 화상 스택 추가
+    if (flameBrand && b.enemy.hp > 0) {
+      applyBurn(b.enemy, Math.max(3, Math.round(effectiveStat('mag') * 0.25)), 2);
+    }
+    const tag = crit ? ' (치명타!)' : '';
+    const brandTag = flameBrand ? ' 🔥' : '';
+    const comboTag = knightCombo && i === 0 ? ' [마법기사]' : '';
+    log(`이그니아의 공격 → ${dmg}${tag}${brandTag}${comboTag}`, 'hero');
     if (b.enemy.hp <= 0) break;
   }
-  // 시간 왜곡 — 공격 쿨다운 발동
+  // 마법기사 — 공격 후 lastAction 갱신
+  if (hasBoonMod('magicKnight')) b.lastAction = 'attack';
+  // 시간 왜곡 / 이중 시전 — 공격 쿨다운 발동
   const aCd = hasBoonMod('attackCdMax') ? hasBoonMod('attackCdMax').mod.attackCdMax : 0;
   if (aCd > 0) b.attackCd = aCd;
   endTurnHero();
@@ -1023,13 +1080,33 @@ function castSkill(skillId) {
   // cut-in (스킬별 일러스트)
   playCutin(s.name, s.quote, s.cutin);
   const skillMulti = hasBoonMod('skillMulti') ? hasBoonMod('skillMulti').mod.skillMulti : 1;
+  const knightCombo = !!hasBoonMod('magicKnight') && b.lastAction === 'attack';
+  const knightMul = knightCombo ? 1.5 : 1;
+  // 점화 — 적의 모든 화상 스택을 소진해 큰 폭발
+  if (s.special === 'detonateBurn') {
+    setTimeout(() => {
+      const count = detonateBurns(b.enemy);
+      if (count <= 0) {
+        log(`${s.name} — 화상이 없다!`, 'system');
+      } else {
+        let dmg = Math.round(effectiveStat('mag') * 1.5 * count * knightMul);
+        dealDamageToEnemy(dmg, 'crit');
+        log(`${s.name}! → ${count}중첩 폭발 → ${dmg}${knightCombo ? ' [마법기사]' : ''}`, 'hero');
+      }
+      r.skillCds[skillId] = getSkillCooldown(skillId);
+      if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
+      endTurnHero();
+    }, 800);
+    return;
+  }
   // 지연 폭발 스킬 (불의 지배 등)
   if (s.delay) {
     setTimeout(() => {
-      const dmg = Math.round(effectiveStat('mag') * s.delayMul * skillMulti);
+      const dmg = Math.round(effectiveStat('mag') * s.delayMul * skillMulti * knightMul);
       b.enemy.dominion = { delay: s.delay, dmg, name: s.name };
-      log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})`, 'hero');
+      log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})${knightCombo ? ' [마법기사]' : ''}`, 'hero');
       r.skillCds[skillId] = getSkillCooldown(skillId);
+      if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
       endTurnHero();
     }, 800);
     return;
@@ -1047,7 +1124,7 @@ function castSkill(skillId) {
       if (b.enemy.hp <= 0) break;
       for (let i = 0; i < s.hits; i++) {
         if (b.enemy.hp <= 0) break;
-        let dmg = Math.round(effectiveStat('mag') * s.mul);
+        let dmg = Math.round(effectiveStat('mag') * s.mul * knightMul);
         // 과열 — HP 50% 이하 시 마법 부스트
         const lowMag = getBoonModSum('lowHpMagBonus');
         if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
@@ -1061,15 +1138,15 @@ function castSkill(skillId) {
         if (ls > 0) healHero(Math.round(dmg * ls));
       }
     }
-    // 화상 적용 (있으면)
+    // 화상 적용 (있으면) — 시전 횟수만큼 스택 추가
     if (burnTurns > 0 && burnDmg > 0 && b.enemy.hp > 0) {
-      b.enemy.burns = Math.max(b.enemy.burns, burnTurns);
-      b.enemy.burnDmg = Math.max(b.enemy.burnDmg, burnDmg);
-      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타) + 화상`, 'hero');
+      for (let cast = 0; cast < skillMulti; cast++) applyBurn(b.enemy, burnDmg, burnTurns);
+      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타) + 화상 ${skillMulti}중첩${knightCombo ? ' [마법기사]' : ''}`, 'hero');
     } else {
-      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타)`, 'hero');
+      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타)${knightCombo ? ' [마법기사]' : ''}`, 'hero');
     }
     r.skillCds[skillId] = getSkillCooldown(skillId);
+    if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
     endTurnHero();
   }, 800);
 }
@@ -1162,15 +1239,15 @@ function dealDamageToHero(dmg) {
 
 function endTurnHero(skipDefense) {
   const b = game.run.battle;
-  // 화상 데미지 (적)
-  if (b.enemy.burns > 0 && b.enemy.hp > 0) {
-    const burn = b.enemy.burnDmg;
-    b.enemy.hp = Math.max(0, b.enemy.hp - burn);
-    showDmgNum('enemy', burn, 'burn');
-    log(`화상 → ${burn}`, 'system');
-    // 화염의 군주 — 화상 영구 지속
-    if (!hasBoonMod('eternalBurn')) b.enemy.burns--;
-    refreshBattleUI();
+  // 화상 도트 (스택별 합산)
+  if (b.enemy.hp > 0) {
+    const burnTotal = tickBurns(b.enemy);
+    if (burnTotal > 0) {
+      b.enemy.hp = Math.max(0, b.enemy.hp - burnTotal);
+      showDmgNum('enemy', burnTotal, 'burn');
+      log(`화상 도트 → ${burnTotal}`, 'system');
+      refreshBattleUI();
+    }
   }
   if (b.enemy.hp <= 0) {
     setTimeout(() => onEnemyDefeat(), 500);
