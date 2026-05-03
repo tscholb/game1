@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v49-stage4-reaper';
+const CACHE = 'ignia-v50-enemy-pools';
 const ASSETS = [
   './',
   './index.html',

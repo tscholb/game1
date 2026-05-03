@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v49-stage4-reaper';
+const VERSION = 'v50-enemy-pools';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -51,13 +51,33 @@ const SKILL_QUOTES = [
 
 // ===== 적 데이터 =====
 const ENEMIES = {
-  goblin:   { name: '고블린',   hp: 30,  atk: 7,  emoji: '👺', tier: 1 },
-  orc:      { name: '오크',     hp: 60,  atk: 11, emoji: '👹', tier: 2 },
-  rogue:    { name: '도적',     hp: 45,  atk: 14, emoji: '🥷', tier: 2, dodge: 0.2 },
-  shield:   { name: '방패병',   hp: 70,  atk: 9,  emoji: '🛡️', tier: 2, defReduce: 0.4 },
-  drone:    { name: '드론',     hp: 50,  atk: 12, emoji: '🦟', tier: 3 },
-  knight:   { name: '흑기사',   hp: 110, atk: 16, emoji: '⚔️', tier: 3 },
-  mimic:    { name: '미믹',     hp: 80,  atk: 14, emoji: '🪤', tier: 2 },
+  // 1층 — 약한 잡몹
+  goblin:   { name: '고블린',     hp: 30,  atk: 7,  emoji: '👺', tier: 1 },
+  orc:      { name: '오크',       hp: 60,  atk: 11, emoji: '👹', tier: 2 },
+  rogue:    { name: '도적',       hp: 45,  atk: 14, emoji: '🥷', tier: 2, dodge: 0.2 },
+  shield:   { name: '방패병',     hp: 70,  atk: 9,  emoji: '🛡️', tier: 2, defReduce: 0.4 },
+  drone:    { name: '드론',       hp: 50,  atk: 12, emoji: '🦟', tier: 3 },
+  // 2층 추가 — 어둠의 잔재
+  wraith:    { name: '어둠 망령',  hp: 60,  atk: 14, emoji: '👻', tier: 3, dodge: 0.15 },
+  assassin:  { name: '암살자',     hp: 55,  atk: 19, emoji: '🗡️', tier: 3, dodge: 0.25 },
+  cultist:   { name: '광신도',     hp: 75,  atk: 13, emoji: '🩸', tier: 3 },
+  // 3층 추가 — 매혹/사신 부하
+  imp:       { name: '서큐버스 임프', hp: 70, atk: 18, emoji: '💜', tier: 4, dodge: 0.20 },
+  reaperMinion: { name: '사신 수하', hp: 90, atk: 17, emoji: '💀', tier: 4 },
+  demon:     { name: '하급 악마',  hp: 110, atk: 20, emoji: '👿', tier: 4 },
+  charmedSoul: { name: '매혹된 영혼', hp: 80, atk: 22, emoji: '🌹', tier: 4, dodge: 0.10 },
+  // 4층 추가 — 심연
+  drake:     { name: '드레이크',   hp: 130, atk: 24, emoji: '🐲', tier: 5 },
+  abyssWalker: { name: '심연 보행자', hp: 115, atk: 26, emoji: '⚫', tier: 5, dodge: 0.15 },
+  shadowBeast: { name: '그림자 야수', hp: 145, atk: 22, emoji: '🌑', tier: 5 },
+  voidPriest: { name: '공허 사제', hp: 120, atk: 25, emoji: '🕯️', tier: 5 },
+  // 엘리트 — 층별 추가
+  knight:    { name: '흑기사',     hp: 110, atk: 16, emoji: '⚔️', tier: 3 },
+  darkKnight: { name: '심연의 흑기사', hp: 150, atk: 22, emoji: '🛡️', tier: 4, defReduce: 0.3 },
+  lichApprentice: { name: '마녀의 제자', hp: 140, atk: 24, emoji: '🔮', tier: 4 },
+  wyvern:    { name: '와이번',     hp: 200, atk: 28, emoji: '🐉', tier: 5 },
+  // 미믹
+  mimic:     { name: '미믹',      hp: 80,  atk: 14, emoji: '🪤', tier: 2 },
   // 보스
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
@@ -65,6 +85,22 @@ const ENEMIES = {
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
   // 4층 보스 페이즈 2 — 진정한 드래곤 모습
   'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-true.png' },
+};
+
+// 층별 등장 풀 — 새 몬스터가 누적되며 점차 강력해짐
+const ENEMY_POOLS = {
+  normal: {
+    1: ['goblin', 'orc', 'rogue', 'shield', 'drone'],
+    2: ['orc', 'rogue', 'shield', 'drone', 'wraith', 'assassin', 'cultist'],
+    3: ['rogue', 'drone', 'wraith', 'assassin', 'cultist', 'imp', 'reaperMinion', 'demon', 'charmedSoul'],
+    4: ['imp', 'reaperMinion', 'demon', 'charmedSoul', 'drake', 'abyssWalker', 'shadowBeast', 'voidPriest'],
+  },
+  elite: {
+    1: ['knight', 'shield', 'drone'],
+    2: ['knight', 'darkKnight', 'shield', 'drone'],
+    3: ['knight', 'darkKnight', 'lichApprentice'],
+    4: ['darkKnight', 'lichApprentice', 'wyvern'],
+  },
 };
 
 // ===== 스킬 카탈로그 =====
@@ -1037,15 +1073,15 @@ function openTreasure(node) {
 function startBattle(kind, node) {
   const f = game.run.floor;
   let ePool;
-  if (kind === 'normal') ePool = ['goblin', 'orc', 'rogue', 'shield', 'drone'];
-  else if (kind === 'elite') ePool = ['knight', 'shield', 'drone'];
+  if (kind === 'normal') ePool = (ENEMY_POOLS.normal[f] || ENEMY_POOLS.normal[4]);
+  else if (kind === 'elite') ePool = (ENEMY_POOLS.elite[f] || ENEMY_POOLS.elite[4]);
   else if (kind === 'boss') ePool = [['giant', 'lich', 'reaper', 'dragon'][f - 1] || 'dragon'];
   else if (kind === 'mimic') ePool = ['mimic'];
   const eid = (node && node.forceEnemy) ? node.forceEnemy : ePool[Math.floor(Math.random() * ePool.length)];
   const def = ENEMIES[eid];
   game.run.currentNode = node || { kind, rewardCat: null, rewardRarity: null };
-  // 층/엘리트 스케일링
-  const scale = 1 + (f - 1) * 0.4 + (kind === 'elite' ? 0.4 : 0);
+  // 층/엘리트 스케일링 — 층마다 +50%, 엘리트는 추가 +50%
+  const scale = 1 + (f - 1) * 0.50 + (kind === 'elite' ? 0.50 : 0);
   game.run.battle = {
     enemy: {
       id: eid,
