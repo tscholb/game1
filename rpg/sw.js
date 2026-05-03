@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v44-fix-ult-img';
+const CACHE = 'ignia-v45-bond-warn';
 const ASSETS = [
   './',
   './index.html',

@@ -1078,7 +1078,30 @@ button:active { transform: scale(0.96); }
 .bp-card .bp-info { padding: 16px 18px 18px; color: #f5e6d8; }
 .bp-card .bp-title { font-size: 18px; font-weight: 900; color: #fff5b8; text-shadow: 0 0 10px rgba(255,232,154,0.7); margin-bottom: 4px; }
 .bp-card .bp-skill { font-size: 13px; color: #ffd680; margin-bottom: 12px; font-weight: 700; }
-.bp-card .bp-text  { font-size: 14px; color: #e8d8c8; line-height: 1.5; margin-bottom: 16px; }
+.bp-card .bp-text  { font-size: 14px; color: #e8d8c8; line-height: 1.5; margin-bottom: 12px; }
+.bp-card .bp-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(180, 30, 40, 0.18);
+  border: 1.5px solid #e04848;
+  color: #ff8a8a;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 8px rgba(255, 80, 80, 0.55);
+  box-shadow: 0 0 16px rgba(220, 50, 60, 0.35) inset;
+  animation: bpWarnPulse 1.6s ease-in-out infinite;
+}
+.bp-card .bp-warn.hidden { display: none; }
+.bp-card .bp-warn-ico { font-size: 16px; filter: drop-shadow(0 0 6px rgba(255,90,90,0.85)); }
+@keyframes bpWarnPulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(220, 50, 60, 0.35) inset, 0 0 12px rgba(220, 50, 60, 0.2); }
+  50%      { box-shadow: 0 0 22px rgba(255, 80, 80, 0.55) inset, 0 0 22px rgba(255, 80, 80, 0.5); }
+}
 .bp-card .bp-actions {
   display: flex;
   gap: 10px;

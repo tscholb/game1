@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v44-fix-ult-img';
+const VERSION = 'v45-bond-warn';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -2135,6 +2135,16 @@ function promptBondAccept(bond) {
   $('bond-prompt-title').textContent = `${bond.icon} ${bond.name} — ${bond.title}`;
   $('bond-prompt-skill').textContent = `「${bond.skillName}」 — ${bond.desc}`;
   $('bond-prompt-text').textContent = bond.promptText;
+  // 기존 결속이 있으면 — 빨간 경고
+  const warn = $('bond-prompt-warn');
+  const warnText = $('bond-prompt-warn-text');
+  const cur = game.run.bond && game.run.bond !== bond.id ? BONDS[game.run.bond] : null;
+  if (cur && warn && warnText) {
+    warn.classList.remove('hidden');
+    warnText.textContent = `현재 ${cur.icon} ${cur.name} 와 결속 중 — 수락 시 기존 결속은 해지됩니다.`;
+  } else if (warn) {
+    warn.classList.add('hidden');
+  }
   modal.classList.add('active');
   const yes = $('bond-prompt-yes'), no = $('bond-prompt-no');
   const close = () => modal.classList.remove('active');
