@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v41-audio-bg';
+const VERSION = 'v42-bond-ult';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -27,16 +27,16 @@ const HEROES = [
     flavor: '달빛에 화살을 실어 보내는 침묵의 사냥꾼.',
     locked: true,
     baseHp: 90, baseAtk: 22, baseMag: 14,
-    portrait: '../assets/heroes/archer.png',
-    sprite: '../assets/heroes/archer.png',
+    portrait: '../assets/heroes/merchant.png',
+    sprite: '../assets/heroes/merchant.png',
   },
   {
     id: 'reyna', name: '레이나', title: '대검 용병',
     flavor: '대검 한 자루로 전장을 가르는 용병.',
     locked: true,
     baseHp: 130, baseAtk: 26, baseMag: 8,
-    portrait: '../assets/heroes/merchant.png',
-    sprite: '../assets/heroes/merchant.png',
+    portrait: '../assets/heroes/reyna.png',
+    sprite: '../assets/heroes/reyna.png',
   },
 ];
 
@@ -277,18 +277,19 @@ function metaBonus() {
 // 시작 / 종료
 // ============================================================
 function showScreen(name) {
-  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain']) {
+  for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain', 'bond']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
   }
   // BGM 트랙 매핑 (battle 은 startBattle 에서 별도 설정)
   if (window.AUDIO) {
     const map = {
-      title: 'title', menu: 'title', prologue: 'title',
+      title: 'title', menu: 'title',
       fork: 'explore', 'rest-screen': 'explore', 'chest-screen': 'explore',
       'shop-screen': 'shop', 'boon-screen': 'shop',
-      result: 'result', fountain: 'title',
+      result: 'result', fountain: 'title', bond: 'title',
     };
+    // prologue 는 호출 컨텍스트에 따라 다름 — 음악 유지
     if (Object.prototype.hasOwnProperty.call(map, name)) AUDIO.music(map[name]);
   }
 }
@@ -351,6 +352,8 @@ function renderStoryScene() {
   const text = $('pr-text');
   // 이미지: speaker 가 있으면 화자 일러스트가 우선
   const imgSrc = (scene.speaker && SPEAKERS[scene.speaker]) || scene.img;
+  // 화자 일러는 가운데 정렬로 크게
+  img.classList.toggle('character', !!scene.speaker);
   if (imgSrc) {
     if (img.getAttribute('src') !== imgSrc) {
       img.classList.remove('shown');
@@ -399,6 +402,41 @@ const SPEAKERS = {
   dragon: '../assets/bosses/dragon-human.png',
   alice:  '../assets/scenes/merchant.png',
   arina:  '../assets/scenes/arina.png',
+  reyna:  '../assets/heroes/reyna.png',
+  luna:   '../assets/heroes/merchant.png',
+};
+
+// ===== 인연각성 (필살기) =====
+// 동시에 한 명만 계약, 한 층 당 1회 사용
+const BONDS = {
+  alice: {
+    id: 'alice', name: '앨리스', title: '여행하는 상인', icon: '💰',
+    art: '../assets/scenes/merchant.png',
+    skillName: '초특급 회복물약',
+    quote: '앨리스 — "특별 손님이니까 — 이거, 받아."',
+    desc: 'HP 100% 회복 + 회복량의 50% 보호막',
+  },
+  arina: {
+    id: 'arina', name: '아리나', title: '서큐버스', icon: '🦇',
+    art: '../assets/scenes/arina.png',
+    skillName: '거부할 수 없는 매혹',
+    quote: '아리나 — "후훗 — 멈춰. 너는 지금부터 내 거야."',
+    desc: '적이 3턴 동안 행동 불가',
+  },
+  reyna: {
+    id: 'reyna', name: '레이나', title: '대검 용병', icon: '⚔',
+    art: '../assets/heroes/reyna.png',
+    skillName: '맹렬한 상처',
+    quote: '레이나 — "한 번에 — 끝낸다."',
+    desc: '공격력 500% 단발 + 적 공격력 3턴 -50%',
+  },
+  luna: {
+    id: 'luna', name: '루나', title: '달빛 궁수', icon: '🌙',
+    art: '../assets/heroes/merchant.png',
+    skillName: '바람의 메아리',
+    quote: '루나 — "달빛이여 — 길을 비추어라."',
+    desc: '마력 500% 단발 + 3턴간 스킬 시 일반공격 추가타',
+  },
 };
 
 // 앨리스 — 가게 방문 시 무작위로 한 줄
@@ -632,6 +670,8 @@ function newRun() {
     shopsOfferedThisFloor: 0,
     tools: [],
     arinaMet: false,
+    bond: game.meta.bond || null,
+    bondUsedThisFloor: false,
   };
   // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
   enterFirstRoom();
@@ -739,6 +779,7 @@ function nextStep() {
     if (r.floor > 3) { endRun(true); return; }
     r.roomNum = 1;
     r.shopsOfferedThisFloor = 0;
+    r.bondUsedThisFloor = false;
     // 연금술사 — 매 층 시작 시 무작위 도구 1개
     const alch = hasBoonMod('toolEachFloor');
     if (alch) {
@@ -923,6 +964,27 @@ function refreshBattleUI() {
       atkBtn.querySelector('.sub').textContent = '기본 공격';
     }
   }
+  // 인연각성 — 결속 시에만 노출
+  const ultRow = $('ult-row');
+  if (ultRow) {
+    if (r.bond && BONDS[r.bond]) {
+      ultRow.classList.remove('hidden');
+      const bond = BONDS[r.bond];
+      const ico = $('ult-ico'); const nameEl = $('ult-name'); const sub = $('ult-sub');
+      if (ico) ico.textContent = bond.icon;
+      if (nameEl) nameEl.textContent = `인연각성 — ${bond.skillName}`;
+      const ultBtn = $('ult-btn');
+      if (r.bondUsedThisFloor) {
+        if (ultBtn) ultBtn.disabled = true;
+        if (sub) sub.textContent = '이 층에서 사용함 (다음 층에서 회복)';
+      } else {
+        if (ultBtn) ultBtn.disabled = false;
+        if (sub) sub.textContent = `${bond.name} — ${bond.desc}`;
+      }
+    } else {
+      ultRow.classList.add('hidden');
+    }
+  }
   // 도구 버튼
   const toolBtn = document.querySelector('[data-action="tool"]');
   if (toolBtn) {
@@ -1014,6 +1076,57 @@ function heroAction(action) {
   else if (action === 'defend') doDefend();
   else if (action === 'tool') openToolPicker();
   else if (action === 'flee') doFlee();
+  else if (action === 'ult') useBond();
+}
+
+// ===== 인연각성 =====
+function useBond() {
+  const r = game.run;
+  const b = r.battle;
+  if (!r.bond || !BONDS[r.bond]) { log('계약된 동료가 없다.', 'system'); return; }
+  if (r.bondUsedThisFloor) { log('이 층에서는 이미 인연각성을 사용했다.', 'system'); return; }
+  const bond = BONDS[r.bond];
+  r.bondUsedThisFloor = true;
+  refreshBattleUI();
+  // 컷씬: 일러 + 대사 → 효과
+  playStorySequence(
+    [{ img: bond.art, text: `🌟 인연각성 — ${bond.skillName}\n\n${bond.quote}` }],
+    () => { showScreen('battle'); applyBondEffect(bond); },
+    { finalLabel: '발동 ▶' }
+  );
+}
+
+function applyBondEffect(bond) {
+  const r = game.run;
+  const b = r.battle;
+  if (window.AUDIO) AUDIO.sfx('legendary');
+  if (bond.id === 'alice') {
+    const heal = r.maxHp - r.hp;
+    r.hp = r.maxHp;
+    const shield = Math.round(heal * 0.5) + Math.round(r.maxHp * 0.10);
+    b.heroShield = (b.heroShield || 0) + shield;
+    showDmgNum('hero', heal, 'heal');
+    log(`✨ 초특급 회복물약 — HP 100% + 보호막 ${shield}`, 'hero');
+  } else if (bond.id === 'arina') {
+    b.enemyStunTurns = (b.enemyStunTurns || 0) + 3;
+    log(`💜 거부할 수 없는 매혹 — ${b.enemy.name} 3턴 행동 불가`, 'hero');
+  } else if (bond.id === 'reyna') {
+    const dmg = Math.round(effectiveStat('atk') * 5);
+    dealDamageToEnemy(dmg, 'crit');
+    b.enemyAtkDebuff = { mul: 0.5, turns: 3 };
+    log(`⚔ 맹렬한 상처 → ${dmg} + 적 공격력 -50% (3턴)`, 'hero');
+  } else if (bond.id === 'luna') {
+    const dmg = Math.round(effectiveStat('mag') * 5);
+    dealDamageToEnemy(dmg, 'crit');
+    b.skillExtraAttackTurns = 3;
+    log(`🌙 바람의 메아리 → ${dmg} + 3턴간 스킬 시 일반공격 추가타`, 'hero');
+  }
+  refreshBattleUI();
+  if (b.enemy.hp <= 0) {
+    setTimeout(() => onEnemyDefeat(), 500);
+  } else {
+    endTurnHero();
+  }
 }
 
 // ===== 도구 헬퍼 =====
@@ -1324,7 +1437,7 @@ function castSkill(skillId) {
       }
       r.skillCds[skillId] = getSkillCooldown(skillId);
       if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
-      endTurnHero();
+      finishHeroSkill();
     }, 800);
     return;
   }
@@ -1336,7 +1449,7 @@ function castSkill(skillId) {
       log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})${knightCombo ? ' [마법기사]' : ''}`, 'hero');
       r.skillCds[skillId] = getSkillCooldown(skillId);
       if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
-      endTurnHero();
+      finishHeroSkill();
     }, 800);
     return;
   }
@@ -1377,8 +1490,20 @@ function castSkill(skillId) {
     }
     r.skillCds[skillId] = getSkillCooldown(skillId);
     if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
-    endTurnHero();
+    finishHeroSkill();
   }, 800);
+}
+
+function finishHeroSkill() {
+  const b = game.run.battle;
+  // 바람의 메아리 — 스킬 시 일반 공격 추가타
+  if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0 && b.enemy.hp > 0) {
+    const extra = Math.round(effectiveStat('atk') * 0.6);
+    if (window.AUDIO) AUDIO.sfx('attack');
+    dealDamageToEnemy(extra, '');
+    log(`바람의 메아리 — 추가 일반공격 → ${extra}`, 'hero');
+  }
+  endTurnHero();
 }
 
 function doDefend() {
@@ -1449,6 +1574,13 @@ function dealDamageToHero(dmg) {
   }
   // 방어
   if (b.heroDefend > 0) dmg = Math.round(dmg * (1 - b.heroDefend));
+  // 보호막 — 먼저 흡수
+  if (b.heroShield && b.heroShield > 0 && dmg > 0) {
+    const absorbed = Math.min(b.heroShield, dmg);
+    b.heroShield -= absorbed;
+    dmg -= absorbed;
+    log(`보호막이 ${absorbed} 흡수 (남은 보호막 ${b.heroShield})`, 'hero');
+  }
   r.hp = Math.max(0, r.hp - dmg);
   if (window.AUDIO && dmg > 0) AUDIO.sfx('hit');
   showDmgNum('hero', dmg);
@@ -1497,7 +1629,26 @@ function endTurnHero(skipDefense) {
 function enemyTurn() {
   const b = game.run.battle;
   if (b.enemy.hp <= 0) return;
-  const dmg = b.enemy.atk;
+  // 거부할 수 없는 매혹 — 적 행동 불가
+  if (b.enemyStunTurns && b.enemyStunTurns > 0) {
+    b.enemyStunTurns--;
+    log(`${b.enemy.name} — 매혹 상태! 행동 불가 (남은 ${b.enemyStunTurns}턴)`, 'enemy');
+    if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) b.enemyAtkDebuff.turns--;
+    if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0) b.skillExtraAttackTurns--;
+    b.heroDefend = 0;
+    b.turn++;
+    for (const id of Object.keys(game.run.skillCds)) {
+      if (game.run.skillCds[id] > 0) game.run.skillCds[id]--;
+    }
+    if (b.attackCd > 0) b.attackCd--;
+    refreshBattleUI();
+    return;
+  }
+  let dmg = b.enemy.atk;
+  // 맹렬한 상처 — 적 공격력 디버프
+  if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) {
+    dmg = Math.round(dmg * b.enemyAtkDebuff.mul);
+  }
   log(`${b.enemy.name}의 공격 → ${dmg}`, 'enemy');
   dealDamageToHero(dmg);
   if (game.run.hp <= 0) {
@@ -1513,6 +1664,9 @@ function enemyTurn() {
   }
   // 공격 쿨다운 -1 (시간 왜곡 가호)
   if (b.attackCd > 0) b.attackCd--;
+  // 인연각성 버프 지속 -1
+  if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) b.enemyAtkDebuff.turns--;
+  if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0) b.skillExtraAttackTurns--;
   // 매 턴 recoil HP 손실 (광기의 화염 등)
   const recoil = getBoonModSum('recoil');
   if (recoil > 0 && game.run.hp > 1) {
@@ -2065,6 +2219,55 @@ function openFountain() {
   showScreen('fountain');
 }
 
+function openBondPicker() {
+  renderBondPicker();
+  showScreen('bond');
+}
+
+function renderBondPicker() {
+  const wrap = $('bond-list');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  // 「계약 없음」 카드
+  const noneCard = document.createElement('div');
+  noneCard.className = 'bond-card none' + (!game.meta.bond ? ' active' : '');
+  noneCard.innerHTML = `
+    <div class="bc-art-placeholder">×</div>
+    <div class="bc-name">계약 없음</div>
+    <div class="bc-skill">— 인연각성 비활성 —</div>
+    <div class="bc-desc">동반자를 선택하지 않습니다.</div>`;
+  noneCard.addEventListener('click', () => {
+    game.meta.bond = null;
+    saveMeta();
+    if (window.AUDIO) AUDIO.sfx('cancel');
+    renderBondPicker();
+  });
+  wrap.appendChild(noneCard);
+  for (const id of Object.keys(BONDS)) {
+    const bond = BONDS[id];
+    const card = document.createElement('div');
+    card.className = 'bond-card' + (game.meta.bond === id ? ' active' : '');
+    card.innerHTML = `
+      <img class="bc-art" src="${bond.art}" alt="${bond.name}">
+      <div class="bc-overlay">
+        <div class="bc-icon">${bond.icon}</div>
+        <div class="bc-name">${bond.name}</div>
+        <div class="bc-title">${bond.title}</div>
+        <div class="bc-skill">— ${bond.skillName} —</div>
+        <div class="bc-desc">${bond.desc}</div>
+        <div class="bc-quote">${bond.quote.split('—').slice(1).join('—').trim() || bond.quote}</div>
+      </div>
+      ${game.meta.bond === id ? '<div class="bc-badge">✓ 계약 중</div>' : ''}`;
+    card.addEventListener('click', () => {
+      game.meta.bond = id;
+      saveMeta();
+      if (window.AUDIO) AUDIO.sfx('legendary');
+      renderBondPicker();
+    });
+    wrap.appendChild(card);
+  }
+}
+
 function renderFountain() {
   $('fountain-essence').textContent = game.meta.essence;
   const wrap = $('fountain-upgrades');
@@ -2187,6 +2390,8 @@ function boot() {
     startPrologue(() => { renderTitle(); showScreen('title'); });
   });
   $('title-fountain').addEventListener('click', openFountain);
+  $('title-bond').addEventListener('click', openBondPicker);
+  $('bond-back').addEventListener('click', () => { renderTitle(); showScreen('title'); });
   $('title-reset').addEventListener('click', hardReset);
   // 프롤로그 컨트롤
   $('pr-next').addEventListener('click', nextStoryScene);

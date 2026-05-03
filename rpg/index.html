@@ -24,6 +24,7 @@
       <div class="title-content">
         <div class="title-actions">
           <button id="title-start" class="big primary">⚔ 게임 시작 ⚔</button>
+          <button id="title-bond" class="big bond-btn">🌟 인연 결속 🌟</button>
           <button id="title-fountain" class="big fountain-btn">⚜ 영원의 샘 ⚜</button>
           <button id="title-prologue" class="small prologue-btn">📖 이야기 다시 보기</button>
           <button id="title-reset" class="small reset-btn">전체 초기화</button>
@@ -161,6 +162,15 @@
         </button>
       </div>
 
+      <!-- 인연각성 (필살기) — 결속 시에만 노출 -->
+      <div id="ult-row" class="hidden">
+        <button id="ult-btn" class="ult-btn">
+          <span class="ult-ico" id="ult-ico">🌟</span>
+          <span class="ult-name" id="ult-name">인연각성</span>
+          <span class="ult-sub" id="ult-sub">필살기 — 한 층 1회</span>
+        </button>
+      </div>
+
       <div id="dmg-layer"></div>
 
       <!-- 스킬 cut-in -->
@@ -286,6 +296,16 @@
     </div>
 
     <!-- ===== 영원의 샘 ===== -->
+    <!-- ===== 인연 결속 (필살기 동반자 선택) ===== -->
+    <div id="bond" class="screen hidden">
+      <div class="fountain-header">
+        <button class="back-btn" id="bond-back">← 메뉴로</button>
+        <h1>🌟 인연 결속 🌟</h1>
+        <p class="subtitle">필살기 「인연각성」을 시전할 동반자를 한 명 선택하세요 — 한 층 당 1회</p>
+      </div>
+      <div id="bond-list" class="bond-list"></div>
+    </div>
+
     <div id="fountain" class="screen hidden">
       <div class="fountain-header">
         <button class="back-btn" id="fountain-back">← 메뉴로</button>
