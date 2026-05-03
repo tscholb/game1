@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v43-bond-event';
+const CACHE = 'ignia-v44-fix-ult-img';
 const ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const ASSETS = [
   '../assets/audio/title.mp3',
   '../assets/heroes/mage.png',
   '../assets/heroes/mage-wounded.png',
-  '../assets/heroes/reyna.png',
+  '../assets/heroes/luna.png',
   '../assets/heroes/merchant.png',
   '../assets/skills/ignia-fireball.png',
   '../assets/skills/ignia-flame-finger.png',

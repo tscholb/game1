@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v43-bond-event';
+const VERSION = 'v44-fix-ult-img';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -27,16 +27,16 @@ const HEROES = [
     flavor: '달빛에 화살을 실어 보내는 침묵의 사냥꾼.',
     locked: true,
     baseHp: 90, baseAtk: 22, baseMag: 14,
-    portrait: '../assets/heroes/merchant.png',
-    sprite: '../assets/heroes/merchant.png',
+    portrait: '../assets/heroes/luna.png',
+    sprite: '../assets/heroes/luna.png',
   },
   {
     id: 'reyna', name: '레이나', title: '대검 용병',
     flavor: '대검 한 자루로 전장을 가르는 용병.',
     locked: true,
     baseHp: 130, baseAtk: 26, baseMag: 8,
-    portrait: '../assets/heroes/reyna.png',
-    sprite: '../assets/heroes/reyna.png',
+    portrait: '../assets/heroes/merchant.png',
+    sprite: '../assets/heroes/merchant.png',
   },
 ];
 
@@ -402,8 +402,8 @@ const SPEAKERS = {
   dragon: '../assets/bosses/dragon-human.png',
   alice:  '../assets/scenes/merchant.png',
   arina:  '../assets/scenes/arina.png',
-  reyna:  '../assets/heroes/reyna.png',
-  luna:   '../assets/heroes/merchant.png',
+  reyna:  '../assets/heroes/merchant.png',
+  luna:   '../assets/heroes/luna.png',
 };
 
 // ===== 인연각성 (필살기) =====
@@ -464,7 +464,7 @@ const BONDS = {
   },
   reyna: {
     id: 'reyna', name: '레이나', title: '대검 용병', icon: '⚔',
-    art: '../assets/heroes/reyna.png',
+    art: '../assets/heroes/merchant.png',
     skillName: '맹렬한 상처',
     quote: '레이나 — "한 번에 — 끝낸다."',
     desc: '공격력 500% 단발 + 적 공격력 3턴 -50%',
@@ -485,7 +485,7 @@ const BONDS = {
   },
   luna: {
     id: 'luna', name: '루나', title: '달빛 궁수', icon: '🌙',
-    art: '../assets/heroes/merchant.png',
+    art: '../assets/heroes/luna.png',
     skillName: '바람의 메아리',
     quote: '루나 — "달빛이여 — 길을 비추어라."',
     desc: '마력 500% 단발 + 3턴간 스킬 시 일반공격 추가타',
@@ -2448,6 +2448,7 @@ function boot() {
   document.querySelectorAll('.action-btn').forEach(btn => {
     btn.addEventListener('click', () => heroAction(btn.dataset.action));
   });
+  $('ult-btn').addEventListener('click', () => heroAction('ult'));
   // 스킬 picker 닫기
   $('skill-picker-close').addEventListener('click', closeSkillPicker);
   $('skill-picker-backdrop').addEventListener('click', closeSkillPicker);
