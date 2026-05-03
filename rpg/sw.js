@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v31-meteor-art';
+const CACHE = 'ignia-v32-unstable-buff';
 const ASSETS = [
   './',
   './index.html',

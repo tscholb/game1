@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v31-meteor-art';
+const VERSION = 'v32-unstable-buff';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -176,13 +176,13 @@ const BOONS = [
   { id: 'b-flame-lord',  cat: 'magic',   name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',     rarity: 'legendary', mod: { eternalBurn: true } },
   { id: 'b-soul',        cat: 'utility', name: '영혼 흡수',  desc: '적 처치 시 최대 HP +5, HP 완전 회복',  rarity: 'legendary', mod: { soulSteal: true } },
 
-  // unstable — 메리트 + 디메리트 동시
-  { id: 'b-time-warp',  cat: 'magic',  name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2 } },
-  { id: 'b-soul-trade', cat: 'utility', name: '영혼 거래',  desc: '◆ 같은 카테고리 한 단계 위 가호 즉시 획득 ◇ 기존 가호 1개 무작위 삭제', rarity: 'unstable',
+  // unstable — 메리트 + 디메리트 동시 (메리트 강화 후)
+  { id: 'b-time-warp',  cat: 'magic',  name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 + 마법력 +12 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2, mag: 12 } },
+  { id: 'b-soul-trade', cat: 'utility', name: '영혼 거래',  desc: '◆ 같은 카테고리 두 단계 위 가호 즉시 획득 ◇ 기존 가호 1개 무작위 삭제', rarity: 'unstable',
     apply: g => { applyUnstableSoulTrade(g); } },
-  { id: 'b-starve',     cat: 'attack', name: '굶주린 칼날', desc: '◆ 공격력 +18 ◇ 최대 HP -30',         rarity: 'unstable', mod: { atk: 18 }, apply: g => { g.maxHp = Math.max(20, g.maxHp - 30); g.hp = Math.min(g.hp, g.maxHp); } },
-  { id: 'b-mad-flame',  cat: 'magic',  name: '광기의 화염', desc: '◆ 마법력 +25 ◇ 매 턴 시작 시 자신 HP -3', rarity: 'unstable', mod: { mag: 25, recoil: 3 } },
-  { id: 'b-equiv',      cat: 'utility', name: '등가 교환',  desc: '◆ 골드 +200 ◇ 최대 HP -25',          rarity: 'unstable', apply: g => { g.gold += 200; g.maxHp = Math.max(20, g.maxHp - 25); g.hp = Math.min(g.hp, g.maxHp); } },
+  { id: 'b-starve',     cat: 'attack', name: '굶주린 칼날', desc: '◆ 공격력 +28 ◇ 최대 HP -30',         rarity: 'unstable', mod: { atk: 28 }, apply: g => { g.maxHp = Math.max(20, g.maxHp - 30); g.hp = Math.min(g.hp, g.maxHp); } },
+  { id: 'b-mad-flame',  cat: 'magic',  name: '광기의 화염', desc: '◆ 마법력 +40 ◇ 매 턴 시작 시 자신 HP -3', rarity: 'unstable', mod: { mag: 40, recoil: 3 } },
+  { id: 'b-equiv',      cat: 'utility', name: '등가 교환',  desc: '◆ 골드 +350 ◇ 최대 HP -25',          rarity: 'unstable', apply: g => { g.gold += 350; g.maxHp = Math.max(20, g.maxHp - 25); g.hp = Math.min(g.hp, g.maxHp); } },
 ];
 
 // ===== 상태 =====
@@ -1376,24 +1376,22 @@ function applyUnstableSoulTrade(g) {
   const sacrificed = others[Math.floor(Math.random() * others.length)];
   // 삭제 — boons 배열에서 제거 (mod 효과는 매 호출마다 boons 를 순회하므로 자동 무효화)
   g.boons = g.boons.filter(b => b.id !== sacrificed.id);
-  // 같은 카테고리, 한 단계 높은 등급의 미보유 가호 풀
+  // 같은 카테고리, 두 단계 높은 등급의 미보유 가호 풀
   const owned = new Set(g.boons.map(b => b.id));
-  const targetRarity = bumpRarity(sacrificed.rarity);
-  let candidates = BOONS.filter(b =>
-    b.cat === sacrificed.cat &&
-    b.rarity === targetRarity &&
-    !b.unstable &&
-    b.rarity !== 'unstable' &&
-    !owned.has(b.id)
-  );
-  // 후보 없으면 같은 카테고리 같은 등급으로 폴백
-  if (candidates.length === 0) {
+  const tryRarities = [
+    bumpRarity(bumpRarity(sacrificed.rarity)), // +2
+    bumpRarity(sacrificed.rarity),             // +1 폴백
+    sacrificed.rarity,                          // 동급 폴백
+  ];
+  let candidates = [];
+  for (const targetRarity of tryRarities) {
     candidates = BOONS.filter(b =>
       b.cat === sacrificed.cat &&
-      b.rarity === sacrificed.rarity &&
+      b.rarity === targetRarity &&
       b.rarity !== 'unstable' &&
       !owned.has(b.id)
     );
+    if (candidates.length > 0) break;
   }
   if (candidates.length === 0) return;
   const replacement = candidates[Math.floor(Math.random() * candidates.length)];
