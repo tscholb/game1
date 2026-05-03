@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v27-alice';
+const CACHE = 'ignia-v28-progress-boons';
 const ASSETS = [
   './',
   './index.html',

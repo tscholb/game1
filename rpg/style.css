@@ -660,6 +660,68 @@ button:active { transform: scale(0.96); }
   font-size: 14px;
   font-weight: 700;
 }
+.progress-section-label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #8a7080;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+#progress-boons {
+  max-height: 38vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid #2a1a2a;
+  border-radius: 8px;
+  text-align: left;
+}
+.boon-chip-empty {
+  text-align: center;
+  color: #6a4a5a;
+  font-size: 12px;
+  padding: 12px 0;
+}
+.boon-chip {
+  background: #15101a;
+  border: 1px solid #2a1a2a;
+  border-left: 3px solid #555;
+  border-radius: 6px;
+  padding: 7px 10px;
+}
+.boon-chip.rarity-rare      { background: linear-gradient(90deg, rgba(110,163,224,0.10), #15101a 60%); }
+.boon-chip.rarity-epic      { background: linear-gradient(90deg, rgba(192,132,252,0.14), #15101a 60%); }
+.boon-chip.rarity-legendary { background: linear-gradient(90deg, rgba(243,216,120,0.16), #15101a 60%); }
+.boon-chip.rarity-unstable  { background: linear-gradient(90deg, rgba(255,120,80,0.14), #15101a 60%); }
+.boon-chip.rarity-shop      { background: linear-gradient(90deg, rgba(184,144,72,0.14), #15101a 60%); }
+.boon-chip .bc-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.boon-chip .bc-ico { font-size: 13px; }
+.boon-chip .bc-name { font-size: 13px; font-weight: 700; color: #f5e6d8; }
+.boon-chip .bc-rar {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a7080;
+}
+.boon-chip.rarity-epic      .bc-rar { color: #d8b4fe; }
+.boon-chip.rarity-legendary .bc-rar { color: #fde68a; }
+.boon-chip.rarity-rare      .bc-rar { color: #93d8ff; }
+.boon-chip.rarity-unstable  .bc-rar { color: #ffae80; }
+.boon-chip.rarity-shop      .bc-rar { color: #e0c080; }
+.boon-chip .bc-desc {
+  font-size: 11px;
+  color: #b8a098;
+  line-height: 1.4;
+}
 .hud-label {
   color: #8a7080;
   letter-spacing: 0.1em;

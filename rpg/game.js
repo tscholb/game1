@@ -159,7 +159,7 @@ const BOONS = [
   { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '새 스킬 「화염 폭풍」 획득 — 3회 연타',     rarity: 'epic',   mod: { grantSkill: 'firestorm' } },
   { id: 'b-inferno',   cat: 'magic',   name: '지옥불',   desc: '새 스킬 「지옥불」 획득 — 맹렬한 화상',     rarity: 'epic',   mod: { grantSkill: 'inferno' } },
   { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
-  { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 100% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
+  { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 80% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
   { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
 
   // legendary
@@ -1046,9 +1046,9 @@ function castSkill(skillId) {
 function doDefend() {
   const b = game.run.battle;
   if (hasBoonMod('defendPerfect')) {
-    b.heroDefend = 1.0;
+    b.heroDefend = 0.8;
     healHero(10);
-    log('완벽 방어! HP +10', 'hero');
+    log('강력 방어! 데미지 -80% + HP +10', 'hero');
   } else {
     b.heroDefend = 0.5;
     log('방어 자세 — 다음 적 공격 데미지 -50%', 'hero');
@@ -1443,7 +1443,37 @@ function openProgressModal() {
       trail.appendChild(arrow);
     }
   });
+  renderProgressBoons();
   $('progress-modal').classList.add('active');
+}
+
+function renderProgressBoons() {
+  const wrap = $('progress-boons');
+  wrap.innerHTML = '';
+  const boons = (game.run && game.run.boons) || [];
+  if (!boons.length) {
+    const empty = document.createElement('div');
+    empty.className = 'boon-chip-empty';
+    empty.textContent = '— 아직 획득한 가호가 없다 —';
+    wrap.appendChild(empty);
+    return;
+  }
+  const order = { legendary: 0, epic: 1, unstable: 2, rare: 3, common: 4, shop: 5 };
+  const sorted = [...boons].sort((a, b) => (order[a.rarity] ?? 9) - (order[b.rarity] ?? 9));
+  for (const boon of sorted) {
+    const cat = CATEGORIES[boon.cat] || { icon: '◆', color: '#888' };
+    const chip = document.createElement('div');
+    chip.className = 'boon-chip rarity-' + (boon.rarity || 'common');
+    chip.style.borderLeftColor = cat.color;
+    chip.innerHTML = `
+      <div class="bc-head">
+        <span class="bc-ico" style="color:${cat.color}">${cat.icon}</span>
+        <span class="bc-name">${boon.name}</span>
+        <span class="bc-rar">${({common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정',shop:'상점'})[boon.rarity] || ''}</span>
+      </div>
+      <div class="bc-desc">${boon.desc || ''}</div>`;
+    wrap.appendChild(chip);
+  }
 }
 
 function closeProgressModal() {
