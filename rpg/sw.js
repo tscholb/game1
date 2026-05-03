@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v32-unstable-buff';
+const CACHE = 'ignia-v33-merchant-bless';
 const ASSETS = [
   './',
   './index.html',

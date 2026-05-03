@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v32-unstable-buff';
+const VERSION = 'v33-merchant-bless';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -149,6 +149,7 @@ const BOONS = [
   { id: 'b-bulwark',   cat: 'defend',  name: '굳건한 자세', desc: '매 전투 첫 피격 데미지 -50%',       rarity: 'common', mod: { firstHitReduce: 0.5 } },
   { id: 'b-spark',     cat: 'magic',   name: '점화',     desc: '전투 시작 시 적에 화상 6/3턴 자동 부여', rarity: 'common', mod: { startBurn: { dmg: 6, turns: 3 } } },
   { id: 'b-bargain',   cat: 'utility', name: '상인의 눈',  desc: '획득 골드 +30%',                      rarity: 'common', mod: { goldMul: 0.3 } },
+  { id: 'b-merchant-bless', cat: 'utility', name: '상인의 가호', desc: '갈림길마다 한쪽이 앨리스의 가게로 등장한다', rarity: 'common', mod: { forkMerchant: true } },
 
   // rare — 메커니즘 기반
   { id: 'b-overheat',  cat: 'magic',   name: '과열',     desc: 'HP 50% 이하 시 마법 데미지 +50%',      rarity: 'rare',   mod: { lowHpMagBonus: 0.5 } },
@@ -345,6 +346,15 @@ const SPEAKERS = {
   alice:  '../assets/scenes/merchant.png',
 };
 
+// 앨리스 — 가게 방문 시 무작위로 한 줄
+const ALICE_LINES = [
+  '"어서 오세요. — 또 만났네요. 오늘은 무얼 찾고 있나요?"',
+  '"이런 깊은 곳까지 와주시는 분은 정말 드물어요."',
+  '"신선한 물건이 들어왔답니다. 한번 보세요."',
+  '"무리하진 마세요. — 살아 돌아오셔야 또 거래할 수 있으니까요."',
+  '"가끔은… 운명조차 골드 몇 닢에 살 수 있답니다."',
+];
+
 // 앨리스 — 첫 등장 컷씬 (런 당 1회)
 const ALICE_INTRO = [
   { img: '../assets/story/prologue-3-cave.png',
@@ -525,6 +535,7 @@ function newRun() {
     bossesDefeated: 0,
     phoenixUsed: false,
     history: [],
+    shopsOfferedThisFloor: 0,
   };
   // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
   enterFirstRoom();
@@ -575,10 +586,26 @@ const SHOP_ITEMS = [
 ];
 
 function generateFork() {
+  const r = game.run;
   // 두 갈래 — 같은 타입이어도 보상 카테고리는 다르게
-  const a = rollNodeTemplate();
-  const b = rollNodeTemplate();
-  return [decorateNode(a), decorateNode(b, decorateNode(a).rewardCat)];
+  let a = rollNodeTemplate();
+  let b = rollNodeTemplate();
+  // 상인의 가호 — 한쪽은 무조건 상점
+  const wantMerchant = !!hasBoonMod('forkMerchant');
+  // 페어 보장 — 한 층에 최소 2회 상점이 옵션으로 등장하도록 막판 보정
+  const offered = r.shopsOfferedThisFloor || 0;
+  const shortage = Math.max(0, 2 - offered);
+  const forksRemaining = r.roomsPerFloor - r.roomNum + 1;
+  const pity = shortage >= forksRemaining;
+  if ((wantMerchant || pity) && a.type !== 'shop' && b.type !== 'shop') {
+    if (Math.random() < 0.5) a = NODE_TEMPLATES.shop;
+    else b = NODE_TEMPLATES.shop;
+  }
+  if (a.type === 'shop' || b.type === 'shop') {
+    r.shopsOfferedThisFloor = offered + 1;
+  }
+  const da = decorateNode(a);
+  return [da, decorateNode(b, da.rewardCat)];
 }
 
 function decorateNode(tmpl, avoidCat) {
@@ -613,6 +640,7 @@ function nextStep() {
     r.floor++;
     if (r.floor > 3) { endRun(true); return; }
     r.roomNum = 1;
+    r.shopsOfferedThisFloor = 0;
     // 다음 층 시작 표시
     r.history.push({ type: 'floor', kind: 'floor', icon: '🏛', name: '층 ' + r.floor });
     r.history.push({ type: 'combat', kind: 'normal', icon: '⚔', name: '시작' });
@@ -1505,6 +1533,9 @@ function openShop(node) {
   // 가게에서 4개 무작위 매물
   const shuffled = [...SHOP_ITEMS].sort(() => Math.random() - 0.5).slice(0, 4);
   game.run.shopOffer = shuffled.map(item => ({ ...item, sold: false }));
+  // 매 방문마다 인사말 무작위
+  const flavor = document.querySelector('#shop-screen .shop-flavor');
+  if (flavor) flavor.textContent = ALICE_LINES[Math.floor(Math.random() * ALICE_LINES.length)];
   renderShop();
   // 첫 등장 — 짧은 컷씬 후 가게 입장
   if (!game.run.aliceMet) {
