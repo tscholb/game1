@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v34-mystic-boons';
+const CACHE = 'ignia-v35-ignite-art';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const ASSETS = [
   '../assets/skills/ignia-flame-finger.png',
   '../assets/skills/ignia-flamethrower.png',
   '../assets/skills/ignia-meteor.png',
+  '../assets/skills/ignia-ignite.png',
   '../assets/story/prologue-1-darkness.png',
   '../assets/story/prologue-3-cave.png',
   '../assets/bosses/dryad.png',

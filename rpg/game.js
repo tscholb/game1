@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v34-mystic-boons';
+const VERSION = 'v35-ignite-art';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -118,7 +118,7 @@ const SKILLS = {
     critBonus: 0,
     desc: '걸린 화상을 모두 소진해 큰 폭발 (스택당 마법력 ×1.5)',
     quote: '터져라 — 화염!',
-    cutin: '../assets/skills/ignia-fireball.png',
+    cutin: '../assets/skills/ignia-ignite.png',
   },
   inferno: {
     id: 'inferno', name: '지옥불', icon: '👹',
