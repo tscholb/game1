@@ -16,6 +16,7 @@ const HEROES = [
     skill: { name: '화염구', quote: '타올라라 — 이 세계마저!', cooldown: 3, burnDmg: 6, burnTurns: 3 },
     portrait: '../assets/heroes/mage.png',
     sprite: '../assets/heroes/mage.png',
+    spriteWounded: '../assets/heroes/mage-wounded.png',
     defaultSkill: 'fireball',
   },
   {
@@ -338,7 +339,26 @@ const SPEAKERS = {
   dryad:  '../assets/bosses/dryad.png',
   witch:  '../assets/bosses/witch.png',
   dragon: '../assets/bosses/dragon-human.png',
+  alice:  '../assets/scenes/merchant.png',
 };
+
+// 앨리스 — 첫 등장 컷씬 (런 당 1회)
+const ALICE_INTRO = [
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '동굴 한가운데 — 어울리지 않는 따뜻한 등불 하나.\n수정과 약병이 가지런히 늘어선, 작은 가게가 자리잡고 있다.' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…이런 곳에, 가게?"' },
+  { speaker: 'alice',
+    text: '앨리스 — "어머, 손님이네요. 어서 오세요.\n이런 데까지 내려오는 분은 정말 오랜만이라."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…너, 어둠이 무섭지 않아?"' },
+  { speaker: 'alice',
+    text: '앨리스 — "글쎄요. 어둠이 무서운 사람은… 보통 여기까지 못 내려오죠.\n저는 그저, 필요한 사람에게 필요한 걸 건넬 뿐이에요."' },
+  { speaker: 'alice',
+    text: '앨리스 — "제 이름은 앨리스. 골드만 있다면, 무엇이든 거래해드려요."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…수상한 가게군.\n뭐, 손해 볼 건 없겠지."' },
+];
 
 const BOSS_STORIES = {
   // 1층 — 어둠의 드리아드
@@ -523,7 +543,7 @@ const NODE_TEMPLATES = {
   treasure: { type: 'treasure', kind: 'treasure', icon: '💰', name: '보물' },
   rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
   chest:    { type: 'chest',    kind: 'chest',    icon: '📦', name: '의문의 상자' },
-  shop:     { type: 'shop',     kind: 'shop',     icon: '🏪', name: '방랑 상인' },
+  shop:     { type: 'shop',     kind: 'shop',     icon: '🏪', name: '앨리스의 가게' },
 };
 
 function rollNodeTemplate() {
@@ -703,6 +723,7 @@ function startBattle(kind, node) {
     art.style.fontSize = def.boss ? '90px' : '70px';
   }
   $('hero-img').src = HERO.sprite;
+  game.run._heroSpriteWounded = false;
   // 점화 가호 — 전투 시작 시 자동 화상
   const sb = hasBoonMod('startBurn');
   if (sb && sb.mod && sb.mod.startBurn) {
@@ -728,6 +749,15 @@ function refreshBattleUI() {
   $('hero-hp-fill').classList.remove('low', 'critical');
   if (r.hp / r.maxHp < 0.25) $('hero-hp-fill').classList.add('critical');
   else if (r.hp / r.maxHp < 0.5) $('hero-hp-fill').classList.add('low');
+  // 부상 일러스트 — HP 40% 이하에서 교체, 회복 시 원래 스프라이트로 복귀
+  const woundedSrc = HERO.spriteWounded;
+  if (woundedSrc) {
+    const shouldWound = r.hp / r.maxHp <= 0.4 && r.hp > 0;
+    if (shouldWound !== r._heroSpriteWounded) {
+      r._heroSpriteWounded = shouldWound;
+      $('hero-img').src = shouldWound ? woundedSrc : HERO.sprite;
+    }
+  }
   $('turn-num').textContent = b.turn;
   $('hud-floor').textContent = r.floor;
   $('hud-room').textContent = r.roomNum;
@@ -1445,7 +1475,13 @@ function openShop(node) {
   const shuffled = [...SHOP_ITEMS].sort(() => Math.random() - 0.5).slice(0, 4);
   game.run.shopOffer = shuffled.map(item => ({ ...item, sold: false }));
   renderShop();
-  showScreen('shop-screen');
+  // 첫 등장 — 짧은 컷씬 후 가게 입장
+  if (!game.run.aliceMet) {
+    game.run.aliceMet = true;
+    playStorySequence(ALICE_INTRO, () => showScreen('shop-screen'), { finalLabel: '가게로 ▶' });
+  } else {
+    showScreen('shop-screen');
+  }
 }
 
 function renderShop() {

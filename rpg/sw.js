@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v26-merchant';
+const CACHE = 'ignia-v27-alice';
 const ASSETS = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   './manifest.json',
   './title.png',
   '../assets/heroes/mage.png',
+  '../assets/heroes/mage-wounded.png',
   '../assets/heroes/archer.png',
   '../assets/heroes/merchant.png',
   '../assets/skills/ignia-fireball.png',
