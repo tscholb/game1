@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v30-version-label';
+const VERSION = 'v31-meteor-art';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -107,7 +107,7 @@ const SKILLS = {
     critBonus: 0.3,
     desc: '한 방 초강타, 높은 치명타',
     quote: '하늘이 무너지리라 — 메테오!',
-    cutin: '../assets/skills/ignia-fireball.png',
+    cutin: '../assets/skills/ignia-meteor.png',
   },
   inferno: {
     id: 'inferno', name: '지옥불', icon: '👹',

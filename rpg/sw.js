@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v30-version-label';
+const CACHE = 'ignia-v31-meteor-art';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   '../assets/skills/ignia-fireball.png',
   '../assets/skills/ignia-flame-finger.png',
   '../assets/skills/ignia-flamethrower.png',
+  '../assets/skills/ignia-meteor.png',
   '../assets/story/prologue-1-darkness.png',
   '../assets/story/prologue-3-cave.png',
   '../assets/bosses/dryad.png',
