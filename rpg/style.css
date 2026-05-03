@@ -980,9 +980,9 @@ button:active { transform: scale(0.96); }
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  width: min(720px, 96%);
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: min(820px, 98%);
   margin: 14px auto 18px;
   z-index: 5;
   position: relative;
@@ -1011,6 +1011,15 @@ button:active { transform: scale(0.96); }
 .action-btn .ico { font-size: 22px; }
 .action-btn .label { font-size: 13px; font-weight: 800; }
 .action-btn .sub { font-size: 10px; color: #9a909a; letter-spacing: 0.05em; }
+.action-btn.tool {
+  background: linear-gradient(180deg, #1a2a1a 0%, #0a1410 100%);
+  border-color: #4a8a5a;
+  box-shadow: 0 0 14px rgba(80, 200, 120, 0.18) inset;
+}
+.action-btn.tool:hover:not(:disabled) {
+  border-color: #7adba0;
+  box-shadow: 0 0 18px rgba(120, 220, 150, 0.45) inset;
+}
 .action-btn.skill {
   border-color: #ff7733;
   background: linear-gradient(180deg, #3a1a14 0%, #2a0a08 100%);
@@ -1047,7 +1056,7 @@ button:active { transform: scale(0.96); }
 /* ============================================================
    스킬 선택 모달
    ============================================================ */
-#skill-picker {
+#skill-picker, #tool-picker {
   position: absolute;
   inset: 0;
   z-index: 150;
@@ -1056,7 +1065,7 @@ button:active { transform: scale(0.96); }
   justify-content: center;
   pointer-events: none;
 }
-#skill-picker.active {
+#skill-picker.active, #tool-picker.active {
   display: flex;
   pointer-events: auto;
 }
@@ -1818,7 +1827,7 @@ button:active { transform: scale(0.96); }
   .battle-stage { gap: 4px; padding: 8px; }
   .vs-divider { display: none; }
   .combatant img, .enemy-art { width: min(140px, 40vw); }
-  .actions { grid-template-columns: repeat(2, 1fr); }
+  .actions { grid-template-columns: repeat(3, 1fr); gap: 5px; }
   .battle-log { height: 70px; font-size: 12px; }
   .menu-actions .big { font-size: 15px; padding: 13px; }
 }

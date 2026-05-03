@@ -144,6 +144,11 @@
           <span class="label">방어</span>
           <span class="sub">데미지 -50%</span>
         </button>
+        <button class="action-btn tool" data-action="tool">
+          <span class="ico">🧪</span>
+          <span class="label">도구</span>
+          <span class="sub" id="tool-count-label">없음</span>
+        </button>
         <button class="action-btn" data-action="flee">
           <span class="ico">🏃</span>
           <span class="label">도망</span>
@@ -170,6 +175,17 @@
             <button class="sp-close" id="skill-picker-close">✕</button>
           </div>
           <div class="sp-list" id="skill-picker-list"></div>
+        </div>
+      </div>
+      <!-- 도구 선택 모달 -->
+      <div id="tool-picker">
+        <div class="sp-backdrop" id="tool-picker-backdrop"></div>
+        <div class="sp-panel">
+          <div class="sp-header">
+            <span class="sp-title">도구 사용</span>
+            <button class="sp-close" id="tool-picker-close">✕</button>
+          </div>
+          <div class="sp-list" id="tool-picker-list"></div>
         </div>
       </div>
     </div>

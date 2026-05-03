@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v36-arina-event';
+const VERSION = 'v37-tools-longstage';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -195,7 +195,40 @@ const BOONS = [
     apply: g => { applyUnstableSoulTrade(g); } },
   { id: 'b-double',       cat: 'attack', name: '쌍수',       desc: '◆ 공격이 2회 발동 ◇ 모든 스킬 쿨다운 ×2', rarity: 'unstable', mod: { atkMulti: 2, skillCdMul: 2 } },
   { id: 'b-double-skill', cat: 'magic',  name: '이중 시전',  desc: '◆ 스킬이 2회 발동 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillMulti: 2, attackCdMax: 2 } },
+
+  // 도구(소비 아이템) 관련 — 유틸 카테고리
+  { id: 'b-herbalist',   cat: 'utility', name: '약초학자',   desc: '런 시작 시 「체력 포션」 2개 획득',
+    rarity: 'common', apply: g => { addTool(g, 'potion'); addTool(g, 'potion'); } },
+  { id: 'b-tool-belt',   cat: 'utility', name: '도구 벨트',  desc: '런 시작 시 무작위 도구 3개 획득',
+    rarity: 'rare',   apply: g => { for (let i=0;i<3;i++) addTool(g, randomToolId()); } },
+  { id: 'b-alchemist',   cat: 'utility', name: '연금술사',   desc: '매 층 시작 시 무작위 도구 1개 획득',
+    rarity: 'rare',   mod: { toolEachFloor: 1 }, apply: g => { addTool(g, randomToolId()); } },
+  { id: 'b-tool-master', cat: 'utility', name: '도구 마스터', desc: '엘리트/보스 처치 시 무작위 도구 1개 획득',
+    rarity: 'epic',   mod: { toolOnElite: true } },
+  { id: 'b-loot-pouch',  cat: 'utility', name: '도굴꾼의 주머니', desc: '상자에서 도구도 함께 나온다',
+    rarity: 'common', mod: { chestTool: true } },
+  { id: 'b-toolkit-mastery', cat: 'utility', name: '도구의 진가', desc: '도구 효과 +50%',
+    rarity: 'epic',   mod: { toolPotency: 0.5 } },
 ];
+
+// ===== 도구(소비 아이템) =====
+const TOOLS = {
+  potion:    { id: 'potion',    icon: '🧪', name: '체력 포션',     desc: 'HP +50 회복' },
+  greater:   { id: 'greater',   icon: '❤️', name: '상급 포션',     desc: 'HP +120 회복' },
+  bomb:      { id: 'bomb',      icon: '💣', name: '불꽃 폭탄',     desc: '적에게 40 마법 데미지 + 화상 12/4턴' },
+  smoke:     { id: 'smoke',     icon: '💨', name: '연막탄',         desc: '다음 적 공격 완전 회피' },
+  bulwark:   { id: 'bulwark',   icon: '🛡️', name: '방벽석',         desc: '즉시 데미지 80% 차단 + HP +15' },
+  cooldown:  { id: 'cooldown',  icon: '💎', name: '냉각의 결정',   desc: '모든 스킬 쿨다운을 즉시 0으로' },
+  haste:     { id: 'haste',     icon: '⏳', name: '각성의 모래',   desc: '이번 전투 모든 데미지 +30%' },
+};
+const TOOL_IDS = Object.keys(TOOLS);
+function randomToolId() { return TOOL_IDS[Math.floor(Math.random() * TOOL_IDS.length)]; }
+function addTool(g, id) {
+  if (!TOOLS[id]) return;
+  if (!g) return;
+  if (!g.tools) g.tools = [];
+  g.tools.push(id);
+}
 
 // ===== 상태 =====
 const game = {
@@ -577,7 +610,7 @@ function newRun() {
     boons: [],
     floor: 1,
     roomNum: 0,
-    roomsPerFloor: 7,
+    roomsPerFloor: 16,
     pendingFork: null,
     skills: [HERO.defaultSkill || 'fireball'],
     skillCds: {},               // { skillId: turnsRemaining }
@@ -587,6 +620,8 @@ function newRun() {
     phoenixUsed: false,
     history: [],
     shopsOfferedThisFloor: 0,
+    tools: [],
+    arinaMet: false,
   };
   // 첫 방은 바로 시작 (전투 또는 가벼운 시작)
   enterFirstRoom();
@@ -694,6 +729,12 @@ function nextStep() {
     if (r.floor > 3) { endRun(true); return; }
     r.roomNum = 1;
     r.shopsOfferedThisFloor = 0;
+    // 연금술사 — 매 층 시작 시 무작위 도구 1개
+    const alch = hasBoonMod('toolEachFloor');
+    if (alch) {
+      const n = alch.mod.toolEachFloor || 1;
+      for (let i = 0; i < n; i++) addTool(r, randomToolId());
+    }
     // 다음 층 시작 표시
     r.history.push({ type: 'floor', kind: 'floor', icon: '🏛', name: '층 ' + r.floor });
     r.history.push({ type: 'combat', kind: 'normal', icon: '⚔', name: '시작' });
@@ -794,6 +835,7 @@ function startBattle(kind, node) {
     lastAction: null,
     log: [],
     over: false,
+    toolDmgBoost: 0,
   };
   $('enemy-name').textContent = def.name + (kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '');
   const art = $('enemy-art');
@@ -861,6 +903,33 @@ function refreshBattleUI() {
       atkBtn.querySelector('.sub').textContent = '기본 공격';
     }
   }
+  // 도구 버튼
+  const toolBtn = document.querySelector('[data-action="tool"]');
+  if (toolBtn) {
+    const tools = r.tools || [];
+    const subEl = toolBtn.querySelector('.sub');
+    const icoEl = toolBtn.querySelector('.ico');
+    const labEl = toolBtn.querySelector('.label');
+    if (tools.length === 0) {
+      toolBtn.disabled = true;
+      icoEl.textContent = '🧰';
+      labEl.textContent = '도구';
+      if (subEl) subEl.textContent = '없음';
+    } else {
+      toolBtn.disabled = false;
+      const unique = [...new Set(tools)];
+      if (unique.length === 1) {
+        const t = TOOLS[unique[0]];
+        icoEl.textContent = t.icon;
+        labEl.textContent = t.name;
+        if (subEl) subEl.textContent = `×${tools.length}`;
+      } else {
+        icoEl.textContent = '🧰';
+        labEl.textContent = '도구';
+        if (subEl) subEl.textContent = `${tools.length}개 (${unique.length}종)`;
+      }
+    }
+  }
   // 상태 표시
   const heroStatus = $('hero-status');
   heroStatus.innerHTML = '';
@@ -923,7 +992,85 @@ function heroAction(action) {
   }
   else if (action === 'skill') openSkillPicker();
   else if (action === 'defend') doDefend();
+  else if (action === 'tool') openToolPicker();
   else if (action === 'flee') doFlee();
+}
+
+// ===== 도구 헬퍼 =====
+function openToolPicker() {
+  const r = game.run;
+  if (!r.tools || r.tools.length === 0) return;
+  if (r.battle.over) return;
+  // 1종류만 보유 → 바로 사용
+  const unique = [...new Set(r.tools)];
+  if (unique.length === 1) { useTool(unique[0]); return; }
+  const modal = $('tool-picker');
+  const wrap = $('tool-picker-list');
+  wrap.innerHTML = '';
+  // 종류별 카운트
+  const counts = {};
+  for (const id of r.tools) counts[id] = (counts[id] || 0) + 1;
+  for (const id of Object.keys(counts)) {
+    const t = TOOLS[id];
+    const card = document.createElement('button');
+    card.className = 'skill-card';
+    card.innerHTML = `
+      <div class="sc-ico">${t.icon}</div>
+      <div class="sc-name">${t.name} ×${counts[id]}</div>
+      <div class="sc-desc">${t.desc}</div>
+      <div class="sc-cd">사용</div>`;
+    card.addEventListener('click', () => {
+      modal.classList.remove('active');
+      useTool(id);
+    });
+    wrap.appendChild(card);
+  }
+  modal.classList.add('active');
+}
+function closeToolPicker() { $('tool-picker').classList.remove('active'); }
+
+function useTool(id) {
+  const r = game.run;
+  const b = r.battle;
+  if (!TOOLS[id]) return;
+  const idx = r.tools.indexOf(id);
+  if (idx < 0) return;
+  const potencyBonus = 1 + (hasBoonMod('toolPotency') ? hasBoonMod('toolPotency').mod.toolPotency : 0);
+  const t = TOOLS[id];
+  let endsTurn = true;
+  if (id === 'potion') {
+    const heal = Math.round(50 * potencyBonus);
+    healHero(heal);
+    log(`🧪 체력 포션 — HP +${heal}`, 'hero');
+  } else if (id === 'greater') {
+    const heal = Math.round(120 * potencyBonus);
+    healHero(heal);
+    log(`❤️ 상급 포션 — HP +${heal}`, 'hero');
+  } else if (id === 'bomb') {
+    const dmg = Math.round(40 * potencyBonus);
+    const burnDmg = Math.round(12 * potencyBonus);
+    b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
+    showDmgNum('enemy', dmg, 'magic');
+    log(`💣 불꽃 폭탄 → ${dmg}`, 'hero');
+    applyBurn(b.enemy, burnDmg, 4);
+  } else if (id === 'smoke') {
+    b.heroDefend = 1.0;
+    log(`💨 연막탄 — 다음 적 공격 회피`, 'hero');
+  } else if (id === 'bulwark') {
+    b.heroDefend = 0.8;
+    healHero(Math.round(15 * potencyBonus));
+    log(`🛡️ 방벽석 — 데미지 -80% + HP +${Math.round(15 * potencyBonus)}`, 'hero');
+  } else if (id === 'cooldown') {
+    for (const sid of Object.keys(r.skillCds)) r.skillCds[sid] = 0;
+    log(`💎 냉각의 결정 — 모든 쿨다운 초기화`, 'hero');
+    endsTurn = false; // 즉시 행동 가능
+  } else if (id === 'haste') {
+    b.toolDmgBoost = 0.3;
+    log(`⏳ 각성의 모래 — 이번 전투 데미지 +30%`, 'hero');
+  }
+  r.tools.splice(idx, 1);
+  refreshBattleUI();
+  if (endsTurn) endTurnHero();
 }
 
 // ===== 스킬 헬퍼 =====
@@ -1227,6 +1374,7 @@ function doFlee() {
 
 function dealDamageToEnemy(dmg, kind) {
   const b = game.run.battle;
+  if (b.toolDmgBoost) dmg = Math.round(dmg * (1 + b.toolDmgBoost));
   b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
   showDmgNum('enemy', dmg, kind);
   hitFlash('enemy');
@@ -1358,6 +1506,12 @@ function onEnemyDefeat() {
   if (goldMul > 0) gold = Math.round(gold * (1 + goldMul));
   game.run.gold += gold;
   log(`+${gold} 골드`, 'system');
+  // 도구 마스터 — 엘리트/보스 처치 시 무작위 도구 1개
+  if (hasBoonMod('toolOnElite') && (b.enemy.kind === 'elite' || b.enemy.def.boss)) {
+    const tid = randomToolId();
+    addTool(game.run, tid);
+    log(`도구 획득! ${TOOLS[tid].icon} ${TOOLS[tid].name}`, 'system');
+  }
   // 영혼 흡수
   if (hasBoonMod('soulSteal')) {
     game.run.maxHp += 5;
@@ -1659,6 +1813,8 @@ function openArinaEvent(node) {
   const grant = () => {
     r.gold += gold;
     r.hp = Math.min(r.maxHp, r.hp + heal);
+    // 50% 확률로 도구 1개 추가 선물
+    if (Math.random() < 0.5) addTool(r, randomToolId());
   };
   if (!r.arinaMet) {
     r.arinaMet = true;
@@ -1722,6 +1878,10 @@ function renderShop() {
 function resolveChestOpen() {
   const node = game.run.pendingChest;
   game.run.pendingChest = null;
+  // 도굴꾼의 주머니 — 상자 열 때 무작위 도구 1개
+  if (hasBoonMod('chestTool')) {
+    addTool(game.run, randomToolId());
+  }
   // 50/50 — 가호 or 미믹
   if (Math.random() < 0.5) {
     const cat = node ? node.rewardCat : null;
@@ -1899,6 +2059,8 @@ function boot() {
   // 스킬 picker 닫기
   $('skill-picker-close').addEventListener('click', closeSkillPicker);
   $('skill-picker-backdrop').addEventListener('click', closeSkillPicker);
+  $('tool-picker-close').addEventListener('click', closeToolPicker);
+  $('tool-picker-backdrop').addEventListener('click', closeToolPicker);
   // 보스/가호 후 진행
   $('boon-skip').addEventListener('click', () => {
     game.run.gold += 30;

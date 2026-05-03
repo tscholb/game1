@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v36-arina-event';
+const CACHE = 'ignia-v37-tools-longstage';
 const ASSETS = [
   './',
   './index.html',
