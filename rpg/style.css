@@ -727,6 +727,17 @@ button:active { transform: scale(0.96); }
   text-transform: uppercase;
   color: #8a7080;
 }
+.boon-chip .bc-lv {
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffd680;
+  background: rgba(243, 216, 120, 0.18);
+  border: 1px solid rgba(243, 216, 120, 0.45);
+  border-radius: 999px;
+  padding: 1px 7px;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 6px rgba(243, 216, 120, 0.5);
+}
 .boon-chip.rarity-epic      .bc-rar { color: #d8b4fe; }
 .boon-chip.rarity-legendary .bc-rar { color: #fde68a; }
 .boon-chip.rarity-rare      .bc-rar { color: #93d8ff; }
@@ -1274,6 +1285,66 @@ button:active { transform: scale(0.96); }
   padding: 16px 12px;
   cursor: pointer;
   transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.boon-choice .lv-badge {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #c0b090;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 2;
+}
+.boon-choice .lv-badge.up {
+  color: #fff5b8;
+  background: linear-gradient(90deg, rgba(243,216,120,0.30), rgba(255,180,80,0.35), rgba(243,216,120,0.30));
+  border: 1px solid rgba(255, 220, 120, 0.7);
+  text-shadow: 0 0 8px rgba(255, 220, 120, 0.85);
+  box-shadow: 0 0 14px rgba(255, 200, 100, 0.45) inset, 0 0 12px rgba(255, 200, 100, 0.35);
+  animation: lvUpPulse 1.4s ease-in-out infinite;
+}
+@keyframes lvUpPulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 200, 100, 0.45) inset, 0 0 12px rgba(255, 200, 100, 0.35); }
+  50%      { box-shadow: 0 0 20px rgba(255, 220, 130, 0.65) inset, 0 0 22px rgba(255, 220, 130, 0.6); }
+}
+.boon-choice.level-up {
+  border-color: #ffcc66;
+  box-shadow: 0 0 24px rgba(255, 200, 100, 0.5);
+}
+.boon-choice.level-up::after {
+  content: '⬆';
+  position: absolute;
+  top: 4px; left: 8px;
+  color: #fff5b8;
+  font-size: 18px;
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(255, 220, 130, 0.95);
+  animation: lvArrow 1.2s ease-in-out infinite;
+  z-index: 4;
+}
+@keyframes lvArrow {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50%      { transform: translateY(-3px); opacity: 1; }
+}
+/* 확인 다이얼로그 — 레벨업 태그 */
+.boon-confirm-card.level-up { box-shadow: 0 0 70px rgba(255, 220, 120, 0.7); }
+.lv-up-tag {
+  display: inline-block;
+  color: #fff5b8;
+  background: linear-gradient(90deg, rgba(243,216,120,0.30), rgba(255,180,80,0.45), rgba(243,216,120,0.30));
+  border: 1px solid rgba(255, 220, 120, 0.7);
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin: 0 4px;
+  font-size: 13px;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(255, 220, 120, 0.9);
+  animation: lvUpPulse 1.4s ease-in-out infinite;
 }
 .boon-choice .rarity {
   font-size: 11px;

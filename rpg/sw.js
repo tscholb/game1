@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v38-legend-reveal';
+const CACHE = 'ignia-v39-boon-levels';
 const ASSETS = [
   './',
   './index.html',

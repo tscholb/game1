@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v38-legend-reveal';
+const VERSION = 'v39-boon-levels';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -156,31 +156,31 @@ const CATEGORIES = {
 // ※ 단순 스탯 +N 류는 모두 제거 — 능력치 강화는 상인을 통해 구매
 const BOONS = [
   // common — 메커니즘 기반
-  { id: 'b-warmup',    cat: 'attack',  name: '예열',     desc: '매 전투 첫 공격 데미지 +60%',         rarity: 'common', mod: { firstAtkBonus: 0.6 } },
-  { id: 'b-bulwark',   cat: 'defend',  name: '굳건한 자세', desc: '매 전투 첫 피격 데미지 -50%',       rarity: 'common', mod: { firstHitReduce: 0.5 } },
-  { id: 'b-spark',     cat: 'magic',   name: '점화',     desc: '전투 시작 시 적에 화상 6/3턴 자동 부여', rarity: 'common', mod: { startBurn: { dmg: 6, turns: 3 } } },
-  { id: 'b-bargain',   cat: 'utility', name: '상인의 눈',  desc: '획득 골드 +30%',                      rarity: 'common', mod: { goldMul: 0.3 } },
+  { id: 'b-warmup',    cat: 'attack',  name: '예열',     desc: '매 전투 첫 공격 데미지 +60%',         rarity: 'common', maxLevel: 3, mod: { firstAtkBonus: 0.6 } },
+  { id: 'b-bulwark',   cat: 'defend',  name: '굳건한 자세', desc: '매 전투 첫 피격 데미지 -50%',       rarity: 'common', maxLevel: 2, mod: { firstHitReduce: 0.5 } },
+  { id: 'b-spark',     cat: 'magic',   name: '점화',     desc: '전투 시작 시 적에 화상 6/3턴 자동 부여', rarity: 'common', maxLevel: 3, mod: { startBurn: { dmg: 6, turns: 3 } } },
+  { id: 'b-bargain',   cat: 'utility', name: '상인의 눈',  desc: '획득 골드 +30%',                      rarity: 'common', maxLevel: 3, mod: { goldMul: 0.3 } },
   { id: 'b-merchant-bless', cat: 'utility', name: '상인의 가호', desc: '갈림길마다 한쪽이 앨리스의 가게로 등장한다', rarity: 'common', mod: { forkMerchant: true } },
 
   // rare — 메커니즘 기반
-  { id: 'b-overheat',  cat: 'magic',   name: '과열',     desc: 'HP 50% 이하 시 마법 데미지 +50%',      rarity: 'rare',   mod: { lowHpMagBonus: 0.5 } },
-  { id: 'b-bloodlust', cat: 'attack',  name: '광폭',     desc: 'HP 30% 이하 시 공격력 +60%',           rarity: 'rare',   mod: { lowHpAtkBonus: 0.6 } },
-  { id: 'b-crit',      cat: 'attack',  name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',      rarity: 'rare',   mod: { critChance: 0.25 } },
-  { id: 'b-thorns',    cat: 'defend',  name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',          rarity: 'rare',   mod: { thorns: 8 } },
-  { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '모든 스킬 쿨다운 -1',                 rarity: 'rare',   mod: { skillCdReduce: 1 } },
+  { id: 'b-overheat',  cat: 'magic',   name: '과열',     desc: 'HP 50% 이하 시 마법 데미지 +50%',      rarity: 'rare',   maxLevel: 3, mod: { lowHpMagBonus: 0.5 } },
+  { id: 'b-bloodlust', cat: 'attack',  name: '광폭',     desc: 'HP 30% 이하 시 공격력 +60%',           rarity: 'rare',   maxLevel: 3, mod: { lowHpAtkBonus: 0.6 } },
+  { id: 'b-crit',      cat: 'attack',  name: '치명',     desc: '치명타 확률 +25% (1.5배 데미지)',      rarity: 'rare',   maxLevel: 3, mod: { critChance: 0.25 } },
+  { id: 'b-thorns',    cat: 'defend',  name: '가시갑옷', desc: '피격 시 적에게 8 반사 데미지',          rarity: 'rare',   maxLevel: 3, mod: { thorns: 8 } },
+  { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '모든 스킬 쿨다운 -1',                 rarity: 'rare',   maxLevel: 3, mod: { skillCdReduce: 1 } },
 
   // epic
   { id: 'b-flamethrower', cat: 'magic', name: '화염방사', desc: '새 스킬 「화염방사」 획득 — 5회 연속 화염',  rarity: 'epic',   mod: { grantSkill: 'flamethrower' } },
   { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '새 스킬 「화염 폭풍」 획득 — 3회 연타',     rarity: 'epic',   mod: { grantSkill: 'firestorm' } },
   { id: 'b-inferno',   cat: 'magic',   name: '지옥불',   desc: '새 스킬 「지옥불」 획득 — 맹렬한 화상',     rarity: 'epic',   mod: { grantSkill: 'inferno' } },
-  { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
+  { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   maxLevel: 2, mod: { burnMul: 2, burnTurnsBonus: 2 } },
   { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 80% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
-  { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
+  { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   maxLevel: 3, mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
 
   // legendary
   { id: 'b-phoenix',     cat: 'defend',  name: '불사조',     desc: 'HP 0이 되면 한 번 50%로 부활',         rarity: 'legendary', mod: { phoenix: true } },
-  { id: 'b-vamp',        cat: 'attack',  name: '공격 흡혈',  desc: '일반 공격 데미지의 30% HP로 회복',     rarity: 'legendary', mod: { attackLifesteal: 0.3 } },
-  { id: 'b-mag-vamp',    cat: 'magic',   name: '마법 흡혈',  desc: '스킬 데미지의 30% HP로 회복',          rarity: 'legendary', mod: { magLifesteal: 0.3 } },
+  { id: 'b-vamp',        cat: 'attack',  name: '공격 흡혈',  desc: '일반 공격 데미지의 30% HP로 회복',     rarity: 'legendary', maxLevel: 3, mod: { attackLifesteal: 0.3 } },
+  { id: 'b-mag-vamp',    cat: 'magic',   name: '마법 흡혈',  desc: '스킬 데미지의 30% HP로 회복',          rarity: 'legendary', maxLevel: 3, mod: { magLifesteal: 0.3 } },
   { id: 'b-magic-knight', cat: 'attack', name: '마법기사',   desc: '마법 직후 공격 +50% / 공격 직후 마법 +50%', rarity: 'legendary', mod: { magicKnight: true } },
   { id: 'b-flame-brand',  cat: 'attack', name: '화염낙인',   desc: '공격 데미지에 마법력이 합산되고 화상도 적용된다', rarity: 'legendary', mod: { flameBrand: true } },
   { id: 'b-ignite-magic', cat: 'magic',  name: '점화 마법',   desc: '새 스킬 「점화」 획득 — 적의 모든 화상을 소진해 큰 폭발', rarity: 'legendary', mod: { grantSkill: 'ignite' } },
@@ -198,17 +198,17 @@ const BOONS = [
 
   // 도구(소비 아이템) 관련 — 유틸 카테고리
   { id: 'b-herbalist',   cat: 'utility', name: '약초학자',   desc: '런 시작 시 「체력 포션」 2개 획득',
-    rarity: 'common', apply: g => { addTool(g, 'potion'); addTool(g, 'potion'); } },
+    rarity: 'common', maxLevel: 3, apply: g => { addTool(g, 'potion'); addTool(g, 'potion'); } },
   { id: 'b-tool-belt',   cat: 'utility', name: '도구 벨트',  desc: '런 시작 시 무작위 도구 3개 획득',
-    rarity: 'rare',   apply: g => { for (let i=0;i<3;i++) addTool(g, randomToolId()); } },
+    rarity: 'rare',   maxLevel: 3, apply: g => { for (let i=0;i<3;i++) addTool(g, randomToolId()); } },
   { id: 'b-alchemist',   cat: 'utility', name: '연금술사',   desc: '매 층 시작 시 무작위 도구 1개 획득',
-    rarity: 'rare',   mod: { toolEachFloor: 1 }, apply: g => { addTool(g, randomToolId()); } },
+    rarity: 'rare',   maxLevel: 3, mod: { toolEachFloor: 1 }, apply: g => { addTool(g, randomToolId()); } },
   { id: 'b-tool-master', cat: 'utility', name: '도구 마스터', desc: '엘리트/보스 처치 시 무작위 도구 1개 획득',
     rarity: 'epic',   mod: { toolOnElite: true } },
   { id: 'b-loot-pouch',  cat: 'utility', name: '도굴꾼의 주머니', desc: '상자에서 도구도 함께 나온다',
     rarity: 'common', mod: { chestTool: true } },
   { id: 'b-toolkit-mastery', cat: 'utility', name: '도구의 진가', desc: '도구 효과 +50%',
-    rarity: 'epic',   mod: { toolPotency: 0.5 } },
+    rarity: 'epic',   maxLevel: 3, mod: { toolPotency: 0.5 } },
 ];
 
 // ===== 도구(소비 아이템) =====
@@ -854,7 +854,8 @@ function startBattle(kind, node) {
   // 점화 가호 — 전투 시작 시 자동 화상
   const sb = hasBoonMod('startBurn');
   if (sb && sb.mod && sb.mod.startBurn) {
-    applyBurn(game.run.battle.enemy, sb.mod.startBurn.dmg, sb.mod.startBurn.turns);
+    const lv = sb.level || 1;
+    applyBurn(game.run.battle.enemy, sb.mod.startBurn.dmg * lv, sb.mod.startBurn.turns);
   }
   refreshBattleUI();
   $('battle-log').innerHTML = '';
@@ -1196,10 +1197,15 @@ function hasBoonMod(key) {
   return game.run.boons.find(b => b.mod && b.mod[key]);
 }
 
+function getBoonLevel(id) {
+  const b = game.run.boons.find(x => x.id === id);
+  return b ? (b.level || 1) : 0;
+}
+
 function getBoonModSum(key) {
   let sum = 0;
   for (const b of game.run.boons) {
-    if (b.mod && b.mod[key]) sum += b.mod[key];
+    if (b.mod && typeof b.mod[key] === 'number') sum += b.mod[key] * (b.level || 1);
   }
   return sum;
 }
@@ -1302,7 +1308,8 @@ function castSkill(skillId) {
     return;
   }
   setTimeout(() => {
-    const burnMul = hasBoonMod('burnMul') ? hasBoonMod('burnMul').mod.burnMul : 1;
+    const bmBoon = hasBoonMod('burnMul');
+    const burnMul = bmBoon ? bmBoon.mod.burnMul * (bmBoon.level || 1) : 1;
     const burnBonus = getBoonModSum('burnTurnsBonus');
     const burnDmg = Math.round(s.burnDmg * burnMul);
     const burnTurns = s.burnTurns + burnBonus;
@@ -1396,7 +1403,7 @@ function dealDamageToHero(dmg) {
   const b = r.battle;
   // 굳건한 자세 — 매 전투 첫 피격 감소
   if (!b.firstHitReduced) {
-    const fhr = getBoonModSum('firstHitReduce');
+    const fhr = Math.min(1, getBoonModSum('firstHitReduce'));
     if (fhr > 0) {
       dmg = Math.round(dmg * (1 - fhr));
       b.firstHitReduced = true;
@@ -1587,9 +1594,15 @@ function rollBoonChoices(category, rarityFloor = 'common') {
     epic:      { common: 0,  rare: 28, epic: 51, legendary: 14, unstable: 7 },
     legendary: { common: 0,  rare: 0,  epic: 38, legendary: 55, unstable: 7 },
   }[rarityFloor] || { common: 56, rare: 28, epic: 9, legendary: 0, unstable: 7 };
-  const owned = new Set(game.run.boons.map(b => b.id));
+  // 보유 중이지만 최대 레벨에 도달한 가호만 제외 (레벨업 가능한 것은 풀에 유지)
+  const maxedIds = new Set();
+  for (const b of game.run.boons) {
+    const def = BOONS.find(x => x.id === b.id);
+    const max = def && def.maxLevel ? def.maxLevel : 1;
+    if ((b.level || 1) >= max) maxedIds.add(b.id);
+  }
   // 카테고리 매칭: 카테고리 지정 시 해당 카테고리 우선
-  let pool = BOONS.filter(b => !owned.has(b.id));
+  let pool = BOONS.filter(b => !maxedIds.has(b.id));
   let priority = category ? pool.filter(b => b.cat === category) : pool;
   const picks = [];
   for (let i = 0; i < 3; i++) {
@@ -1622,10 +1635,21 @@ function openBoonScreen(context, category, rarityFloor) {
     const el = document.createElement('div');
     el.className = `boon-choice ${b.rarity}`;
     const lbl = { common: '일반', rare: '희귀', epic: '영웅', legendary: '전설', unstable: '불안정' }[b.rarity];
+    const curLv = getBoonLevel(b.id);
+    const max = b.maxLevel || 1;
+    const isLevelUp = curLv > 0 && curLv < max;
+    let badge = '';
+    if (isLevelUp) {
+      badge = `<div class="lv-badge up">⬆ Lv.${curLv} → Lv.${curLv + 1}</div>`;
+      el.classList.add('level-up');
+    } else if (max > 1) {
+      badge = `<div class="lv-badge">최대 Lv.${max}</div>`;
+    }
     el.innerHTML = `
       <div class="rarity">${lbl}</div>
       <div class="name">${b.name}</div>
-      <div class="desc">${b.desc}</div>`;
+      <div class="desc">${b.desc}</div>
+      ${badge}`;
     el.addEventListener('click', () => openBoonConfirm(b));
     wrap.appendChild(el);
     if (b.rarity === 'legendary') legendaryEls.push(el);
@@ -1660,7 +1684,16 @@ function triggerLegendReveal(els) {
 function openBoonConfirm(boon) {
   const card = $('boon-confirm-card');
   card.className = 'boon-confirm-card ' + boon.rarity;
-  $('bc-rarity').textContent = `◆ ${{common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정'}[boon.rarity]} 가호 ◆`;
+  const rarLbl = {common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정'}[boon.rarity];
+  const curLv = getBoonLevel(boon.id);
+  const max = boon.maxLevel || 1;
+  const isLevelUp = curLv > 0 && curLv < max;
+  if (isLevelUp) {
+    card.classList.add('level-up');
+    $('bc-rarity').innerHTML = `◆ ${rarLbl} 가호 — <span class="lv-up-tag">⬆ Lv.${curLv} → Lv.${curLv + 1}</span> ◆`;
+  } else {
+    $('bc-rarity').textContent = `◆ ${rarLbl} 가호 ◆`;
+  }
   $('bc-name').textContent = boon.name;
   $('bc-desc').textContent = boon.desc;
   $('boon-confirm').classList.add('active');
@@ -1684,14 +1717,22 @@ function openBoonConfirm(boon) {
 }
 
 function applyBoon(boon) {
-  game.run.boons.push(boon);
-  if (boon.apply) boon.apply(game.run);
-  // 새 스킬 획득
+  const r = game.run;
+  const existing = r.boons.find(b => b.id === boon.id);
+  const max = boon.maxLevel || 1;
+  if (existing) {
+    if ((existing.level || 1) < max) existing.level = (existing.level || 1) + 1;
+    if (boon.apply) boon.apply(r);
+    return;
+  }
+  const entry = Object.assign({}, boon, { level: 1 });
+  r.boons.push(entry);
+  if (boon.apply) boon.apply(r);
   if (boon.mod && boon.mod.grantSkill) {
     const sid = boon.mod.grantSkill;
-    if (!game.run.skills.includes(sid)) {
-      game.run.skills.push(sid);
-      game.run.skillCds[sid] = 0;
+    if (!r.skills.includes(sid)) {
+      r.skills.push(sid);
+      r.skillCds[sid] = 0;
     }
   }
 }
@@ -1794,10 +1835,14 @@ function renderProgressBoons() {
     const chip = document.createElement('div');
     chip.className = 'boon-chip rarity-' + (boon.rarity || 'common');
     chip.style.borderLeftColor = cat.color;
+    const max = boon.maxLevel || 1;
+    const lv = boon.level || 1;
+    const lvTag = max > 1 ? `<span class="bc-lv">Lv.${lv}/${max}</span>` : '';
     chip.innerHTML = `
       <div class="bc-head">
         <span class="bc-ico" style="color:${cat.color}">${cat.icon}</span>
         <span class="bc-name">${boon.name}</span>
+        ${lvTag}
         <span class="bc-rar">${({common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정',shop:'상점'})[boon.rarity] || ''}</span>
       </div>
       <div class="bc-desc">${boon.desc || ''}</div>`;
