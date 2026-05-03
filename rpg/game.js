@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v35-ignite-art';
+const VERSION = 'v36-arina-event';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -355,6 +355,7 @@ const SPEAKERS = {
   witch:  '../assets/bosses/witch.png',
   dragon: '../assets/bosses/dragon-human.png',
   alice:  '../assets/scenes/merchant.png',
+  arina:  '../assets/scenes/arina.png',
 };
 
 // 앨리스 — 가게 방문 시 무작위로 한 줄
@@ -382,6 +383,45 @@ const ALICE_INTRO = [
     text: '앨리스 — "제 이름은 앨리스. 골드만 있다면, 무엇이든 거래해드려요."' },
   { speaker: 'ignia',
     text: '이그니아 — "…수상한 가게군.\n뭐, 손해 볼 건 없겠지."' },
+];
+
+// 아리나 — 첫 등장 컷씬 (런 당 1회)
+const ARINA_INTRO = [
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '동굴 한구석 — 갑자기 짙은 향기가 코를 찌른다.\n달콤하면서도, 어딘가 아찔한 향.' },
+  { speaker: 'arina',
+    text: '— "어머나, 어머나. 이런 곳에 이렇게 예쁜 손님이 다 있다니."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…누구냐."' },
+  { speaker: 'arina',
+    text: '아리나 — "아리나라고 해. — 깜짝 놀랐어, 너처럼 곱고 단단한 얼굴은 정말 오랜만이거든."' },
+  { speaker: 'arina',
+    text: '아리나 — "그 흑발 사이로 비치는 눈매도, 잘록한 허리도, 새빨간 입술도 — 정말 위험할 정도로 아름답네."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "용건만 말해라."' },
+  { speaker: 'arina',
+    text: '아리나 — "후훗 — 차갑긴. 그래, 용건이라면…\n네가 쫓고 있는 「어둠」 말이야."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…뭐?"' },
+  { speaker: 'arina',
+    text: '아리나 — "그자가… 정말로 적이라고 생각해?\n이 어둠의 진짜 시작이 누구인지, 너는 알고 있을까?"' },
+  { speaker: 'arina',
+    text: '아리나 — "혹시 — 네 안에서 타오르는 그 「불꽃」도\n원래는 누가 너에게 쥐여준 건지… 한 번쯤은 의심해봐도 좋을 거야."' },
+  { speaker: 'ignia',
+    text: '이그니아 — "…!"' },
+  { speaker: 'arina',
+    text: '아리나 — "오늘은 여기까지. 작은 선물 하나 두고 갈게.\n또 만나, 「불꽃」아."' },
+  { img: '../assets/scenes/arina.png',
+    text: '향기는 흩어지고, 그녀의 모습도 사라진다.\n남겨진 자리에 — 작게 빛나는 금화 한 줌.' },
+];
+
+// 아리나 — 재조우 시 무작위 한 줄
+const ARINA_LINES = [
+  '아리나 — "또 만났네, 「불꽃」. — 오늘도 어쩜 이렇게 곱지?"',
+  '아리나 — "그 눈동자 안의 흔들림 — 점점 짙어지고 있어. 슬슬 의심이 시작됐을까?"',
+  '아리나 — "조심해. 가장 가까운 곳에서 가장 깊은 어둠이 자라기도 하니까."',
+  '아리나 — "선물이야. — 받아주면 기쁠 텐데."',
+  '아리나 — "후훗 — 그렇게 노려봐도 무섭지 않아. 오히려 — 더 갖고 싶어질 뿐인걸."',
 ];
 
 const BOSS_STORIES = {
@@ -569,16 +609,18 @@ const NODE_TEMPLATES = {
   rest:     { type: 'rest',     kind: 'rest',     icon: '💧', name: '샘물' },
   chest:    { type: 'chest',    kind: 'chest',    icon: '📦', name: '의문의 상자' },
   shop:     { type: 'shop',     kind: 'shop',     icon: '🏪', name: '앨리스의 가게' },
+  arina:    { type: 'event',    kind: 'arina',    icon: '🦇', name: '서큐버스 아리나' },
 };
 
 function rollNodeTemplate() {
   const r = Math.random();
-  if (r < 0.70) {
+  if (r < 0.05) return NODE_TEMPLATES.arina; // 무작위 이벤트 — 아리나
+  if (r < 0.72) {
     // 적 — 그중 20%가 엘리트
     return Math.random() < 0.20 ? NODE_TEMPLATES.elite : NODE_TEMPLATES.combat;
   }
-  if (r < 0.78) return NODE_TEMPLATES.treasure;
-  if (r < 0.86) return NODE_TEMPLATES.rest;
+  if (r < 0.80) return NODE_TEMPLATES.treasure;
+  if (r < 0.87) return NODE_TEMPLATES.rest;
   if (r < 0.93) return NODE_TEMPLATES.chest;
   return NODE_TEMPLATES.shop;
 }
@@ -707,6 +749,7 @@ function chooseFork(node) {
   else if (node.type === 'treasure') openTreasure(node);
   else if (node.type === 'chest') openChest(node);
   else if (node.type === 'shop') openShop(node);
+  else if (node.type === 'event' && node.kind === 'arina') openArinaEvent(node);
 }
 
 function openTreasure(node) {
@@ -1605,6 +1648,31 @@ function openChest(node) {
 // ============================================================
 // 상점
 // ============================================================
+// ============================================================
+// 아리나 이벤트
+// ============================================================
+function openArinaEvent(node) {
+  const r = game.run;
+  // 보상 — 작은 선물 (50~100 골드 + 약간 회복)
+  const gold = 50 + Math.floor(Math.random() * 51) + r.floor * 10;
+  const heal = 12 + Math.floor(Math.random() * 9);
+  const grant = () => {
+    r.gold += gold;
+    r.hp = Math.min(r.maxHp, r.hp + heal);
+  };
+  if (!r.arinaMet) {
+    r.arinaMet = true;
+    playStorySequence(ARINA_INTRO, () => { grant(); nextStep(); }, { finalLabel: '계속 ▶' });
+  } else {
+    const line = ARINA_LINES[Math.floor(Math.random() * ARINA_LINES.length)];
+    playStorySequence(
+      [{ speaker: 'arina', text: line }],
+      () => { grant(); nextStep(); },
+      { finalLabel: '계속 ▶' }
+    );
+  }
+}
+
 function openShop(node) {
   game.run.pendingShop = node;
   // 가게에서 4개 무작위 매물

@@ -648,6 +648,7 @@ button:active { transform: scale(0.96); }
 .trail-node.rest { border-color: #5aaad8; }
 .trail-node.chest { border-color: #ffb13a; box-shadow: 0 0 14px rgba(255, 160, 40, 0.4); }
 .trail-node.shop { border-color: #b89048; box-shadow: 0 0 12px rgba(184, 144, 72, 0.5); }
+.trail-node.event { border-color: #c84a8a; box-shadow: 0 0 14px rgba(200, 70, 140, 0.55); }
 .trail-node.combat { border-color: #6a3030; }
 .trail-node.floor {
   width: 100%;

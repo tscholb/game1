@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v35-ignite-art';
+const CACHE = 'ignia-v36-arina-event';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,7 @@ const ASSETS = [
   '../assets/scenes/spring.png',
   '../assets/scenes/chest.png',
   '../assets/scenes/merchant.png',
+  '../assets/scenes/arina.png',
 ];
 
 self.addEventListener('install', e => {
