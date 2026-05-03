@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v50-enemy-pools';
+const CACHE = 'ignia-v51-reaper-art';
 const ASSETS = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const ASSETS = [
   '../assets/story/prologue-3-cave.png',
   '../assets/bosses/dryad.png',
   '../assets/bosses/witch.png',
+  '../assets/bosses/reaper.png',
   '../assets/bosses/dragon-human.png',
   '../assets/bosses/dragon-true.png',
   '../assets/scenes/spring.png',

@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v50-enemy-pools';
+const VERSION = 'v51-reaper-art';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -81,7 +81,7 @@ const ENEMIES = {
   // 보스
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
-  reaper:   { name: '매혹의 사신',     hp: 320, atk: 28, emoji: '☠', boss: true, sprite: '../assets/bosses/witch.png' },
+  reaper:   { name: '매혹의 사신',     hp: 320, atk: 28, emoji: '☠', boss: true, sprite: '../assets/bosses/reaper.png' },
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
   // 4층 보스 페이즈 2 — 진정한 드래곤 모습
   'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-true.png' },
@@ -441,7 +441,7 @@ const SPEAKERS = {
   arina:  '../assets/scenes/arina.png',
   reyna:  '../assets/heroes/merchant.png',
   luna:   '../assets/heroes/luna.png',
-  reaper: '../assets/bosses/witch.png',
+  reaper: '../assets/bosses/reaper.png',
 };
 
 // ===== 인연각성 (필살기) =====
@@ -763,7 +763,7 @@ const BOSS_STORIES = {
         text: '이그니아 — "끝나는 건 — 너다."' },
     ],
     outro: [
-      { img: '../assets/bosses/witch.png',
+      { img: '../assets/bosses/reaper.png',
         text: '검은 안개가 흩어지며, 사신의 모습이 점점 사라져간다.' },
       { speaker: 'reaper',
         text: '매혹의 사신 — "후훗… 정말로… 무서운 불꽃이네…\n그자도, 너를 — 마음에 들어하시겠어…"' },
