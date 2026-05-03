@@ -1654,16 +1654,36 @@ function renderFountain() {
 // ============================================================
 // 초기화
 // ============================================================
-function hardReset() {
-  if (!confirm('모든 데이터를 초기화합니다. 계속하시겠습니까?')) return;
+async function hardReset() {
+  if (!confirm('모든 데이터와 캐시를 완전히 초기화합니다. 계속하시겠습니까?')) return;
   try { localStorage.clear(); } catch (e) {}
   try { sessionStorage.clear(); } catch (e) {}
+  // 캐시 / 서비스워커 — 끝까지 await 해서 새로고침 전에 정리 완료
   try {
-    if ('caches' in window) caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k))));
-    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {}
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) {}
+  // IndexedDB도 비움 (지원 브라우저 한정)
+  try {
+    if (indexedDB && indexedDB.databases) {
+      const dbs = await indexedDB.databases();
+      await Promise.all(dbs.map(db => db.name && new Promise(res => {
+        const req = indexedDB.deleteDatabase(db.name);
+        req.onsuccess = req.onerror = req.onblocked = () => res();
+      })));
+    }
   } catch (e) {}
   alert('초기화 완료. 새로고침합니다.');
-  setTimeout(() => location.reload(), 200);
+  // 캐시 무시 강제 재요청
+  location.replace(location.pathname + '?cb=' + Date.now());
 }
 
 // ============================================================

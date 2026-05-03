@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v28-progress-boons';
+const CACHE = 'ignia-v29-hardreset';
 const ASSETS = [
   './',
   './index.html',
