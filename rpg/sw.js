@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v48-boss-skills';
+const CACHE = 'ignia-v49-stage4-reaper';
 const ASSETS = [
   './',
   './index.html',

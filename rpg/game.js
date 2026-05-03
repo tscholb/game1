@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v48-boss-skills';
+const VERSION = 'v49-stage4-reaper';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -61,8 +61,9 @@ const ENEMIES = {
   // 보스
   giant:    { name: '어둠의 드리아드', hp: 280, atk: 22, emoji: '🌳', boss: true, sprite: '../assets/bosses/dryad.png' },
   lich:     { name: '보랏빛 마녀',     hp: 240, atk: 26, emoji: '💀', boss: true, sprite: '../assets/bosses/witch.png' },
+  reaper:   { name: '매혹의 사신',     hp: 320, atk: 28, emoji: '☠', boss: true, sprite: '../assets/bosses/witch.png' },
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
-  // 3층 보스 페이즈 2 — 진정한 드래곤 모습
+  // 4층 보스 페이즈 2 — 진정한 드래곤 모습
   'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-true.png' },
 };
 
@@ -404,6 +405,7 @@ const SPEAKERS = {
   arina:  '../assets/scenes/arina.png',
   reyna:  '../assets/heroes/merchant.png',
   luna:   '../assets/heroes/luna.png',
+  reaper: '../assets/bosses/witch.png',
 };
 
 // ===== 인연각성 (필살기) =====
@@ -577,17 +579,20 @@ const BOSS_SKILLS = {
       } },
   ],
   lich: [
-    { name: '저주의 시선', interval: 3,
-      quote: '"약해져라…"',
+    // 악의 — 다음 hero 턴 마법 데미지를 흡수, 그 다음 보스 턴에 3배로 반환
+    { name: '악의', interval: 4,
+      quote: '"네 마법을 — 빨아들이지."',
       apply(b, r) {
-        b.heroDmgDebuff = { mul: 0.6, turns: 2 };
-        log('👁 저주의 시선 — 이그니아의 데미지 -40% (2턴)', 'enemy');
+        b.lichMalice = { phase: 'absorbing', collected: 0 };
+        log('💜 악의 — 다음 턴 마법 데미지를 흡수, 그 다음 턴 3배로 반환', 'enemy');
       } },
-    { name: '죽음의 룬', hpThreshold: 0.5, oneShot: true,
-      quote: '"너의 영혼에 룬을 새긴다!"',
+    // 끝없는 절망 — HP 50% 이하 1회. 매 턴 데미지가 2배로 증가하는 저주
+    { name: '끝없는 절망', hpThreshold: 0.5, oneShot: true,
+      quote: '"무너져라 — 끝없이."',
       apply(b, r) {
-        b.heroDot = { dmg: 8, turns: 5 };
-        log('💀 죽음의 룬 — 매 턴 8 데미지 (5턴)', 'enemy');
+        const initialDmg = Math.max(1, Math.floor(r.maxHp * 0.2));
+        b.heroDespair = { dmg: initialDmg };
+        log(`💀 끝없는 절망 — 매 턴 데미지가 2배로 (시작 ${initialDmg})`, 'enemy');
       } },
   ],
   dragon: [
@@ -603,6 +608,29 @@ const BOSS_SKILLS = {
       apply(b, r) {
         b.enemy.atk = Math.round(b.enemy.atk * 1.3);
         log(`🐉 분노 폭발 — 드래곤의 공격력 +30%`, 'enemy');
+      } },
+  ],
+  reaper: [
+    // 매혹의 시선 — hero 다음 1턴 행동 불가 (스턴)
+    { name: '매혹의 시선', interval: 4,
+      quote: '"…이리 오렴."',
+      apply(b, r) {
+        b.heroStunTurns = 1;
+        log('🌹 매혹의 시선 — 이그니아의 다음 행동 봉인', 'enemy');
+      } },
+    // 죽음의 입맞춤 — HP 50% 1회. 이그니아 현재 HP 30% 데미지 + 그만큼 사신 회복
+    { name: '죽음의 입맞춤', hpThreshold: 0.5, oneShot: true,
+      quote: '"마지막 — 입맞춤이야."',
+      apply(b, r) {
+        const dmg = Math.max(1, Math.floor(r.hp * 0.3));
+        log(`💋 죽음의 입맞춤 → ${dmg}`, 'enemy');
+        dealDamageToHero(dmg);
+        if (b.enemy.hp > 0) {
+          b.enemy.hp = Math.min(b.enemy.maxHp, b.enemy.hp + dmg);
+          showDmgNum('enemy', dmg, 'heal');
+          log(`매혹의 사신 회복 → +${dmg}`, 'enemy');
+          refreshBattleUI();
+        }
       } },
   ],
   'dragon-true': [
@@ -682,7 +710,34 @@ const BOSS_STORIES = {
         text: '이그니아 — "끝까지.\n어둠이 다 타버릴 때까지."' },
     ],
   },
-  // 3층 — 심연의 드래곤
+  // 3층 — 매혹의 사신
+  reaper: {
+    intro: [
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '동굴 깊숙한 곳 — 검은 안개가 짙어진다.\n그 안에서 한 여인이, 천천히 손짓한다.' },
+      { speaker: 'reaper',
+        text: '매혹의 사신 — "어머나… 또 한 송이의 불꽃이네."' },
+      { speaker: 'reaper',
+        text: '매혹의 사신 — "타오르는 영혼은 — 정말로, 가장 달콤한 맛이야."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…사신인가."' },
+      { speaker: 'reaper',
+        text: '매혹의 사신 — "그렇게 무서운 얼굴 짓지 말고. — 이리 오렴.\n살짝 — 입맞춤만 하면, 모든 게 끝나거든."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "끝나는 건 — 너다."' },
+    ],
+    outro: [
+      { img: '../assets/bosses/witch.png',
+        text: '검은 안개가 흩어지며, 사신의 모습이 점점 사라져간다.' },
+      { speaker: 'reaper',
+        text: '매혹의 사신 — "후훗… 정말로… 무서운 불꽃이네…\n그자도, 너를 — 마음에 들어하시겠어…"' },
+      { speaker: 'ignia',
+        text: '이그니아 — "그자…?\n\n그자가, 누구지."' },
+      { speaker: 'reaper',
+        text: '매혹의 사신 — "후후… 곧 — 만나게 될 거야."' },
+    ],
+  },
+  // 4층 — 심연의 드래곤
   dragon: {
     intro: [
       { img: '../assets/story/prologue-3-cave.png',
@@ -723,7 +778,7 @@ const BOSS_STORIES = {
 };
 
 function getBossStoryByFloor(floor) {
-  const id = ['giant', 'lich', 'dragon'][floor - 1] || 'dragon';
+  const id = ['giant', 'lich', 'reaper', 'dragon'][floor - 1] || 'dragon';
   return BOSS_STORIES[id];
 }
 
@@ -894,7 +949,7 @@ function nextStep() {
   // 직전 노드가 보스였으면 → 다음 층
   if (r.currentNode && r.currentNode.kind === 'boss') {
     r.floor++;
-    if (r.floor > 3) { endRun(true); return; }
+    if (r.floor > 4) { endRun(true); return; }
     r.roomNum = 1;
     r.shopsOfferedThisFloor = 0;
     r.bondUsedThisFloor = false;
@@ -984,7 +1039,7 @@ function startBattle(kind, node) {
   let ePool;
   if (kind === 'normal') ePool = ['goblin', 'orc', 'rogue', 'shield', 'drone'];
   else if (kind === 'elite') ePool = ['knight', 'shield', 'drone'];
-  else if (kind === 'boss') ePool = [['giant', 'lich', 'dragon'][f - 1] || 'dragon'];
+  else if (kind === 'boss') ePool = [['giant', 'lich', 'reaper', 'dragon'][f - 1] || 'dragon'];
   else if (kind === 'mimic') ePool = ['mimic'];
   const eid = (node && node.forceEnemy) ? node.forceEnemy : ePool[Math.floor(Math.random() * ePool.length)];
   const def = ENEMIES[eid];
@@ -1190,6 +1245,14 @@ function hitFlash(side) {
 function heroAction(action) {
   const b = game.run.battle;
   if (b.over) return;
+  // 매혹 등 — hero 스턴
+  if (b.heroStunTurns && b.heroStunTurns > 0) {
+    log('🌹 이그니아 — 매혹 상태! 행동을 잃는다…', 'system');
+    b.heroStunTurns--;
+    if (window.AUDIO) AUDIO.sfx('cancel');
+    endTurnHero();
+    return;
+  }
   if (action === 'attack') {
     if (b.attackCd > 0) return;
     doAttack();
@@ -1234,12 +1297,12 @@ function applyBondEffect(bond) {
     log(`💜 거부할 수 없는 매혹 — ${b.enemy.name} 3턴 행동 불가`, 'hero');
   } else if (bond.id === 'reyna') {
     const dmg = Math.round(effectiveStat('atk') * 5);
-    dealDamageToEnemy(dmg, 'crit');
+    dealDamageToEnemy(dmg, 'crit', 'attack');
     b.enemyAtkDebuff = { mul: 0.5, turns: 3 };
     log(`⚔ 맹렬한 상처 → ${dmg} + 적 공격력 -50% (3턴)`, 'hero');
   } else if (bond.id === 'luna') {
     const dmg = Math.round(effectiveStat('mag') * 5);
-    dealDamageToEnemy(dmg, 'crit');
+    dealDamageToEnemy(dmg, 'crit', 'skill');
     b.skillExtraAttackTurns = 3;
     log(`🌙 바람의 메아리 → ${dmg} + 3턴간 스킬 시 일반공격 추가타`, 'hero');
   }
@@ -1571,7 +1634,7 @@ function doAttack() {
     if (Math.random() < critC) { dmg = Math.round(dmg * 1.5); crit = true; if (window.AUDIO) AUDIO.sfx('crit'); }
     // 방패병 감소
     if (b.enemy.def.defReduce) dmg = Math.round(dmg * (1 - b.enemy.def.defReduce));
-    dealDamageToEnemy(dmg, crit ? 'crit' : '');
+    dealDamageToEnemy(dmg, crit ? 'crit' : '', 'attack');
     // 공격 흡혈
     const ls = getBoonModSum('attackLifesteal');
     if (ls > 0) {
@@ -1620,7 +1683,7 @@ function castSkill(skillId) {
         log(`${s.name} — 화상이 없다!`, 'system');
       } else {
         let dmg = Math.round(effectiveStat('mag') * 1.5 * count * knightMul);
-        dealDamageToEnemy(dmg, 'crit');
+        dealDamageToEnemy(dmg, 'crit', 'skill');
         log(`${s.name}! → ${count}중첩 폭발 → ${dmg}${knightCombo ? ' [마법기사]' : ''}`, 'hero');
       }
       r.skillCds[skillId] = getSkillCooldown(skillId);
@@ -1662,7 +1725,7 @@ function castSkill(skillId) {
         let crit = false;
         const critChance = critBase + (s.critBonus || 0);
         if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
-        dealDamageToEnemy(dmg, crit ? 'crit' : '');
+        dealDamageToEnemy(dmg, crit ? 'crit' : '', 'skill');
         totalDmg += dmg;
         totalHits++;
         // 마법 흡혈
@@ -1688,7 +1751,7 @@ function finishHeroSkill() {
   if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0 && b.enemy.hp > 0) {
     const extra = Math.round(effectiveStat('atk') * 0.6);
     if (window.AUDIO) AUDIO.sfx('attack');
-    dealDamageToEnemy(extra, '');
+    dealDamageToEnemy(extra, '', 'attack');
     log(`바람의 메아리 — 추가 일반공격 → ${extra}`, 'hero');
   }
   endTurnHero();
@@ -1728,11 +1791,19 @@ function doFlee() {
   }
 }
 
-function dealDamageToEnemy(dmg, kind) {
+function dealDamageToEnemy(dmg, kind, src) {
   const b = game.run.battle;
   if (b.toolDmgBoost) dmg = Math.round(dmg * (1 + b.toolDmgBoost));
   // 저주 등 — 이그니아의 데미지 디버프
   if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) dmg = Math.round(dmg * b.heroDmgDebuff.mul);
+  // 악의 — 마법(스킬) 데미지 흡수
+  if (b.lichMalice && b.lichMalice.phase === 'absorbing' && src === 'skill' && dmg > 0) {
+    b.lichMalice.collected = (b.lichMalice.collected || 0) + dmg;
+    showDmgNum('enemy', dmg, 'magic');
+    log(`💜 마녀가 마법을 흡수… (누적 ${b.lichMalice.collected})`, 'enemy');
+    refreshBattleUI();
+    return;
+  }
   b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
   showDmgNum('enemy', dmg, kind);
   hitFlash('enemy');
@@ -1857,6 +1928,14 @@ function tryFireBossSkill(b) {
 function enemyTurn() {
   const b = game.run.battle;
   if (b.enemy.hp <= 0) return;
+  // 끝없는 절망 — 매 턴 데미지가 2배로 증가하는 저주
+  if (b.heroDespair) {
+    const dmg = b.heroDespair.dmg;
+    log(`💀 끝없는 절망 — 저주 데미지 → ${dmg} (다음 턴 ×2)`, 'enemy');
+    dealDamageToHero(dmg);
+    b.heroDespair.dmg = b.heroDespair.dmg * 2;
+    if (game.run.hp <= 0) { setTimeout(() => onHeroDefeat(), 600); return; }
+  }
   // 죽음의 룬 등 — hero DoT 도트 데미지 (턴 시작 시)
   if (b.heroDot && b.heroDot.turns > 0) {
     const dmg = b.heroDot.dmg;
@@ -1883,15 +1962,30 @@ function enemyTurn() {
   }
   // 가시 카운터 — 한 hero 턴 한 번 발동 플래그 리셋
   b.bossThornsFiredThisTurn = false;
-  // 차지된 보스 스킬 — 우선 발동 (다른 스킬/일반 공격 대체)
   let actionTaken = false;
-  if (b.bossCharge) {
+  // 악의 — 흡수 페이즈 종료, 카운터 발동
+  if (b.lichMalice && b.lichMalice.phase === 'absorbing') {
+    const collected = b.lichMalice.collected || 0;
+    const counter = collected * 3;
+    b.lichMalice = null;
+    if (collected > 0) {
+      playCutin('악의 — 반환', '"네 마법이 — 너를 찢는다!"', b.enemy.def.sprite);
+      log(`💜 악의 — 흡수 ${collected} × 3 → ${counter}`, 'enemy');
+      dealDamageToHero(counter);
+    } else {
+      playCutin('악의 — 빈 손', '"…아무것도 없군."', b.enemy.def.sprite);
+      log('💜 악의 — 흡수한 마법이 없다', 'enemy');
+    }
+    actionTaken = true;
+  }
+  // 차지된 보스 스킬 — 우선 발동 (다른 스킬/일반 공격 대체)
+  if (!actionTaken && b.bossCharge) {
     const c = b.bossCharge;
     b.bossCharge = null;
     c.attack();
     actionTaken = true;
   }
-  // 보스 특수 기술 시도 (차지가 없을 때만)
+  // 보스 특수 기술 시도 (차지/카운터 없을 때만)
   if (!actionTaken) {
     actionTaken = tryFireBossSkill(b);
   }
@@ -1938,7 +2032,7 @@ function enemyTurn() {
       b.enemy.dominion = null;
       setTimeout(() => {
         log(`🔥 ${name} 폭발! → ${ddmg}`, 'system');
-        dealDamageToEnemy(ddmg, 'crit');
+        dealDamageToEnemy(ddmg, 'crit', 'skill');
         if (b.enemy.hp <= 0) {
           setTimeout(() => onEnemyDefeat(), 500);
         } else {
@@ -2586,6 +2680,23 @@ function endRun(victory) {
   game.meta.essence += earned;
   saveMeta();
 
+  // 4층까지 클리어한 경우 — 「계속」 엔딩 (숨겨진 진실을 암시)
+  const isFinalVictory = victory && r.floor > 4;
+  if (isFinalVictory) {
+    playStorySequence(FINAL_ENDING, () => {
+      $('result-title').textContent = 'TO BE CONTINUED';
+      $('result-title').className = 'victory';
+      $('result-text').innerHTML = '4층까지의 여정은 끝났다… 그러나 진정한 어둠은, 아직 — <em>잠들어있다</em>.';
+      $('result-stats').innerHTML = `
+        <div class="stat"><span class="k">처치</span><span class="v">${r.enemiesDefeated}</span></div>
+        <div class="stat"><span class="k">보스</span><span class="v">${r.bossesDefeated}</span></div>
+        <div class="stat"><span class="k">획득 정수</span><span class="v">+${earned}</span></div>
+        <div class="stat"><span class="k">도달 층</span><span class="v">4 / ?</span></div>`;
+      showScreen('result');
+    }, { finalLabel: '계속 ▶' });
+    return;
+  }
+
   $('result-title').textContent = victory ? 'VICTORY' : 'DEFEAT';
   $('result-title').className = victory ? 'victory' : 'defeat';
   $('result-text').textContent = victory
@@ -2598,6 +2709,26 @@ function endRun(victory) {
     <div class="stat"><span class="k">최종 층</span><span class="v">${r.floor}</span></div>`;
   showScreen('result');
 }
+
+// 4층 클리어 후 — 「계속」 엔딩 컷씬
+const FINAL_ENDING = [
+  { img: '../assets/bosses/dragon-true.png',
+    text: '거대한 어둠의 비룡이 잿더미가 되어 무너진다.\n동굴은 — 처음으로, 완전한 침묵에 잠긴다.' },
+  { speaker: 'ignia',
+    text: '이그니아 — "이게… 끝인가."' },
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '— 그러나.\n잿더미 사이로, 작은 속삭임이 새어나온다.' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '"…잘 했어, 작은 불꽃아."' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '"이제 — 진짜 어둠을 보러, 와다오."' },
+  { speaker: 'ignia',
+    text: '이그니아의 손끝 불꽃이 — 처음으로, 흔들린다.\n\n이그니아 — "…누구냐."' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '대답은 — 들려오지 않는다.\n오직, 끝없는 어둠이 — 미소 짓고 있을 뿐.' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '— 진정한 어둠은, 아직 — 잠들어있다.\n\n계속…' },
+];
 
 // ============================================================
 // 영원의 샘
