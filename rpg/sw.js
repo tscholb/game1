@@ -1,11 +1,13 @@
-const CACHE = 'ignia-v39-boon-levels';
+const CACHE = 'ignia-v40-audio';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './game.js',
+  './audio.js',
   './manifest.json',
   './title.png',
+  '../assets/audio/title.mp3',
   '../assets/heroes/mage.png',
   '../assets/heroes/mage-wounded.png',
   '../assets/heroes/archer.png',

@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v39-boon-levels';
+const VERSION = 'v40-audio';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -280,6 +280,16 @@ function showScreen(name) {
   for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
+  }
+  // BGM 트랙 매핑 (battle 은 startBattle 에서 별도 설정)
+  if (window.AUDIO) {
+    const map = {
+      title: 'title', menu: 'title', prologue: 'title',
+      fork: 'explore', 'rest-screen': 'explore', 'chest-screen': 'explore',
+      'shop-screen': 'shop', 'boon-screen': 'shop',
+      result: 'result', fountain: 'title',
+    };
+    if (Object.prototype.hasOwnProperty.call(map, name)) AUDIO.music(map[name]);
   }
 }
 
@@ -779,6 +789,13 @@ function renderFork() {
 }
 
 function chooseFork(node) {
+  if (window.AUDIO) {
+    if (node.type === 'event' && node.kind === 'arina') AUDIO.sfx('arina');
+    else if (node.type === 'rest') AUDIO.sfx('spring');
+    else if (node.type === 'shop') AUDIO.sfx('shop');
+    else if (node.type === 'treasure' || node.type === 'chest') AUDIO.sfx('coin');
+    else AUDIO.sfx('fork');
+  }
   game.run.pendingFork = null;
   // 진행 기록
   game.run.history = game.run.history || [];
@@ -862,6 +879,8 @@ function startBattle(kind, node) {
   log(`${def.name} 출현!`, 'system');
   if (sb) log('점화! 적이 불타기 시작한다', 'hero');
   showScreen('battle');
+  // 전투 BGM
+  if (window.AUDIO) AUDIO.music(kind === 'boss' ? 'boss' : 'battle');
 }
 
 function refreshBattleUI() {
@@ -1039,6 +1058,14 @@ function useTool(id) {
   const potencyBonus = 1 + (hasBoonMod('toolPotency') ? hasBoonMod('toolPotency').mod.toolPotency : 0);
   const t = TOOLS[id];
   let endsTurn = true;
+  if (window.AUDIO) {
+    if (id === 'bomb') AUDIO.sfx('bomb');
+    else if (id === 'potion' || id === 'greater') AUDIO.sfx('potion');
+    else if (id === 'smoke' || id === 'bulwark') AUDIO.sfx('defend');
+    else if (id === 'cooldown') AUDIO.sfx('select');
+    else if (id === 'haste') AUDIO.sfx('skill');
+    else AUDIO.sfx('tool');
+  }
   if (id === 'potion') {
     const heal = Math.round(50 * potencyBonus);
     healHero(heal);
@@ -1213,6 +1240,7 @@ function getBoonModSum(key) {
 function doAttack() {
   const b = game.run.battle;
   const r = game.run;
+  if (window.AUDIO) AUDIO.sfx('attack');
   const atkMulti = hasBoonMod('atkMulti') ? hasBoonMod('atkMulti').mod.atkMulti : 1;
   const flameBrand = !!hasBoonMod('flameBrand');
   const knightCombo = !!hasBoonMod('magicKnight') && b.lastAction === 'magic';
@@ -1239,7 +1267,7 @@ function doAttack() {
     // 치명타
     let crit = false;
     const critC = getBoonModSum('critChance');
-    if (Math.random() < critC) { dmg = Math.round(dmg * 1.5); crit = true; }
+    if (Math.random() < critC) { dmg = Math.round(dmg * 1.5); crit = true; if (window.AUDIO) AUDIO.sfx('crit'); }
     // 방패병 감소
     if (b.enemy.def.defReduce) dmg = Math.round(dmg * (1 - b.enemy.def.defReduce));
     dealDamageToEnemy(dmg, crit ? 'crit' : '');
@@ -1272,6 +1300,11 @@ function castSkill(skillId) {
   const b = r.battle;
   const s = SKILLS[skillId];
   if (!s) return;
+  if (window.AUDIO) {
+    if (skillId === 'meteor') AUDIO.sfx('meteor');
+    else if (skillId === 'firedom' || skillId === 'inferno' || skillId === 'firestorm' || skillId === 'flamethrower') AUDIO.sfx('fire');
+    else AUDIO.sfx('skill');
+  }
   if (getSkillCdNow(skillId) > 0) return;
   // cut-in (스킬별 일러스트)
   playCutin(s.name, s.quote, s.cutin);
@@ -1350,6 +1383,7 @@ function castSkill(skillId) {
 
 function doDefend() {
   const b = game.run.battle;
+  if (window.AUDIO) AUDIO.sfx('defend');
   if (hasBoonMod('defendPerfect')) {
     b.heroDefend = 0.8;
     healHero(10);
@@ -1365,8 +1399,10 @@ function doFlee() {
   const b = game.run.battle;
   if (b.enemy.def.boss || b.enemy.kind === 'elite') {
     log('이 적에게서는 도망칠 수 없다!', 'system');
+    if (window.AUDIO) AUDIO.sfx('cancel');
     return;
   }
+  if (window.AUDIO) AUDIO.sfx('flee');
   if (Math.random() < 0.6) {
     log('성공적으로 도망쳤다.', 'system');
     setTimeout(() => {
@@ -1394,6 +1430,7 @@ function healHero(amount) {
   const heal = Math.min(r.maxHp - r.hp, amount);
   if (heal <= 0) return;
   r.hp += heal;
+  if (window.AUDIO) AUDIO.sfx('heal');
   showDmgNum('hero', heal, 'heal');
   refreshBattleUI();
 }
@@ -1413,6 +1450,7 @@ function dealDamageToHero(dmg) {
   // 방어
   if (b.heroDefend > 0) dmg = Math.round(dmg * (1 - b.heroDefend));
   r.hp = Math.max(0, r.hp - dmg);
+  if (window.AUDIO && dmg > 0) AUDIO.sfx('hit');
   showDmgNum('hero', dmg);
   hitFlash('hero');
   refreshBattleUI();
@@ -1421,6 +1459,7 @@ function dealDamageToHero(dmg) {
   if (thorns > 0) {
     setTimeout(() => {
       b.enemy.hp = Math.max(0, b.enemy.hp - thorns);
+      if (window.AUDIO) AUDIO.sfx('thorn');
       showDmgNum('enemy', thorns);
       log(`가시 반사 → ${thorns}`, 'hero');
       refreshBattleUI();
@@ -1507,11 +1546,16 @@ function onEnemyDefeat() {
   b.over = true;
   log(`${b.enemy.name} 처치!`, 'system');
   game.run.enemiesDefeated++;
+  if (window.AUDIO) {
+    AUDIO.sfx(b.enemy.def.boss ? 'fanfare' : 'death');
+    if (b.enemy.def.boss) setTimeout(() => AUDIO.sfx('coin'), 300);
+  }
   // 보상 골드
   let gold = 10 + game.run.floor * 5 + (b.enemy.kind === 'elite' ? 25 : 0) + (b.enemy.def.boss ? 60 : 0);
   const goldMul = getBoonModSum('goldMul');
   if (goldMul > 0) gold = Math.round(gold * (1 + goldMul));
   game.run.gold += gold;
+  if (window.AUDIO) AUDIO.sfx('coin');
   log(`+${gold} 골드`, 'system');
   // 도구 마스터 — 엘리트/보스 처치 시 무작위 도구 1개
   if (hasBoonMod('toolOnElite') && (b.enemy.kind === 'elite' || b.enemy.def.boss)) {
@@ -1662,6 +1706,7 @@ function openBoonScreen(context, category, rarityFloor) {
 }
 
 function triggerLegendReveal(els) {
+  if (window.AUDIO) AUDIO.sfx('legendary');
   const flash = $('legend-flash');
   const rays  = $('legend-rays');
   if (flash) {
@@ -1723,11 +1768,13 @@ function applyBoon(boon) {
   if (existing) {
     if ((existing.level || 1) < max) existing.level = (existing.level || 1) + 1;
     if (boon.apply) boon.apply(r);
+    if (window.AUDIO) AUDIO.sfx('levelup');
     return;
   }
   const entry = Object.assign({}, boon, { level: 1 });
   r.boons.push(entry);
   if (boon.apply) boon.apply(r);
+  if (window.AUDIO) AUDIO.sfx(boon.rarity === 'legendary' ? 'legendary' : 'boon');
   if (boon.mod && boon.mod.grantSkill) {
     const sid = boon.mod.grantSkill;
     if (!r.skills.includes(sid)) {
@@ -1949,6 +1996,7 @@ function renderShop() {
 function resolveChestOpen() {
   const node = game.run.pendingChest;
   game.run.pendingChest = null;
+  if (window.AUDIO) AUDIO.sfx('open');
   // 도굴꾼의 주머니 — 상자 열 때 무작위 도구 1개
   if (hasBoonMod('chestTool')) {
     addTool(game.run, randomToolId());
@@ -1990,6 +2038,7 @@ function playCutin(name, quote, image) {
 // ============================================================
 function endRun(victory) {
   const r = game.run;
+  if (window.AUDIO) AUDIO.sfx(victory ? 'fanfare' : 'gameover');
   // 정수 보상
   let earned = r.enemiesDefeated + r.bossesDefeated * 5 + (victory ? 20 : 0);
   game.meta.essence += earned;
@@ -2101,6 +2150,30 @@ function boot() {
   // 버전 라벨
   const vEl = $('title-version');
   if (vEl) vEl.textContent = VERSION;
+  // 오디오 초기화 (첫 입력 시 컨텍스트 생성)
+  const initAudio = () => {
+    if (!window.AUDIO) return;
+    AUDIO.init();
+    AUDIO.resume();
+    refreshAudioToggles();
+    // 첫 입력 직후 타이틀 음악 시도 (자동재생 정책 우회)
+    const cur = $('title') && !$('title').classList.contains('hidden');
+    if (cur) AUDIO.music('title');
+  };
+  ['pointerdown', 'keydown', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, initAudio, { once: true, passive: true })
+  );
+  // 오디오 토글 버튼
+  const refreshAudioToggles = () => {
+    if (!window.AUDIO) return;
+    const m = $('audio-music'); const s = $('audio-sfx');
+    if (m) { m.textContent = AUDIO.musicEnabled ? '🎵' : '🔇'; m.classList.toggle('off', !AUDIO.musicEnabled); }
+    if (s) { s.textContent = AUDIO.sfxEnabled ? '🔊' : '🔕'; s.classList.toggle('off', !AUDIO.sfxEnabled); }
+  };
+  window.refreshAudioToggles = refreshAudioToggles;
+  $('audio-music').addEventListener('click', () => { AUDIO.init(); AUDIO.toggleMusic(); refreshAudioToggles(); AUDIO.sfx('click'); });
+  $('audio-sfx').addEventListener('click', () => { AUDIO.init(); AUDIO.toggleSfx(); refreshAudioToggles(); AUDIO.sfx('click'); });
+  refreshAudioToggles();
   // 타이틀
   $('title-start').addEventListener('click', () => {
     if (hasSeenPrologue()) {

@@ -11,6 +11,11 @@
 </head>
 <body>
   <div id="app">
+    <!-- 오디오 토글 (전역) -->
+    <div id="audio-toggles">
+      <button id="audio-music" class="audio-btn" title="배경 음악">🎵</button>
+      <button id="audio-sfx" class="audio-btn" title="효과음">🔊</button>
+    </div>
 
     <!-- ===== 타이틀 (첫 진입) ===== -->
     <div id="title" class="screen">
@@ -296,6 +301,7 @@
 
   </div>
 
+  <script src="./audio.js"></script>
   <script src="./game.js"></script>
 </body>
 </html>
