@@ -4,6 +4,9 @@
 
 const $ = id => document.getElementById(id);
 
+// 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
+const VERSION = 'v30-version-label';
+
 // ===== 영웅 데이터 =====
 const HEROES = [
   {
@@ -1690,6 +1693,9 @@ async function hardReset() {
 // 부팅
 // ============================================================
 function boot() {
+  // 버전 라벨
+  const vEl = $('title-version');
+  if (vEl) vEl.textContent = VERSION;
   // 타이틀
   $('title-start').addEventListener('click', () => {
     if (hasSeenPrologue()) {

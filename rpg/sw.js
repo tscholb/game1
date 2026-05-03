@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v29-hardreset';
+const CACHE = 'ignia-v30-version-label';
 const ASSETS = [
   './',
   './index.html',
