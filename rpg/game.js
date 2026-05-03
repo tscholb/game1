@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v47-lv-stats-conflict';
+const VERSION = 'v48-boss-skills';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -533,7 +533,96 @@ const ALICE_INTRO = [
     text: '이그니아 — "…수상한 가게군.\n뭐, 손해 볼 건 없겠지."' },
 ];
 
-// 아리나 — 첫 등장 컷씬 (런 당 1회)
+// ===== 보스 특수 기술 =====
+// trigger:
+//   interval: N — 보스 턴 카운터가 N 의 배수일 때 발동 (일반 공격 대신)
+//   hpThreshold: 0~1 — HP 비율이 이 값 이하로 떨어질 때 1회 발동
+//   quote: 컷인 대사
+const BOSS_SKILLS = {
+  giant: [
+    // 자연의 일격 — 1턴 차지 후 공격, 입힌 데미지만큼 회복 (HP 50% ↓이면 회복량 +50%)
+    { name: '자연의 일격', interval: 4,
+      quote: '"대지여 — 일어나라."',
+      apply(b, r) {
+        log('🌿 어둠의 드리아드 — 거대한 가지를 끌어올린다…', 'enemy');
+        log('자연의 일격 — 다음 턴 발동 (입힌 데미지만큼 회복)', 'system');
+        b.bossCharge = {
+          name: '자연의 일격',
+          quote: '"대지여 — 일어나라!"',
+          attack() {
+            const bb = game.run.battle;
+            const before = game.run.hp;
+            const dmg = Math.round(bb.enemy.atk * 1.6);
+            playCutin('자연의 일격', '"대지여 — 일어나라!"', bb.enemy.def.sprite);
+            log(`🌿 자연의 일격 → ${dmg}`, 'enemy');
+            dealDamageToHero(dmg);
+            const dealt = before - game.run.hp;
+            if (dealt > 0 && bb.enemy.hp > 0) {
+              const lowHp = bb.enemy.hp / bb.enemy.maxHp <= 0.5;
+              const healAmt = lowHp ? Math.round(dealt * 1.5) : dealt;
+              bb.enemy.hp = Math.min(bb.enemy.maxHp, bb.enemy.hp + healAmt);
+              showDmgNum('enemy', healAmt, 'heal');
+              log(`드리아드 회복 → +${healAmt}${lowHp ? ' (HP 50%↓ 보너스 +50%)' : ''}`, 'enemy');
+              refreshBattleUI();
+            }
+          }
+        };
+      } },
+    // 가시 — 3턴간 공격받을 때마다 일반 공격의 200% 카운터
+    { name: '가시', interval: 7,
+      quote: '"손대는 자, 피흘려라."',
+      apply(b, r) {
+        b.bossThorns = { turns: 3 };
+        log('🌵 가시 — 3턴간 공격받을 때마다 200% 카운터', 'enemy');
+      } },
+  ],
+  lich: [
+    { name: '저주의 시선', interval: 3,
+      quote: '"약해져라…"',
+      apply(b, r) {
+        b.heroDmgDebuff = { mul: 0.6, turns: 2 };
+        log('👁 저주의 시선 — 이그니아의 데미지 -40% (2턴)', 'enemy');
+      } },
+    { name: '죽음의 룬', hpThreshold: 0.5, oneShot: true,
+      quote: '"너의 영혼에 룬을 새긴다!"',
+      apply(b, r) {
+        b.heroDot = { dmg: 8, turns: 5 };
+        log('💀 죽음의 룬 — 매 턴 8 데미지 (5턴)', 'enemy');
+      } },
+  ],
+  dragon: [
+    { name: '화염의 숨결', interval: 4,
+      quote: '"불타라."',
+      apply(b, r) {
+        const dmg = Math.round(b.enemy.atk * 1.6);
+        log(`🔥 화염의 숨결 → ${dmg}`, 'enemy');
+        dealDamageToHero(dmg);
+      } },
+    { name: '분노의 포효', hpThreshold: 0.5, oneShot: true,
+      quote: '"끄아아아악!!"',
+      apply(b, r) {
+        b.enemy.atk = Math.round(b.enemy.atk * 1.3);
+        log(`🐉 분노 폭발 — 드래곤의 공격력 +30%`, 'enemy');
+      } },
+  ],
+  'dragon-true': [
+    { name: '심연의 숨결', interval: 3,
+      quote: '"어둠 속으로 — 가라앉아라."',
+      apply(b, r) {
+        const dmg = Math.round(b.enemy.atk * 1.8);
+        log(`🌑🔥 심연의 숨결 → ${dmg}`, 'enemy');
+        dealDamageToHero(dmg);
+      } },
+    { name: '심연의 포효', hpThreshold: 0.55, oneShot: true,
+      quote: '"이것이 진정한 어둠이다!"',
+      apply(b, r) {
+        b.enemy.atk = Math.round(b.enemy.atk * 1.4);
+        b.heroDmgDebuff = { mul: 0.7, turns: 3 };
+        log(`🌑 심연의 포효 — 드래곤 공격 +40%, 이그니아 데미지 -30% (3턴)`, 'enemy');
+      } },
+  ],
+};
+
 const BOSS_STORIES = {
   // 1층 — 어둠의 드리아드
   giant: {
@@ -923,6 +1012,10 @@ function startBattle(kind, node) {
     log: [],
     over: false,
     toolDmgBoost: 0,
+    heroDmgDebuff: null,
+    heroDot: null,
+    bossSkillTurn: 0,
+    bossSkillTriggered: {},
   };
   $('enemy-name').textContent = def.name + (kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '');
   const art = $('enemy-art');
@@ -1638,11 +1731,22 @@ function doFlee() {
 function dealDamageToEnemy(dmg, kind) {
   const b = game.run.battle;
   if (b.toolDmgBoost) dmg = Math.round(dmg * (1 + b.toolDmgBoost));
+  // 저주 등 — 이그니아의 데미지 디버프
+  if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) dmg = Math.round(dmg * b.heroDmgDebuff.mul);
   b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
   showDmgNum('enemy', dmg, kind);
   hitFlash('enemy');
   shake();
   refreshBattleUI();
+  // 보스 가시 카운터 — 한 hero 턴 1회
+  if (b.bossThorns && b.bossThorns.turns > 0 && !b.bossThornsFiredThisTurn && b.enemy.hp > 0 && kind !== 'counter' && kind !== 'burn') {
+    b.bossThornsFiredThisTurn = true;
+    const counter = Math.round(dmg * 2);
+    setTimeout(() => {
+      log(`🌵 가시 카운터 → ${counter}`, 'enemy');
+      dealDamageToHero(counter);
+    }, 250);
+  }
 }
 
 function healHero(amount) {
@@ -1721,15 +1825,53 @@ function endTurnHero(skipDefense) {
   setTimeout(() => enemyTurn(), 700);
 }
 
+function tryFireBossSkill(b) {
+  const skills = BOSS_SKILLS[b.enemy.id];
+  if (!skills) return false;
+  b.bossSkillTurn = (b.bossSkillTurn || 0) + 1;
+  const fire = (sk) => {
+    if (window.AUDIO) AUDIO.sfx('skill');
+    playCutin(sk.name, sk.quote || '', b.enemy.def.sprite);
+    sk.apply(b, game.run);
+  };
+  // HP 임계값 1회용 — 우선 발동
+  for (const sk of skills) {
+    if (sk.oneShot && typeof sk.hpThreshold === 'number') {
+      if (!b.bossSkillTriggered[sk.name] && b.enemy.hp / b.enemy.maxHp <= sk.hpThreshold) {
+        b.bossSkillTriggered[sk.name] = true;
+        fire(sk);
+        return true;
+      }
+    }
+  }
+  // 인터벌 발동
+  for (const sk of skills) {
+    if (typeof sk.interval === 'number' && b.bossSkillTurn > 0 && b.bossSkillTurn % sk.interval === 0) {
+      fire(sk);
+      return true;
+    }
+  }
+  return false;
+}
+
 function enemyTurn() {
   const b = game.run.battle;
   if (b.enemy.hp <= 0) return;
+  // 죽음의 룬 등 — hero DoT 도트 데미지 (턴 시작 시)
+  if (b.heroDot && b.heroDot.turns > 0) {
+    const dmg = b.heroDot.dmg;
+    b.heroDot.turns--;
+    log(`💀 룬 데미지 → ${dmg}`, 'enemy');
+    dealDamageToHero(dmg);
+    if (game.run.hp <= 0) { setTimeout(() => onHeroDefeat(), 600); return; }
+  }
   // 거부할 수 없는 매혹 — 적 행동 불가
   if (b.enemyStunTurns && b.enemyStunTurns > 0) {
     b.enemyStunTurns--;
     log(`${b.enemy.name} — 매혹 상태! 행동 불가 (남은 ${b.enemyStunTurns}턴)`, 'enemy');
     if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) b.enemyAtkDebuff.turns--;
     if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0) b.skillExtraAttackTurns--;
+    if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) b.heroDmgDebuff.turns--;
     b.heroDefend = 0;
     b.turn++;
     for (const id of Object.keys(game.run.skillCds)) {
@@ -1739,13 +1881,29 @@ function enemyTurn() {
     refreshBattleUI();
     return;
   }
-  let dmg = b.enemy.atk;
-  // 맹렬한 상처 — 적 공격력 디버프
-  if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) {
-    dmg = Math.round(dmg * b.enemyAtkDebuff.mul);
+  // 가시 카운터 — 한 hero 턴 한 번 발동 플래그 리셋
+  b.bossThornsFiredThisTurn = false;
+  // 차지된 보스 스킬 — 우선 발동 (다른 스킬/일반 공격 대체)
+  let actionTaken = false;
+  if (b.bossCharge) {
+    const c = b.bossCharge;
+    b.bossCharge = null;
+    c.attack();
+    actionTaken = true;
   }
-  log(`${b.enemy.name}의 공격 → ${dmg}`, 'enemy');
-  dealDamageToHero(dmg);
+  // 보스 특수 기술 시도 (차지가 없을 때만)
+  if (!actionTaken) {
+    actionTaken = tryFireBossSkill(b);
+  }
+  if (!actionTaken) {
+    let dmg = b.enemy.atk;
+    // 맹렬한 상처 — 적 공격력 디버프
+    if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) {
+      dmg = Math.round(dmg * b.enemyAtkDebuff.mul);
+    }
+    log(`${b.enemy.name}의 공격 → ${dmg}`, 'enemy');
+    dealDamageToHero(dmg);
+  }
   if (game.run.hp <= 0) {
     setTimeout(() => onHeroDefeat(), 600);
     return;
@@ -1762,6 +1920,9 @@ function enemyTurn() {
   // 인연각성 버프 지속 -1
   if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) b.enemyAtkDebuff.turns--;
   if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0) b.skillExtraAttackTurns--;
+  // 보스 디버프/카운터 지속 -1
+  if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) b.heroDmgDebuff.turns--;
+  if (b.bossThorns && b.bossThorns.turns > 0) b.bossThorns.turns--;
   // 매 턴 recoil HP 손실 (광기의 화염 등)
   const recoil = getBoonModSum('recoil');
   if (recoil > 0 && game.run.hp > 1) {

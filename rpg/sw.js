@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v47-lv-stats-conflict';
+const CACHE = 'ignia-v48-boss-skills';
 const ASSETS = [
   './',
   './index.html',
