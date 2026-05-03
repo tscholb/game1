@@ -154,21 +154,23 @@ const BOONS = [
   { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '모든 스킬 쿨다운 -1',                 rarity: 'rare',   mod: { skillCdReduce: 1 } },
 
   // epic
-  { id: 'b-vamp',      cat: 'attack',  name: '흡혈',     desc: '공격 시 데미지의 30% HP로 회복',      rarity: 'epic',   mod: { lifesteal: 0.3 } },
   { id: 'b-flamethrower', cat: 'magic', name: '화염방사', desc: '새 스킬 「화염방사」 획득 — 5회 연속 화염',  rarity: 'epic',   mod: { grantSkill: 'flamethrower' } },
   { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '새 스킬 「화염 폭풍」 획득 — 3회 연타',     rarity: 'epic',   mod: { grantSkill: 'firestorm' } },
   { id: 'b-inferno',   cat: 'magic',   name: '지옥불',   desc: '새 스킬 「지옥불」 획득 — 맹렬한 화상',     rarity: 'epic',   mod: { grantSkill: 'inferno' } },
   { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   mod: { burnMul: 2, burnTurnsBonus: 2 } },
-  { id: 'b-double',    cat: 'attack',  name: '쌍수',     desc: '공격이 2회 발동',                    rarity: 'epic',   mod: { atkMulti: 2 } },
   { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 100% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
   { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
 
   // legendary
-  { id: 'b-phoenix',   cat: 'defend',  name: '불사조',   desc: 'HP 0이 되면 한 번 50%로 부활',       rarity: 'legendary', mod: { phoenix: true } },
-  { id: 'b-meteor',    cat: 'magic',   name: '메테오',   desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
-  { id: 'b-firedom',   cat: 'magic',   name: '불의 지배', desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
-  { id: 'b-flame-lord', cat: 'magic',  name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',   rarity: 'legendary', mod: { eternalBurn: true } },
-  { id: 'b-soul',      cat: 'utility', name: '영혼 흡수', desc: '적 처치 시 최대 HP +5, HP 완전 회복', rarity: 'legendary', mod: { soulSteal: true } },
+  { id: 'b-phoenix',     cat: 'defend',  name: '불사조',     desc: 'HP 0이 되면 한 번 50%로 부활',         rarity: 'legendary', mod: { phoenix: true } },
+  { id: 'b-vamp',        cat: 'attack',  name: '공격 흡혈',  desc: '일반 공격 데미지의 30% HP로 회복',     rarity: 'legendary', mod: { attackLifesteal: 0.3 } },
+  { id: 'b-mag-vamp',    cat: 'magic',   name: '마법 흡혈',  desc: '스킬 데미지의 30% HP로 회복',          rarity: 'legendary', mod: { magLifesteal: 0.3 } },
+  { id: 'b-double',      cat: 'attack',  name: '쌍수',       desc: '공격이 2회 발동',                      rarity: 'legendary', mod: { atkMulti: 2 } },
+  { id: 'b-double-skill', cat: 'magic',  name: '이중 시전',  desc: '스킬이 2회 발동',                      rarity: 'legendary', mod: { skillMulti: 2 } },
+  { id: 'b-meteor',      cat: 'magic',   name: '메테오',     desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
+  { id: 'b-firedom',     cat: 'magic',   name: '불의 지배',  desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
+  { id: 'b-flame-lord',  cat: 'magic',   name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',     rarity: 'legendary', mod: { eternalBurn: true } },
+  { id: 'b-soul',        cat: 'utility', name: '영혼 흡수',  desc: '적 처치 시 최대 HP +5, HP 완전 회복',  rarity: 'legendary', mod: { soulSteal: true } },
 
   // unstable — 메리트 + 디메리트 동시
   { id: 'b-time-warp',  cat: 'magic',  name: '시간 왜곡',  desc: '◆ 모든 스킬 쿨다운 절반 ◇ 일반 공격 후 2턴 쿨다운', rarity: 'unstable', mod: { skillCdHalf: true, attackCdMax: 2 } },
@@ -936,8 +938,8 @@ function doAttack() {
     // 방패병 감소
     if (b.enemy.def.defReduce) dmg = Math.round(dmg * (1 - b.enemy.def.defReduce));
     dealDamageToEnemy(dmg, crit ? 'crit' : '');
-    // 흡혈
-    const ls = getBoonModSum('lifesteal');
+    // 공격 흡혈
+    const ls = getBoonModSum('attackLifesteal');
     if (ls > 0) {
       const heal = Math.round(dmg * ls);
       healHero(heal);
@@ -959,10 +961,11 @@ function castSkill(skillId) {
   if (getSkillCdNow(skillId) > 0) return;
   // cut-in (스킬별 일러스트)
   playCutin(s.name, s.quote, s.cutin);
+  const skillMulti = hasBoonMod('skillMulti') ? hasBoonMod('skillMulti').mod.skillMulti : 1;
   // 지연 폭발 스킬 (불의 지배 등)
   if (s.delay) {
     setTimeout(() => {
-      const dmg = Math.round(effectiveStat('mag') * s.delayMul);
+      const dmg = Math.round(effectiveStat('mag') * s.delayMul * skillMulti);
       b.enemy.dominion = { delay: s.delay, dmg, name: s.name };
       log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})`, 'hero');
       r.skillCds[skillId] = getSkillCooldown(skillId);
@@ -976,29 +979,34 @@ function castSkill(skillId) {
     const burnDmg = Math.round(s.burnDmg * burnMul);
     const burnTurns = s.burnTurns + burnBonus;
     const critBase = getBoonModSum('critChance');
+    const ls = getBoonModSum('magLifesteal');
     let totalDmg = 0;
-    for (let i = 0; i < s.hits; i++) {
+    let totalHits = 0;
+    for (let cast = 0; cast < skillMulti; cast++) {
       if (b.enemy.hp <= 0) break;
-      let dmg = Math.round(effectiveStat('mag') * s.mul);
-      // 과열 — HP 50% 이하 시 마법 부스트
-      const lowMag = getBoonModSum('lowHpMagBonus');
-      if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
-      let crit = false;
-      const critChance = critBase + (s.critBonus || 0);
-      if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
-      dealDamageToEnemy(dmg, crit ? 'crit' : '');
-      totalDmg += dmg;
-      // 흡혈
-      const ls = getBoonModSum('lifesteal');
-      if (ls > 0) healHero(Math.round(dmg * ls));
+      for (let i = 0; i < s.hits; i++) {
+        if (b.enemy.hp <= 0) break;
+        let dmg = Math.round(effectiveStat('mag') * s.mul);
+        // 과열 — HP 50% 이하 시 마법 부스트
+        const lowMag = getBoonModSum('lowHpMagBonus');
+        if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
+        let crit = false;
+        const critChance = critBase + (s.critBonus || 0);
+        if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
+        dealDamageToEnemy(dmg, crit ? 'crit' : '');
+        totalDmg += dmg;
+        totalHits++;
+        // 마법 흡혈
+        if (ls > 0) healHero(Math.round(dmg * ls));
+      }
     }
     // 화상 적용 (있으면)
     if (burnTurns > 0 && burnDmg > 0 && b.enemy.hp > 0) {
       b.enemy.burns = Math.max(b.enemy.burns, burnTurns);
       b.enemy.burnDmg = Math.max(b.enemy.burnDmg, burnDmg);
-      log(`${s.name}! → 총 ${totalDmg} (${s.hits}타) + 화상`, 'hero');
+      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타) + 화상`, 'hero');
     } else {
-      log(`${s.name}! → 총 ${totalDmg} (${s.hits}타)`, 'hero');
+      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타)`, 'hero');
     }
     r.skillCds[skillId] = getSkillCooldown(skillId);
     endTurnHero();

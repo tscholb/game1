@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v25-dragon-true';
+const CACHE = 'ignia-v26-merchant';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const ASSETS = [
   '../assets/bosses/dragon-true.png',
   '../assets/scenes/spring.png',
   '../assets/scenes/chest.png',
+  '../assets/scenes/merchant.png',
 ];
 
 self.addEventListener('install', e => {
