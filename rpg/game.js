@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v45-bond-warn';
+const VERSION = 'v46-boon-lv-effect';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -1371,6 +1371,33 @@ function getBoonLevel(id) {
   return b ? (b.level || 1) : 0;
 }
 
+// 가호의 레벨별 효과 텍스트 — UI 표시용
+function getBoonEffectAtLevel(boon, level) {
+  if (!boon) return '';
+  const m = boon.mod || {};
+  const pct = (v) => `${Math.round(v * 100)}%`;
+  switch (boon.id) {
+    case 'b-warmup':         return `첫 공격 +${pct(m.firstAtkBonus * level)}`;
+    case 'b-bulwark':        return `첫 피격 -${pct(Math.min(1, m.firstHitReduce * level))}`;
+    case 'b-spark':          return `시작 화상 ${m.startBurn.dmg * level} / ${m.startBurn.turns}턴`;
+    case 'b-bargain':        return `골드 +${pct(m.goldMul * level)}`;
+    case 'b-overheat':       return `HP 50% 이하 마법 +${pct(m.lowHpMagBonus * level)}`;
+    case 'b-bloodlust':      return `HP 30% 이하 공격 +${pct(m.lowHpAtkBonus * level)}`;
+    case 'b-crit':           return `치명 확률 +${pct(m.critChance * level)}`;
+    case 'b-thorns':         return `가시 반사 ${m.thorns * level}`;
+    case 'b-quick':          return `스킬 쿨다운 -${m.skillCdReduce * level}`;
+    case 'b-fortune':        return `치명 +${pct(m.critChance * level)} · 골드 +${50 * level} 누적`;
+    case 'b-vamp':           return `공격 흡혈 ${pct(m.attackLifesteal * level)}`;
+    case 'b-mag-vamp':       return `마법 흡혈 ${pct(m.magLifesteal * level)}`;
+    case 'b-burn-mark':      return `화상 ×${m.burnMul * level} · 지속 +${m.burnTurnsBonus * level}턴`;
+    case 'b-toolkit-mastery':return `도구 효과 +${pct(m.toolPotency * level)}`;
+    case 'b-alchemist':      return `시작 도구 ×${level} · 매 층 도구 ×${level}`;
+    case 'b-herbalist':      return `시작 「체력 포션」 ×${2 * level}`;
+    case 'b-tool-belt':      return `시작 무작위 도구 ×${3 * level}`;
+    default:                 return boon.desc || '';
+  }
+}
+
 function getBoonModSum(key) {
   let sum = 0;
   for (const b of game.run.boons) {
@@ -1867,10 +1894,24 @@ function openBoonScreen(context, category, rarityFloor) {
     const isLevelUp = curLv > 0 && curLv < max;
     let badge = '';
     if (isLevelUp) {
-      badge = `<div class="lv-badge up">⬆ Lv.${curLv} → Lv.${curLv + 1}</div>`;
+      const cur = getBoonEffectAtLevel(b, curLv);
+      const nxt = getBoonEffectAtLevel(b, curLv + 1);
+      badge = `
+        <div class="lv-badge up">⬆ Lv.${curLv} → Lv.${curLv + 1}</div>
+        <div class="lv-effect">
+          <div class="lv-eff-row"><span class="lv-eff-tag cur">현재</span> ${cur}</div>
+          <div class="lv-eff-row"><span class="lv-eff-tag next">다음</span> ${nxt}</div>
+        </div>`;
       el.classList.add('level-up');
     } else if (max > 1) {
-      badge = `<div class="lv-badge">최대 Lv.${max}</div>`;
+      const lv1 = getBoonEffectAtLevel(b, 1);
+      const lvm = getBoonEffectAtLevel(b, max);
+      badge = `
+        <div class="lv-badge">최대 Lv.${max}</div>
+        <div class="lv-effect dim">
+          <div class="lv-eff-row"><span class="lv-eff-tag">Lv.1</span> ${lv1}</div>
+          <div class="lv-eff-row"><span class="lv-eff-tag">Lv.${max}</span> ${lvm}</div>
+        </div>`;
     }
     el.innerHTML = `
       <div class="rarity">${lbl}</div>
@@ -1923,7 +1964,19 @@ function openBoonConfirm(boon) {
     $('bc-rarity').textContent = `◆ ${rarLbl} 가호 ◆`;
   }
   $('bc-name').textContent = boon.name;
-  $('bc-desc').textContent = boon.desc;
+  // 효과 비교 — 레벨업이면 현재 → 다음, 아니면 일반 설명
+  if (isLevelUp) {
+    const cur = getBoonEffectAtLevel(boon, curLv);
+    const nxt = getBoonEffectAtLevel(boon, curLv + 1);
+    $('bc-desc').innerHTML = `
+      <div class="bc-effect-cmp">
+        <div class="bc-eff-row"><span class="bc-eff-tag cur">현재 Lv.${curLv}</span> ${cur}</div>
+        <div class="bc-eff-row"><span class="bc-eff-tag next">⬆ Lv.${curLv + 1}</span> ${nxt}</div>
+      </div>
+      <div class="bc-base-desc">${boon.desc}</div>`;
+  } else {
+    $('bc-desc').textContent = boon.desc;
+  }
   $('boon-confirm').classList.add('active');
   const yes = $('boon-confirm-yes'), no = $('boon-confirm-no');
   const close = () => $('boon-confirm').classList.remove('active');

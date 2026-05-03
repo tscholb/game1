@@ -1485,6 +1485,94 @@ button:active { transform: scale(0.96); }
   box-shadow: 0 0 14px rgba(255, 200, 100, 0.45) inset, 0 0 12px rgba(255, 200, 100, 0.35);
   animation: lvUpPulse 1.4s ease-in-out infinite;
 }
+/* 가호 효과 비교 (선택창) */
+.boon-choice .lv-effect {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 2;
+}
+.boon-choice .lv-effect.dim { opacity: 0.7; }
+.boon-choice .lv-eff-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #d8c8b0;
+  line-height: 1.5;
+  padding: 1px 0;
+}
+.boon-choice .lv-eff-tag {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(120, 100, 80, 0.4);
+  color: #c0b090;
+  border: 1px solid rgba(200, 180, 140, 0.3);
+  flex-shrink: 0;
+}
+.boon-choice .lv-eff-tag.cur {
+  background: rgba(80, 80, 100, 0.45);
+  color: #b0c0d8;
+  border-color: rgba(140, 160, 200, 0.4);
+}
+.boon-choice .lv-eff-tag.next {
+  background: linear-gradient(90deg, rgba(243,216,120,0.40), rgba(255,180,80,0.45));
+  color: #1a0e0a;
+  border-color: rgba(255, 220, 120, 0.85);
+  text-shadow: 0 0 4px rgba(255, 240, 180, 0.8);
+}
+
+/* 가호 확인 다이얼로그 — 효과 비교 */
+.boon-confirm-card .bc-effect-cmp {
+  margin: 6px 0 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 220, 120, 0.4);
+}
+.boon-confirm-card .bc-eff-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #e8d8c0;
+  line-height: 1.6;
+  padding: 2px 0;
+}
+.boon-confirm-card .bc-eff-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.boon-confirm-card .bc-eff-tag.cur {
+  background: rgba(80, 80, 100, 0.55);
+  color: #b8c8e0;
+  border: 1px solid rgba(140, 160, 200, 0.5);
+}
+.boon-confirm-card .bc-eff-tag.next {
+  background: linear-gradient(90deg, rgba(243,216,120,0.55), rgba(255,180,80,0.65));
+  color: #1a0e0a;
+  border: 1px solid rgba(255, 220, 120, 0.95);
+  text-shadow: 0 0 6px rgba(255, 240, 180, 0.85);
+  box-shadow: 0 0 10px rgba(255, 200, 100, 0.55);
+}
+.boon-confirm-card .bc-base-desc {
+  font-size: 12px;
+  color: #b0a090;
+  font-style: italic;
+  margin-top: 4px;
+}
 @keyframes lvUpPulse {
   0%, 100% { box-shadow: 0 0 14px rgba(255, 200, 100, 0.45) inset, 0 0 12px rgba(255, 200, 100, 0.35); }
   50%      { box-shadow: 0 0 20px rgba(255, 220, 130, 0.65) inset, 0 0 22px rgba(255, 220, 130, 0.6); }
