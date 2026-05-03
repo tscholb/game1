@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v46-boon-lv-effect';
+const CACHE = 'ignia-v47-lv-stats-conflict';
 const ASSETS = [
   './',
   './index.html',

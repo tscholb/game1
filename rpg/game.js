@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v46-boon-lv-effect';
+const VERSION = 'v47-lv-stats-conflict';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -1398,6 +1398,45 @@ function getBoonEffectAtLevel(boon, level) {
   }
 }
 
+// 가호 레벨별 「수치」 분해 — { label, value } 배열로 반환
+function getBoonStatsAtLevel(boon, level) {
+  if (!boon) return [];
+  const m = boon.mod || {};
+  const pct = (v) => `+${Math.round(v * 100)}%`;
+  switch (boon.id) {
+    case 'b-warmup':         return [{ label: '첫 공격 데미지', value: pct(m.firstAtkBonus * level) }];
+    case 'b-bulwark':        return [{ label: '첫 피격 감소',   value: `-${Math.round(Math.min(1, m.firstHitReduce * level) * 100)}%` }];
+    case 'b-spark':          return [
+                                 { label: '시작 화상 데미지', value: `${m.startBurn.dmg * level}` },
+                                 { label: '시작 화상 지속',   value: `${m.startBurn.turns}턴` },
+                               ];
+    case 'b-bargain':        return [{ label: '획득 골드',     value: pct(m.goldMul * level) }];
+    case 'b-overheat':       return [{ label: 'HP 50%↓ 마법',  value: pct(m.lowHpMagBonus * level) }];
+    case 'b-bloodlust':      return [{ label: 'HP 30%↓ 공격',  value: pct(m.lowHpAtkBonus * level) }];
+    case 'b-crit':           return [{ label: '치명타 확률',   value: pct(m.critChance * level) }];
+    case 'b-thorns':         return [{ label: '가시 반사 데미지', value: `${m.thorns * level}` }];
+    case 'b-quick':          return [{ label: '스킬 쿨다운',   value: `-${m.skillCdReduce * level}` }];
+    case 'b-fortune':        return [
+                                 { label: '치명타 확률', value: pct(m.critChance * level) },
+                                 { label: '획득 골드',   value: `+${50 * level} 누적` },
+                               ];
+    case 'b-vamp':           return [{ label: '공격 흡혈',     value: pct(m.attackLifesteal * level) }];
+    case 'b-mag-vamp':       return [{ label: '마법 흡혈',     value: pct(m.magLifesteal * level) }];
+    case 'b-burn-mark':      return [
+                                 { label: '화상 데미지', value: `×${m.burnMul * level}` },
+                                 { label: '화상 지속',   value: `+${m.burnTurnsBonus * level}턴` },
+                               ];
+    case 'b-toolkit-mastery':return [{ label: '도구 효과',     value: pct(m.toolPotency * level) }];
+    case 'b-alchemist':      return [
+                                 { label: '시작 시 도구',     value: `×${level}` },
+                                 { label: '매 층 시작 도구',  value: `×${level}` },
+                               ];
+    case 'b-herbalist':      return [{ label: '시작 체력 포션', value: `×${2 * level}` }];
+    case 'b-tool-belt':      return [{ label: '시작 무작위 도구', value: `×${3 * level}` }];
+    default:                 return [];
+  }
+}
+
 function getBoonModSum(key) {
   let sum = 0;
   for (const b of game.run.boons) {
@@ -1841,6 +1880,19 @@ function onHeroDefeat() {
 // ============================================================
 // 가호 시스템
 // ============================================================
+// 서로 상충되는 가호 그룹 — 한 그룹에서 한 개만 보유 가능
+const CONFLICT_GROUPS = [
+  // 「공격 2회」 vs 「스킬 2회」 — 같이 가지면 서로의 쿨다운 페널티가 충돌
+  ['b-double', 'b-double-skill'],
+];
+
+function getConflictingIds(boonId) {
+  for (const grp of CONFLICT_GROUPS) {
+    if (grp.includes(boonId)) return grp.filter(id => id !== boonId);
+  }
+  return [];
+}
+
 function rollBoonChoices(category, rarityFloor = 'common') {
   const weights = {
     common:    { common: 56, rare: 28, epic: 9,  legendary: 0,  unstable: 7 },
@@ -1850,13 +1902,16 @@ function rollBoonChoices(category, rarityFloor = 'common') {
   }[rarityFloor] || { common: 56, rare: 28, epic: 9, legendary: 0, unstable: 7 };
   // 보유 중이지만 최대 레벨에 도달한 가호만 제외 (레벨업 가능한 것은 풀에 유지)
   const maxedIds = new Set();
+  // 보유한 가호의 충돌 그룹 항목도 풀에서 제외
+  const conflictExcluded = new Set();
   for (const b of game.run.boons) {
     const def = BOONS.find(x => x.id === b.id);
     const max = def && def.maxLevel ? def.maxLevel : 1;
     if ((b.level || 1) >= max) maxedIds.add(b.id);
+    for (const id of getConflictingIds(b.id)) conflictExcluded.add(id);
   }
   // 카테고리 매칭: 카테고리 지정 시 해당 카테고리 우선
-  let pool = BOONS.filter(b => !maxedIds.has(b.id));
+  let pool = BOONS.filter(b => !maxedIds.has(b.id) && !conflictExcluded.has(b.id));
   let priority = category ? pool.filter(b => b.cat === category) : pool;
   const picks = [];
   for (let i = 0; i < 3; i++) {
@@ -1875,6 +1930,12 @@ function rollBoonChoices(category, rarityFloor = 'common') {
     picks.push(chosen);
     pool = pool.filter(b => b !== chosen);
     priority = priority.filter(b => b !== chosen);
+    // 같은 충돌 그룹의 다른 항목도 이번 선택지에서 제외
+    const chosenConflicts = getConflictingIds(chosen.id);
+    if (chosenConflicts.length > 0) {
+      pool = pool.filter(b => !chosenConflicts.includes(b.id));
+      priority = priority.filter(b => !chosenConflicts.includes(b.id));
+    }
   }
   return picks;
 }
@@ -1892,32 +1953,42 @@ function openBoonScreen(context, category, rarityFloor) {
     const curLv = getBoonLevel(b.id);
     const max = b.maxLevel || 1;
     const isLevelUp = curLv > 0 && curLv < max;
-    let badge = '';
+    let body = '';
     if (isLevelUp) {
-      const cur = getBoonEffectAtLevel(b, curLv);
-      const nxt = getBoonEffectAtLevel(b, curLv + 1);
-      badge = `
-        <div class="lv-badge up">⬆ Lv.${curLv} → Lv.${curLv + 1}</div>
-        <div class="lv-effect">
-          <div class="lv-eff-row"><span class="lv-eff-tag cur">현재</span> ${cur}</div>
-          <div class="lv-eff-row"><span class="lv-eff-tag next">다음</span> ${nxt}</div>
-        </div>`;
       el.classList.add('level-up');
+      const curStats = getBoonStatsAtLevel(b, curLv);
+      const nxtStats = getBoonStatsAtLevel(b, curLv + 1);
+      const rows = curStats.map((s, i) => `
+        <div class="upg-row">
+          <div class="upg-label">${s.label}</div>
+          <div class="upg-vals">
+            <span class="upg-cur">${s.value}</span>
+            <span class="upg-arrow">→</span>
+            <span class="upg-next">${nxtStats[i] ? nxtStats[i].value : s.value}</span>
+          </div>
+        </div>`).join('');
+      body = `
+        <div class="lv-up-banner">⬆ 레벨업 — Lv.${curLv} → Lv.${curLv + 1}</div>
+        <div class="upg-box">${rows}</div>
+        <div class="lv-up-flavor">${b.desc}</div>`;
     } else if (max > 1) {
-      const lv1 = getBoonEffectAtLevel(b, 1);
-      const lvm = getBoonEffectAtLevel(b, max);
-      badge = `
-        <div class="lv-badge">최대 Lv.${max}</div>
-        <div class="lv-effect dim">
-          <div class="lv-eff-row"><span class="lv-eff-tag">Lv.1</span> ${lv1}</div>
-          <div class="lv-eff-row"><span class="lv-eff-tag">Lv.${max}</span> ${lvm}</div>
-        </div>`;
+      // 첫 획득 — Lv.1 효과 + 최대 레벨 안내
+      const stats = getBoonStatsAtLevel(b, 1);
+      const rows = stats.map(s => `
+        <div class="upg-row simple">
+          <div class="upg-label">${s.label}</div>
+          <div class="upg-vals"><span class="upg-next">${s.value}</span></div>
+        </div>`).join('');
+      body = `
+        <div class="desc">${b.desc}</div>
+        ${rows ? `<div class="upg-box outline">${rows}<div class="upg-hint">최대 Lv.${max} — 같은 가호로 강화 가능</div></div>` : ''}`;
+    } else {
+      body = `<div class="desc">${b.desc}</div>`;
     }
     el.innerHTML = `
       <div class="rarity">${lbl}</div>
       <div class="name">${b.name}</div>
-      <div class="desc">${b.desc}</div>
-      ${badge}`;
+      ${body}`;
     el.addEventListener('click', () => openBoonConfirm(b));
     wrap.appendChild(el);
     if (b.rarity === 'legendary') legendaryEls.push(el);

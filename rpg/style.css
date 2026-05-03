@@ -1485,48 +1485,98 @@ button:active { transform: scale(0.96); }
   box-shadow: 0 0 14px rgba(255, 200, 100, 0.45) inset, 0 0 12px rgba(255, 200, 100, 0.35);
   animation: lvUpPulse 1.4s ease-in-out infinite;
 }
-/* 가호 효과 비교 (선택창) */
-.boon-choice .lv-effect {
-  margin-top: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* 가호 — 레벨업 강조 배너 */
+.boon-choice .lv-up-banner {
+  margin: 8px 0 6px;
+  padding: 6px 10px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #fff5b8;
+  background: linear-gradient(90deg, rgba(255,200,80,0.45), rgba(255,140,40,0.55), rgba(255,200,80,0.45));
+  border: 1.5px solid rgba(255, 220, 120, 0.85);
+  border-radius: 8px;
+  text-shadow: 0 0 10px rgba(255, 220, 120, 0.95);
+  box-shadow: 0 0 16px rgba(255, 200, 100, 0.55);
+  position: relative;
+  z-index: 2;
+  animation: lvUpPulse 1.4s ease-in-out infinite;
+}
+.boon-choice .lv-up-flavor {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: #b0a090;
+  font-style: italic;
+  line-height: 1.4;
   position: relative;
   z-index: 2;
 }
-.boon-choice .lv-effect.dim { opacity: 0.7; }
-.boon-choice .lv-eff-row {
+
+/* 가호 — 수치 비교 박스 (현재 → 다음) */
+.boon-choice .upg-box {
+  background: rgba(0, 0, 0, 0.42);
+  border: 1.5px solid rgba(255, 220, 120, 0.55);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 0 12px rgba(255, 200, 100, 0.18);
+}
+.boon-choice .upg-box.outline {
+  border-style: dashed;
+  border-color: rgba(200, 180, 140, 0.35);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: none;
+}
+.boon-choice .upg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #e8d8c0;
+}
+.boon-choice .upg-label {
+  font-weight: 700;
+  color: #d8c8a8;
+  flex: 1;
+}
+.boon-choice .upg-vals {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: #d8c8b0;
-  line-height: 1.5;
-  padding: 1px 0;
-}
-.boon-choice .lv-eff-tag {
-  display: inline-block;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgba(120, 100, 80, 0.4);
-  color: #c0b090;
-  border: 1px solid rgba(200, 180, 140, 0.3);
   flex-shrink: 0;
 }
-.boon-choice .lv-eff-tag.cur {
-  background: rgba(80, 80, 100, 0.45);
-  color: #b0c0d8;
-  border-color: rgba(140, 160, 200, 0.4);
+.boon-choice .upg-cur {
+  color: #aab0c0;
+  font-weight: 700;
+  font-size: 13px;
 }
-.boon-choice .lv-eff-tag.next {
-  background: linear-gradient(90deg, rgba(243,216,120,0.40), rgba(255,180,80,0.45));
-  color: #1a0e0a;
-  border-color: rgba(255, 220, 120, 0.85);
-  text-shadow: 0 0 4px rgba(255, 240, 180, 0.8);
+.boon-choice .upg-arrow {
+  color: #ffcc66;
+  font-weight: 900;
+  font-size: 13px;
+  text-shadow: 0 0 6px rgba(255, 200, 100, 0.8);
+}
+.boon-choice .upg-next {
+  color: #fff5b8;
+  font-weight: 900;
+  font-size: 14.5px;
+  text-shadow: 0 0 8px rgba(255, 220, 120, 0.95), 0 0 14px rgba(255, 200, 100, 0.6);
+}
+.boon-choice .upg-row.simple .upg-next { font-size: 13px; }
+.boon-choice .upg-hint {
+  margin-top: 2px;
+  font-size: 10px;
+  color: #8a7a6a;
+  text-align: center;
+  font-style: italic;
+  letter-spacing: 0.03em;
 }
 
 /* 가호 확인 다이얼로그 — 효과 비교 */
