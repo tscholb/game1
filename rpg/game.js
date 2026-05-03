@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v51-reaper-art';
+const VERSION = 'v52-reaper-skills';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -647,26 +647,28 @@ const BOSS_SKILLS = {
       } },
   ],
   reaper: [
-    // 매혹의 시선 — hero 다음 1턴 행동 불가 (스턴)
-    { name: '매혹의 시선', interval: 4,
-      quote: '"…이리 오렴."',
+    // 목 긋기 — 3턴간 마법 봉인 + 매 턴 도트 데미지
+    { name: '목 긋기', interval: 3,
+      quote: '"숨소리도 — 잘라내 주지."',
       apply(b, r) {
-        b.heroStunTurns = 1;
-        log('🌹 매혹의 시선 — 이그니아의 다음 행동 봉인', 'enemy');
+        b.heroSkillBlock = 3;
+        const dmg = Math.max(6, Math.floor(r.maxHp * 0.06));
+        b.heroBleed = { dmg, turns: 3 };
+        log(`🩸 목 긋기 — 3턴간 마법 봉인 + 매 턴 ${dmg} 출혈`, 'enemy');
       } },
-    // 죽음의 입맞춤 — HP 50% 1회. 이그니아 현재 HP 30% 데미지 + 그만큼 사신 회복
-    { name: '죽음의 입맞춤', hpThreshold: 0.5, oneShot: true,
-      quote: '"마지막 — 입맞춤이야."',
+    // 운명의 사슬 — 3턴간 서로 데미지의 30% 대신 맞음
+    { name: '운명의 사슬', interval: 6,
+      quote: '"우리 — 함께 가자."',
       apply(b, r) {
-        const dmg = Math.max(1, Math.floor(r.hp * 0.3));
-        log(`💋 죽음의 입맞춤 → ${dmg}`, 'enemy');
-        dealDamageToHero(dmg);
-        if (b.enemy.hp > 0) {
-          b.enemy.hp = Math.min(b.enemy.maxHp, b.enemy.hp + dmg);
-          showDmgNum('enemy', dmg, 'heal');
-          log(`매혹의 사신 회복 → +${dmg}`, 'enemy');
-          refreshBattleUI();
-        }
+        b.chainOfFate = { turns: 3 };
+        log('🔗 운명의 사슬 — 3턴간 서로 데미지의 30%를 같이 받는다', 'enemy');
+      } },
+    // 사형선고 — HP 50% 이하 1회. 5턴 후 즉사
+    { name: '사형선고', hpThreshold: 0.5, oneShot: true,
+      quote: '"네 운명 — 이미 정해졌어."',
+      apply(b, r) {
+        b.deathSentence = 5;
+        log('☠ 사형선고 — 5턴 후 사형 집행 (보스를 처치하면 해제)', 'enemy');
       } },
   ],
   'dragon-true': [
@@ -1105,6 +1107,10 @@ function startBattle(kind, node) {
     toolDmgBoost: 0,
     heroDmgDebuff: null,
     heroDot: null,
+    heroBleed: null,
+    heroSkillBlock: 0,
+    chainOfFate: null,
+    deathSentence: undefined,
     bossSkillTurn: 0,
     bossSkillTriggered: {},
   };
@@ -1289,6 +1295,12 @@ function heroAction(action) {
     endTurnHero();
     return;
   }
+  // 목 긋기 — 마법 봉인
+  if (action === 'skill' && b.heroSkillBlock > 0) {
+    log(`🩸 마법 봉인 — 마법을 시전할 수 없다 (남은 ${b.heroSkillBlock}턴)`, 'system');
+    if (window.AUDIO) AUDIO.sfx('cancel');
+    return;
+  }
   if (action === 'attack') {
     if (b.attackCd > 0) return;
     doAttack();
@@ -1454,22 +1466,24 @@ function getSkillCdNow(skillId) {
 
 function refreshSkillButton() {
   const r = game.run;
+  const b = r.battle;
   const skillBtn = document.querySelector('[data-action="skill"]');
   if (!skillBtn) return;
+  const blocked = b && b.heroSkillBlock > 0;
   // 1개 보유: 그 스킬 정보 표시 / 2개+: '스킬' 라벨 + 사용가능 개수
   if (r.skills.length === 1) {
     const s = SKILLS[r.skills[0]];
     const cd = getSkillCdNow(s.id);
-    skillBtn.querySelector('.ico').textContent = s.icon;
-    skillBtn.querySelector('.label').textContent = s.name;
-    skillBtn.querySelector('.sub').textContent = cd > 0 ? `${cd}턴 후` : s.desc;
-    skillBtn.disabled = cd > 0;
+    skillBtn.querySelector('.ico').textContent = blocked ? '🩸' : s.icon;
+    skillBtn.querySelector('.label').textContent = blocked ? '봉인됨' : s.name;
+    skillBtn.querySelector('.sub').textContent = blocked ? `${b.heroSkillBlock}턴 마법 봉인` : (cd > 0 ? `${cd}턴 후` : s.desc);
+    skillBtn.disabled = blocked || cd > 0;
   } else {
     const ready = r.skills.filter(id => getSkillCdNow(id) === 0).length;
-    skillBtn.querySelector('.ico').textContent = '✦';
-    skillBtn.querySelector('.label').textContent = '스킬';
-    skillBtn.querySelector('.sub').textContent = `${ready}/${r.skills.length} 사용가능`;
-    skillBtn.disabled = ready === 0;
+    skillBtn.querySelector('.ico').textContent = blocked ? '🩸' : '✦';
+    skillBtn.querySelector('.label').textContent = blocked ? '봉인됨' : '스킬';
+    skillBtn.querySelector('.sub').textContent = blocked ? `${b.heroSkillBlock}턴 마법 봉인` : `${ready}/${r.skills.length} 사용가능`;
+    skillBtn.disabled = blocked || ready === 0;
   }
 }
 
@@ -1854,6 +1868,21 @@ function dealDamageToEnemy(dmg, kind, src) {
       dealDamageToHero(counter);
     }, 250);
   }
+  // 운명의 사슬 — hero 도 30% 받음 (직접 hp 깎아 재귀 방지)
+  if (b.chainOfFate && b.chainOfFate.turns > 0 && kind !== 'chain' && kind !== 'burn' && dmg > 0) {
+    const echo = Math.round(dmg * 0.3);
+    if (echo > 0) {
+      setTimeout(() => {
+        const r = game.run;
+        r.hp = Math.max(0, r.hp - echo);
+        showDmgNum('hero', echo);
+        hitFlash('hero');
+        log(`🔗 운명의 사슬 — 이그니아도 ${echo}`, 'enemy');
+        refreshBattleUI();
+        if (r.hp <= 0) setTimeout(() => onHeroDefeat(), 600);
+      }, 250);
+    }
+  }
 }
 
 function healHero(amount) {
@@ -1866,9 +1895,10 @@ function healHero(amount) {
   refreshBattleUI();
 }
 
-function dealDamageToHero(dmg) {
+function dealDamageToHero(dmg, kind) {
   const r = game.run;
   const b = r.battle;
+  const origDmg = dmg;
   // 굳건한 자세 — 매 전투 첫 피격 감소
   if (!b.firstHitReduced) {
     const fhr = Math.min(1, getBoonModSum('firstHitReduce'));
@@ -1909,6 +1939,19 @@ function dealDamageToHero(dmg) {
     r.hp = Math.round(r.maxHp * 0.5);
     log('🔥 불사조의 가호! HP 50%로 부활!', 'system');
     refreshBattleUI();
+  }
+  // 운명의 사슬 — 사신도 30% 받음 (직접 hp 깎아 재귀 방지)
+  if (b.chainOfFate && b.chainOfFate.turns > 0 && kind !== 'chain' && b.enemy.hp > 0 && origDmg > 0) {
+    const echo = Math.round(origDmg * 0.3);
+    if (echo > 0) {
+      setTimeout(() => {
+        b.enemy.hp = Math.max(0, b.enemy.hp - echo);
+        showDmgNum('enemy', echo, 'chain');
+        log(`🔗 운명의 사슬 — 사신도 ${echo}`, 'hero');
+        refreshBattleUI();
+        if (b.enemy.hp <= 0) setTimeout(() => onEnemyDefeat(), 500);
+      }, 250);
+    }
   }
 }
 
@@ -1964,6 +2007,28 @@ function tryFireBossSkill(b) {
 function enemyTurn() {
   const b = game.run.battle;
   if (b.enemy.hp <= 0) return;
+  // 사형선고 — 5턴 후 즉사 (시작 시 카운트다운)
+  if (typeof b.deathSentence === 'number') {
+    if (b.deathSentence === 0) {
+      playCutin('사형 집행', '"사형 집행."', b.enemy.def.sprite);
+      log('☠ 사형 집행 — 모든 것이 끝났다', 'enemy');
+      game.run.hp = 0;
+      refreshBattleUI();
+      setTimeout(() => onHeroDefeat(), 800);
+      return;
+    } else {
+      log(`☠ 사형선고 — ${b.deathSentence}턴 후 사형 집행`, 'enemy');
+      b.deathSentence--;
+    }
+  }
+  // 출혈 (목 긋기) — 매 턴 도트
+  if (b.heroBleed && b.heroBleed.turns > 0) {
+    const dmg = b.heroBleed.dmg;
+    b.heroBleed.turns--;
+    log(`🩸 출혈 → ${dmg}`, 'enemy');
+    dealDamageToHero(dmg);
+    if (game.run.hp <= 0) { setTimeout(() => onHeroDefeat(), 600); return; }
+  }
   // 끝없는 절망 — 매 턴 데미지가 2배로 증가하는 저주
   if (b.heroDespair) {
     const dmg = b.heroDespair.dmg;
@@ -2053,6 +2118,8 @@ function enemyTurn() {
   // 보스 디버프/카운터 지속 -1
   if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) b.heroDmgDebuff.turns--;
   if (b.bossThorns && b.bossThorns.turns > 0) b.bossThorns.turns--;
+  if (b.heroSkillBlock > 0) b.heroSkillBlock--;
+  if (b.chainOfFate && b.chainOfFate.turns > 0) b.chainOfFate.turns--;
   // 매 턴 recoil HP 손실 (광기의 화염 등)
   const recoil = getBoonModSum('recoil');
   if (recoil > 0 && game.run.hp > 1) {
