@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v54-soul-trade-event';
+const VERSION = 'v55-skill-tree-multi';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -105,81 +105,99 @@ const ENEMY_POOLS = {
 
 // ===== 스킬 카탈로그 =====
 // hits: 타격 횟수, mul: 1타당 mag 배율, burnDmg/burnTurns: 화상, critBonus: 추가 치명타 확률
+// tier: 스킬 트리 등급 (1~4) — 등급이 높을수록 학습 SP ↑
+// 마법 레벨업: Lv 1→2→3 (max 3) — 데미지 / 화상 / 지속 모두 강화
 const SKILLS = {
   fireball: {
-    id: 'fireball', name: '화염구', icon: '🔥',
+    id: 'fireball', name: '화염구', icon: '🔥', tier: 1, target: 'single',
     cooldown: 3,
     hits: 1, mul: 1.0,
     burnDmg: 6, burnTurns: 3,
     critBonus: 0,
-    desc: '단일 강타 + 화상 3턴',
+    desc: '단일 — 강타 + 화상 3턴',
     quote: '타올라라 — 이 세계마저!',
     cutin: '../assets/heroes/mage.png',
   },
+  'flame-finger': {
+    id: 'flame-finger', name: '화염 손가락', icon: '🪄', tier: 1, target: 'single',
+    cooldown: 2,
+    hits: 1, mul: 0.7,
+    burnDmg: 4, burnTurns: 2,
+    critBonus: 0.1,
+    desc: '단일 — 저비용 단발 + 가벼운 화상',
+    quote: '한 번 — 콕 찌른다.',
+    cutin: '../assets/skills/ignia-flame-finger.png',
+  },
   flamethrower: {
-    id: 'flamethrower', name: '화염방사', icon: '🜂',
+    id: 'flamethrower', name: '화염방사', icon: '🜂', tier: 2, target: 'single',
     cooldown: 4,
     hits: 5, mul: 0.45,
     burnDmg: 8, burnTurns: 4,
     critBonus: 0,
-    desc: '5회 연속 화염 + 강한 화상',
+    desc: '단일 — 5회 연속 화염 + 강한 화상',
     quote: '재가 될 때까지 — 끝나지 않아!',
     cutin: '../assets/skills/ignia-flamethrower.png',
   },
   firestorm: {
-    id: 'firestorm', name: '화염 폭풍', icon: '🌪',
+    id: 'firestorm', name: '화염 폭풍', icon: '🌪', tier: 2, target: 'aoe',
     cooldown: 4,
-    hits: 3, mul: 0.7,
+    hits: 3, mul: 0.55,
     burnDmg: 5, burnTurns: 2,
     critBonus: 0.1,
-    desc: '3회 연타 + 가벼운 화상',
+    desc: '광역 — 3회 연타 (모든 적) + 가벼운 화상',
     quote: '폭풍이여, 휘몰아쳐라!',
     cutin: '../assets/skills/ignia-fireball.png',
   },
   meteor: {
-    id: 'meteor', name: '메테오', icon: '☄',
+    id: 'meteor', name: '메테오', icon: '☄', tier: 4, target: 'single',
     cooldown: 6,
     hits: 1, mul: 2.4,
     burnDmg: 0, burnTurns: 0,
     critBonus: 0.3,
-    desc: '한 방 초강타, 높은 치명타',
+    desc: '단일 — 한 방 초강타, 높은 치명타',
     quote: '하늘이 무너지리라 — 메테오!',
     cutin: '../assets/skills/ignia-meteor.png',
   },
   ignite: {
-    id: 'ignite', name: '점화', icon: '🔆',
+    id: 'ignite', name: '점화', icon: '🔆', tier: 3, target: 'aoe',
     cooldown: 4,
     special: 'detonateBurn',
     hits: 0, mul: 0,
     burnDmg: 0, burnTurns: 0,
     critBonus: 0,
-    desc: '걸린 화상을 모두 소진해 큰 폭발 (스택당 마법력 ×1.5)',
+    desc: '광역 — 모든 적의 화상 스택을 소진해 큰 폭발 (스택당 마법력 ×1.5)',
     quote: '터져라 — 화염!',
     cutin: '../assets/skills/ignia-ignite.png',
   },
   inferno: {
-    id: 'inferno', name: '지옥불', icon: '👹',
+    id: 'inferno', name: '지옥불', icon: '👹', tier: 3, target: 'single',
     cooldown: 5,
     hits: 1, mul: 1.1,
     burnDmg: 14, burnTurns: 5,
     critBonus: 0,
-    desc: '맹렬한 화상 5턴',
+    desc: '단일 — 맹렬한 화상 5턴',
     quote: '지옥의 불꽃을 받아라!',
     cutin: '../assets/skills/ignia-fireball.png',
   },
   firedom: {
-    id: 'firedom', name: '불의 지배', icon: '👁',
+    id: 'firedom', name: '불의 지배', icon: '👁', tier: 4, target: 'aoe',
     cooldown: 7,
     hits: 0, mul: 0,                  // 즉시 데미지 없음
     burnDmg: 0, burnTurns: 0,
     critBonus: 0,
     delay: 2,                         // 2턴 후 폭발
-    delayMul: 3.4,                    // 폭발 시 mag × 3.4
-    desc: '2턴 후 강력한 화염 폭발',
+    delayMul: 2.4,                    // 폭발 시 mag × 2.4 (각 적)
+    desc: '광역 — 2턴 후 모든 적에게 강력한 화염 폭발',
     quote: '내 손짓 한 번에 — 모든 것이 잿더미.',
     cutin: '../assets/skills/ignia-flame-finger.png',
   },
 };
+
+// 스킬 학습 비용 (티어 → SP)
+const SKILL_LEARN_COST = { 1: 1, 2: 2, 3: 4, 4: 6 };
+// 레벨업 비용 (현재 레벨 → 다음 레벨로 가는 SP)
+const SKILL_UPGRADE_COST = { 1: 2, 2: 3 }; // Lv1→2: 2SP, Lv2→3: 3SP
+const SKILL_MAX_LEVEL = 3;
 
 // ===== 가호 카테고리 =====
 const CATEGORIES = {
@@ -207,9 +225,10 @@ const BOONS = [
   { id: 'b-quick',     cat: 'utility', name: '재빠른 손', desc: '모든 스킬 쿨다운 -1',                 rarity: 'rare',   maxLevel: 3, mod: { skillCdReduce: 1 } },
 
   // epic
-  { id: 'b-flamethrower', cat: 'magic', name: '화염방사', desc: '새 스킬 「화염방사」 획득 — 5회 연속 화염',  rarity: 'epic',   mod: { grantSkill: 'flamethrower' } },
-  { id: 'b-firestorm', cat: 'magic',   name: '화염 폭풍', desc: '새 스킬 「화염 폭풍」 획득 — 3회 연타',     rarity: 'epic',   mod: { grantSkill: 'firestorm' } },
-  { id: 'b-inferno',   cat: 'magic',   name: '지옥불',   desc: '새 스킬 「지옥불」 획득 — 맹렬한 화상',     rarity: 'epic',   mod: { grantSkill: 'inferno' } },
+  { id: 'b-magic-insight', cat: 'magic', name: '마법의 깨달음', desc: '✦ 즉시 +2 SP — 「마법 트리」에서 새 마법 학습 / 강화',
+    rarity: 'epic', apply: g => grantSkillPoints(g, 2) },
+  { id: 'b-magic-rite',    cat: 'magic', name: '마법의 의식',   desc: '✦ 즉시 +3 SP — 「마법 트리」에서 새 마법 학습 / 강화',
+    rarity: 'epic', apply: g => grantSkillPoints(g, 3) },
   { id: 'b-burn-mark', cat: 'magic',   name: '낙인',     desc: '모든 스킬 화상 데미지 ×2, 지속 +2턴',  rarity: 'epic',   maxLevel: 2, mod: { burnMul: 2, burnTurnsBonus: 2 } },
   { id: 'b-shield',    cat: 'defend',  name: '불멸의 방패', desc: '방어 시 데미지 80% 차단 + HP +10', rarity: 'epic', mod: { defendPerfect: true } },
   { id: 'b-fortune',   cat: 'utility', name: '행운',     desc: '치명타 +15%, 골드 +50',                rarity: 'epic',   maxLevel: 3, mod: { critChance: 0.15 }, apply: g => { g.gold += 50; } },
@@ -220,9 +239,10 @@ const BOONS = [
   { id: 'b-mag-vamp',    cat: 'magic',   name: '마법 흡혈',  desc: '스킬 데미지의 30% HP로 회복',          rarity: 'legendary', maxLevel: 3, mod: { magLifesteal: 0.3 } },
   { id: 'b-magic-knight', cat: 'attack', name: '마법기사',   desc: '마법 직후 공격 +50% / 공격 직후 마법 +50%', rarity: 'legendary', mod: { magicKnight: true } },
   { id: 'b-flame-brand',  cat: 'attack', name: '화염낙인',   desc: '공격 데미지에 마법력이 합산되고 화상도 적용된다', rarity: 'legendary', mod: { flameBrand: true } },
-  { id: 'b-ignite-magic', cat: 'magic',  name: '점화 마법',   desc: '새 스킬 「점화」 획득 — 적의 모든 화상을 소진해 큰 폭발', rarity: 'legendary', mod: { grantSkill: 'ignite' } },
-  { id: 'b-meteor',      cat: 'magic',   name: '메테오',     desc: '새 스킬 「메테오」 획득 — 초강력 단발',   rarity: 'legendary', mod: { grantSkill: 'meteor' } },
-  { id: 'b-firedom',     cat: 'magic',   name: '불의 지배',  desc: '새 스킬 「불의 지배」 획득 — 2턴 후 대폭발', rarity: 'legendary', mod: { grantSkill: 'firedom' } },
+  { id: 'b-magic-mastery', cat: 'magic', name: '마법의 통달', desc: '✦ 즉시 +5 SP — 강력한 마법 학습 가능',
+    rarity: 'legendary', apply: g => grantSkillPoints(g, 5) },
+  { id: 'b-magic-prime',   cat: 'magic', name: '마법의 정수', desc: '✦ 즉시 +5 SP — 강력한 마법 학습 가능',
+    rarity: 'legendary', apply: g => grantSkillPoints(g, 5) },
   { id: 'b-flame-lord',  cat: 'magic',   name: '화염의 군주', desc: '적의 화상이 처치 시까지 영구 지속',     rarity: 'legendary', mod: { eternalBurn: true } },
   { id: 'b-soul',        cat: 'utility', name: '영혼 흡수',  desc: '적 처치 시 최대 HP +5, HP 완전 회복',  rarity: 'legendary', mod: { soulSteal: true } },
 
@@ -872,6 +892,8 @@ function newRun() {
     roomsPerFloor: 16,
     pendingFork: null,
     skills: [HERO.defaultSkill || 'fireball'],
+    skillLevels: { [HERO.defaultSkill || 'fireball']: 1 },
+    skillPoints: 1,             // 시작 SP — Tier 1 마법 1개 학습 가능
     skillCds: {},               // { skillId: turnsRemaining }
     skillStartCdReduce: bonus.startCd,
     enemiesDefeated: 0,
@@ -1079,22 +1101,38 @@ function startBattle(kind, node) {
   else if (kind === 'elite') ePool = (ENEMY_POOLS.elite[f] || ENEMY_POOLS.elite[4]);
   else if (kind === 'boss') ePool = [['giant', 'lich', 'reaper', 'dragon'][f - 1] || 'dragon'];
   else if (kind === 'mimic') ePool = ['mimic'];
-  const eid = (node && node.forceEnemy) ? node.forceEnemy : ePool[Math.floor(Math.random() * ePool.length)];
-  const def = ENEMIES[eid];
   game.run.currentNode = node || { kind, rewardCat: null, rewardRarity: null };
   // 층/엘리트 스케일링 — 층마다 +50%, 엘리트는 추가 +50%
   const scale = 1 + (f - 1) * 0.50 + (kind === 'elite' ? 0.50 : 0);
-  game.run.battle = {
-    enemy: {
+  // 등장 인원 — boss/elite/mimic 은 1명, normal 은 1~3명 (층 ↑ 시 더 많은 적 비율 ↑)
+  let count = 1;
+  if (kind === 'normal') {
+    const r = Math.random();
+    if (f >= 2 && r < (f === 2 ? 0.30 : f === 3 ? 0.45 : 0.55)) count = 2;
+    if (f >= 3 && r < (f === 3 ? 0.18 : 0.30)) count = 3;
+  }
+  const enemies = [];
+  for (let i = 0; i < count; i++) {
+    const eid = (i === 0 && node && node.forceEnemy) ? node.forceEnemy : ePool[Math.floor(Math.random() * ePool.length)];
+    const def = ENEMIES[eid];
+    // 다중 등장 시 개별 hp 약간 감소 (혼자보다 풀이 더 많지만 부담 균형)
+    const groupScale = count === 1 ? 1 : (count === 2 ? 0.85 : 0.72);
+    enemies.push({
       id: eid,
       name: def.name,
-      maxHp: Math.round(def.hp * scale),
-      hp: Math.round(def.hp * scale),
+      maxHp: Math.round(def.hp * scale * groupScale),
+      hp: Math.round(def.hp * scale * groupScale),
       atk: Math.round(def.atk * scale),
       def: def,
       kind,
       burnStacks: [],
-    },
+    });
+  }
+  game.run.battle = {
+    enemies,
+    targetIdx: 0,
+    get enemy() { return this.enemies[this.targetIdx]; },
+    set enemy(v) { /* no-op — alias only */ },
     turn: 1,
     attackCd: 0,
     firstAtkUsed: false,
@@ -1115,44 +1153,71 @@ function startBattle(kind, node) {
     bossSkillTurn: 0,
     bossSkillTriggered: {},
   };
-  $('enemy-name').textContent = def.name + (kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '');
+  // 첫 적의 일러를 메인 표시로 사용
+  const main = enemies[0];
+  const mainDef = main.def;
+  const titleSuffix = kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '';
+  $('enemy-name').textContent = (count > 1 ? `${main.name} 외 ${count - 1}` : main.name) + titleSuffix;
   const art = $('enemy-art');
-  if (def.sprite) {
+  if (mainDef.sprite) {
     art.classList.add('with-sprite');
-    art.innerHTML = `<img class="enemy-sprite" src="${def.sprite}" alt="${def.name}">`;
+    art.innerHTML = `<img class="enemy-sprite" src="${mainDef.sprite}" alt="${main.name}">`;
     art.style.fontSize = '';
   } else {
     art.classList.remove('with-sprite');
     art.innerHTML = '';
-    art.textContent = def.emoji;
-    art.style.fontSize = def.boss ? '90px' : '70px';
+    art.textContent = mainDef.emoji;
+    art.style.fontSize = mainDef.boss ? '90px' : '70px';
   }
   $('hero-img').src = HERO.sprite;
   game.run._heroSpriteWounded = false;
-  // 점화 가호 — 전투 시작 시 자동 화상
+  // 점화 가호 — 전투 시작 시 모든 적에 자동 화상 (AoE)
   const sb = hasBoonMod('startBurn');
   if (sb && sb.mod && sb.mod.startBurn) {
     const lv = sb.level || 1;
-    applyBurn(game.run.battle.enemy, sb.mod.startBurn.dmg * lv, sb.mod.startBurn.turns);
+    for (const en of enemies) applyBurn(en, sb.mod.startBurn.dmg * lv, sb.mod.startBurn.turns);
   }
   refreshBattleUI();
   $('battle-log').innerHTML = '';
-  log(`${def.name} 출현!`, 'system');
-  if (sb) log('점화! 적이 불타기 시작한다', 'hero');
+  log(`${count > 1 ? count + '명의 ' : ''}${main.name} 출현!`, 'system');
+  if (sb) log('점화! 적들이 불타기 시작한다', 'hero');
   showScreen('battle');
   // 전투 BGM
   if (window.AUDIO) AUDIO.music(kind === 'boss' ? 'boss' : 'battle');
 }
 
+// ===== 다중 적 헬퍼 =====
+function aliveEnemies(b) { return b.enemies ? b.enemies.filter(e => e.hp > 0) : []; }
+function currentTarget(b) {
+  if (!b.enemies) return null;
+  const cur = b.enemies[b.targetIdx];
+  if (cur && cur.hp > 0) return cur;
+  // 첫 살아있는 적으로 자동 전환
+  const idx = b.enemies.findIndex(e => e.hp > 0);
+  if (idx >= 0) { b.targetIdx = idx; return b.enemies[idx]; }
+  return null;
+}
+function advanceTargetIfDead(b) {
+  if (!b.enemies) return;
+  const cur = b.enemies[b.targetIdx];
+  if (!cur || cur.hp <= 0) {
+    const idx = b.enemies.findIndex(e => e.hp > 0);
+    if (idx >= 0) b.targetIdx = idx;
+  }
+}
+
 function refreshBattleUI() {
   const r = game.run;
   const b = r.battle;
+  const tgt = currentTarget(b);
   $('hero-hp').textContent = r.hp;
   $('hero-max-hp').textContent = r.maxHp;
-  $('enemy-hp').textContent = b.enemy.hp;
-  $('enemy-max-hp').textContent = b.enemy.maxHp;
+  if (tgt) {
+    $('enemy-hp').textContent = tgt.hp;
+    $('enemy-max-hp').textContent = tgt.maxHp;
+    $('enemy-hp-fill').style.width = (tgt.hp / tgt.maxHp * 100) + '%';
+  }
   $('hero-hp-fill').style.width = (r.hp / r.maxHp * 100) + '%';
-  $('enemy-hp-fill').style.width = (b.enemy.hp / b.enemy.maxHp * 100) + '%';
   $('hero-hp-fill').classList.remove('low', 'critical');
   if (r.hp / r.maxHp < 0.25) $('hero-hp-fill').classList.add('critical');
   else if (r.hp / r.maxHp < 0.5) $('hero-hp-fill').classList.add('low');
@@ -1235,15 +1300,70 @@ function refreshBattleUI() {
   // 상태 표시
   const heroStatus = $('hero-status');
   heroStatus.innerHTML = '';
-  if (b.heroDefend > 0) heroStatus.innerHTML = '<span class="status-chip defend">방어</span>';
+  if (b.heroDefend > 0) heroStatus.innerHTML += '<span class="status-chip defend">방어</span>';
+  if (b.heroShield > 0) heroStatus.innerHTML += `<span class="status-chip defend">🛡 보호막 ${b.heroShield}</span>`;
+  if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) heroStatus.innerHTML += `<span class="status-chip burn">데미지 ↓${Math.round((1-b.heroDmgDebuff.mul)*100)}% (${b.heroDmgDebuff.turns}턴)</span>`;
+  if (b.heroSkillBlock > 0) heroStatus.innerHTML += `<span class="status-chip burn">🩸 마법봉인 ${b.heroSkillBlock}턴</span>`;
+  if (b.heroBleed && b.heroBleed.turns > 0) heroStatus.innerHTML += `<span class="status-chip burn">🩸 출혈 ${b.heroBleed.dmg}/턴 (${b.heroBleed.turns}턴)</span>`;
+  if (b.chainOfFate && b.chainOfFate.turns > 0) heroStatus.innerHTML += `<span class="status-chip burn">🔗 사슬 (${b.chainOfFate.turns}턴)</span>`;
+  if (typeof b.deathSentence === 'number') heroStatus.innerHTML += `<span class="status-chip burn">☠ 사형선고 ${b.deathSentence}턴</span>`;
   const enemyStatus = $('enemy-status');
   enemyStatus.innerHTML = '';
-  const stacks = b.enemy.burnStacks || [];
-  if (stacks.length > 0) {
-    const dot = stacks.reduce((s, st) => s + st.dmg, 0);
-    enemyStatus.innerHTML += `<span class="status-chip burn">🔥 화상 ${stacks.length}중첩 (${dot}/턴)</span>`;
+  if (tgt) {
+    const stacks = tgt.burnStacks || [];
+    if (stacks.length > 0) {
+      const dot = stacks.reduce((s, st) => s + st.dmg, 0);
+      enemyStatus.innerHTML += `<span class="status-chip burn">🔥 화상 ${stacks.length}중첩 (${dot}/턴)</span>`;
+    }
+    if (tgt.dominion) enemyStatus.innerHTML += `<span class="status-chip dominion">🔥 ${tgt.dominion.delay}턴 후 폭발</span>`;
   }
-  if (b.enemy.dominion) enemyStatus.innerHTML += `<span class="status-chip dominion">🔥 ${b.enemy.dominion.delay}턴 후 폭발</span>`;
+  // 다중 적 — 작은 칩 리스트 (이름 + HP%)
+  let multiEl = $('enemy-list');
+  if (!multiEl) {
+    multiEl = document.createElement('div');
+    multiEl.id = 'enemy-list';
+    multiEl.className = 'enemy-list';
+    const enemySide = document.querySelector('.combatant.enemy') || document.querySelector('#actions');
+    if (enemySide && enemySide.parentNode) enemySide.parentNode.insertBefore(multiEl, enemySide);
+  }
+  if (b.enemies && b.enemies.length > 1) {
+    multiEl.innerHTML = b.enemies.map((e, i) => {
+      const pct = Math.max(0, Math.round(e.hp / e.maxHp * 100));
+      const dead = e.hp <= 0;
+      const isTarget = i === b.targetIdx && !dead;
+      return `<div class="elist-chip${dead ? ' dead' : ''}${isTarget ? ' target' : ''}" data-idx="${i}">
+        <span class="elc-emoji">${e.def.emoji}</span>
+        <span class="elc-name">${e.name}</span>
+        <span class="elc-hp">${dead ? '✕' : `${e.hp}/${e.maxHp} (${pct}%)`}</span>
+      </div>`;
+    }).join('');
+    // 타겟 전환 — 클릭으로 살아있는 적 선택
+    multiEl.querySelectorAll('.elist-chip').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.idx);
+        if (b.enemies[idx] && b.enemies[idx].hp > 0) {
+          b.targetIdx = idx;
+          // 메인 일러도 새 타겟으로 교체
+          const tgt2 = b.enemies[idx];
+          const art = $('enemy-art');
+          $('enemy-name').textContent = tgt2.name + (tgt2.def.boss ? ' (보스)' : tgt2.kind === 'elite' ? ' (엘리트)' : '');
+          if (tgt2.def.sprite) {
+            art.classList.add('with-sprite');
+            art.innerHTML = `<img class="enemy-sprite" src="${tgt2.def.sprite}" alt="${tgt2.name}">`;
+            art.style.fontSize = '';
+          } else {
+            art.classList.remove('with-sprite');
+            art.innerHTML = '';
+            art.textContent = tgt2.def.emoji;
+            art.style.fontSize = tgt2.def.boss ? '90px' : '70px';
+          }
+          refreshBattleUI();
+        }
+      });
+    });
+  } else {
+    multiEl.innerHTML = '';
+  }
 }
 
 function log(text, kind = '') {
@@ -1449,6 +1569,178 @@ function useTool(id) {
 }
 
 // ===== 스킬 헬퍼 =====
+// ===== SP / 스킬 트리 =====
+function grantSkillPoints(g, n) {
+  g = g || game.run;
+  if (!g) return;
+  g.skillPoints = (g.skillPoints || 0) + n;
+  log(`✦ 스킬 포인트 +${n} (보유: ${g.skillPoints})`, 'system');
+}
+
+function getSkillLevel(id) {
+  const r = game.run;
+  if (!r || !r.skillLevels) return 0;
+  return r.skillLevels[id] || 0;
+}
+
+function getSkillScale(id) {
+  // 레벨별 데미지/화상 배율 — Lv 1 = 1.0 / Lv 2 = 1.4 / Lv 3 = 1.8
+  const lv = getSkillLevel(id) || 1;
+  return 1 + (lv - 1) * 0.4;
+}
+
+function canLearnSkill(id) {
+  const r = game.run;
+  if (r.skills.includes(id)) return false;
+  const tier = SKILLS[id].tier || 1;
+  const cost = SKILL_LEARN_COST[tier] || 99;
+  return r.skillPoints >= cost;
+}
+
+function canUpgradeSkill(id) {
+  const r = game.run;
+  if (!r.skills.includes(id)) return false;
+  const lv = getSkillLevel(id);
+  if (lv >= SKILL_MAX_LEVEL) return false;
+  const cost = SKILL_UPGRADE_COST[lv] || 99;
+  return r.skillPoints >= cost;
+}
+
+function learnSkill(id) {
+  const r = game.run;
+  if (!canLearnSkill(id)) return false;
+  const tier = SKILLS[id].tier || 1;
+  const cost = SKILL_LEARN_COST[tier];
+  r.skillPoints -= cost;
+  r.skills.push(id);
+  r.skillLevels[id] = 1;
+  r.skillCds[id] = 0;
+  if (window.AUDIO) AUDIO.sfx('boon');
+  log(`✨ 새 마법 학습 — 「${SKILLS[id].name}」 Lv.1 (-${cost} SP)`, 'hero');
+  return true;
+}
+
+function upgradeSkill(id) {
+  const r = game.run;
+  if (!canUpgradeSkill(id)) return false;
+  const lv = getSkillLevel(id);
+  const cost = SKILL_UPGRADE_COST[lv];
+  r.skillPoints -= cost;
+  r.skillLevels[id] = lv + 1;
+  if (window.AUDIO) AUDIO.sfx('levelup');
+  log(`⬆ 마법 강화 — 「${SKILLS[id].name}」 Lv.${lv} → Lv.${lv + 1} (-${cost} SP)`, 'hero');
+  return true;
+}
+
+function getSkillStatsAtLevel(s, level) {
+  const scale = 1 + (level - 1) * 0.4;
+  const stats = [];
+  if (s.special === 'detonateBurn') {
+    stats.push({ label: '폭발 배율 (스택당)', value: `mag × ${(1.5 * scale).toFixed(2)}` });
+  } else if (s.delay) {
+    stats.push({ label: '폭발 배율',     value: `mag × ${(s.delayMul * scale).toFixed(2)}` });
+    stats.push({ label: '지연 턴',        value: `${s.delay}턴` });
+  } else {
+    stats.push({ label: '타격 횟수',      value: `${s.hits}회` });
+    stats.push({ label: '1타 배율',       value: `mag × ${(s.mul * scale).toFixed(2)}` });
+    const totalMul = (s.hits * s.mul * scale).toFixed(2);
+    stats.push({ label: '총 배율 (단일)', value: `mag × ${totalMul}` });
+  }
+  if (s.burnDmg > 0) {
+    stats.push({ label: '화상 데미지',    value: `${Math.round(s.burnDmg * scale)}/턴` });
+    stats.push({ label: '화상 지속',      value: `${s.burnTurns + (level - 1)}턴` });
+  }
+  if (s.critBonus > 0) stats.push({ label: '추가 치명',  value: `+${Math.round(s.critBonus * 100)}%` });
+  stats.push({ label: '쿨다운',           value: `${s.cooldown}턴` });
+  stats.push({ label: '대상',             value: s.target === 'aoe' ? '광역 (모든 적)' : '단일' });
+  return stats;
+}
+
+function openSkillTree() {
+  if (!game.run) { return; }
+  renderSkillTree();
+  $('skill-tree-modal').classList.add('active');
+  if (window.AUDIO) AUDIO.sfx('open');
+}
+function closeSkillTree() {
+  $('skill-tree-modal').classList.remove('active');
+}
+
+function renderSkillTree() {
+  const r = game.run;
+  $('st-sp').textContent = r.skillPoints || 0;
+  const wrap = $('st-body');
+  wrap.innerHTML = '';
+  const tiers = [1, 2, 3, 4];
+  for (const tier of tiers) {
+    const tierSpells = Object.values(SKILLS).filter(s => (s.tier || 1) === tier);
+    if (tierSpells.length === 0) continue;
+    const sec = document.createElement('div');
+    sec.className = 'st-tier';
+    const learnCost = SKILL_LEARN_COST[tier];
+    sec.innerHTML = `<div class="st-tier-head">티어 ${tier} <span class="st-tier-cost">학습 비용 ${learnCost} SP</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'st-grid';
+    for (const s of tierSpells) {
+      const owned = r.skills.includes(s.id);
+      const lv = getSkillLevel(s.id);
+      const upgradeAvail = canUpgradeSkill(s.id);
+      const learnAvail = canLearnSkill(s.id);
+      const card = document.createElement('div');
+      card.className = `st-card${owned ? ' owned' : ''}${lv >= SKILL_MAX_LEVEL ? ' maxed' : ''}`;
+      const stats = getSkillStatsAtLevel(s, lv || 1);
+      const statsRows = stats.map(st => `<div class="st-stat"><span class="st-stat-l">${st.label}</span><span class="st-stat-v">${st.value}</span></div>`).join('');
+      let nextStatsBlock = '';
+      if (owned && lv < SKILL_MAX_LEVEL) {
+        const next = getSkillStatsAtLevel(s, lv + 1);
+        const nextRows = next.map((st, i) => {
+          const cur = stats[i];
+          const changed = cur && cur.value !== st.value;
+          return `<div class="st-stat next${changed ? ' diff' : ''}"><span class="st-stat-l">${st.label}</span><span class="st-stat-v">${st.value}</span></div>`;
+        }).join('');
+        nextStatsBlock = `<div class="st-next-head">⬆ Lv.${lv + 1} 효과</div><div class="st-stats next">${nextRows}</div>`;
+      }
+      let actionBtn = '';
+      if (owned) {
+        if (lv >= SKILL_MAX_LEVEL) {
+          actionBtn = `<button class="st-btn maxed" disabled>최대 Lv.${SKILL_MAX_LEVEL}</button>`;
+        } else {
+          const cost = SKILL_UPGRADE_COST[lv];
+          actionBtn = `<button class="st-btn upgrade" data-act="upgrade" data-sid="${s.id}"${upgradeAvail ? '' : ' disabled'}>⬆ 강화 (${cost} SP)</button>`;
+        }
+      } else {
+        actionBtn = `<button class="st-btn learn" data-act="learn" data-sid="${s.id}"${learnAvail ? '' : ' disabled'}>✦ 학습 (${learnCost} SP)</button>`;
+      }
+      card.innerHTML = `
+        <div class="st-card-head">
+          <span class="st-icon">${s.icon}</span>
+          <span class="st-name">${s.name}</span>
+          ${owned ? `<span class="st-lv">Lv.${lv}/${SKILL_MAX_LEVEL}</span>` : `<span class="st-lv unowned">미보유</span>`}
+        </div>
+        <div class="st-tag ${s.target}">${s.target === 'aoe' ? '광역' : '단일'}</div>
+        <div class="st-desc">${s.desc}</div>
+        <div class="st-stats">${statsRows}</div>
+        ${nextStatsBlock}
+        ${actionBtn}`;
+      grid.appendChild(card);
+    }
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
+  }
+  // 버튼 핸들러
+  wrap.querySelectorAll('.st-btn[data-act]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sid = btn.dataset.sid;
+      const act = btn.dataset.act;
+      if (act === 'learn') learnSkill(sid);
+      else if (act === 'upgrade') upgradeSkill(sid);
+      renderSkillTree();
+      // 전투 중이면 스킬 버튼도 갱신
+      if (game.run.battle) refreshBattleUI();
+    });
+  });
+}
+
 function getSkillCooldown(skillId) {
   const base = SKILLS[skillId].cooldown;
   const startCd = game.run.skillStartCdReduce || 0;   // 음수
@@ -1726,29 +2018,35 @@ function castSkill(skillId) {
   const skillMulti = hasBoonMod('skillMulti') ? hasBoonMod('skillMulti').mod.skillMulti : 1;
   const knightCombo = !!hasBoonMod('magicKnight') && b.lastAction === 'attack';
   const knightMul = knightCombo ? 1.5 : 1;
-  // 점화 — 적의 모든 화상 스택을 소진해 큰 폭발
+  const lvScale = getSkillScale(skillId);  // 마법 레벨 배율
+  const targets = (s.target === 'aoe') ? aliveEnemies(b) : [currentTarget(b)].filter(e => e && e.hp > 0);
+  // 점화 — 모든 적의 화상 스택을 소진해 큰 폭발 (광역)
   if (s.special === 'detonateBurn') {
     setTimeout(() => {
-      const count = detonateBurns(b.enemy);
-      if (count <= 0) {
-        log(`${s.name} — 화상이 없다!`, 'system');
-      } else {
-        let dmg = Math.round(effectiveStat('mag') * 1.5 * count * knightMul);
-        dealDamageToEnemy(dmg, 'crit', 'skill');
-        log(`${s.name}! → ${count}중첩 폭발 → ${dmg}${knightCombo ? ' [마법기사]' : ''}`, 'hero');
+      let totalCount = 0;
+      for (const en of targets) {
+        const count = detonateBurns(en);
+        if (count <= 0) continue;
+        totalCount += count;
+        let dmg = Math.round(effectiveStat('mag') * 1.5 * lvScale * count * knightMul);
+        dealDamageToTarget(en, dmg, 'crit', 'skill');
       }
+      if (totalCount <= 0) log(`${s.name} — 화상이 없다!`, 'system');
+      else log(`${s.name}! → ${totalCount}중첩 폭발${knightCombo ? ' [마법기사]' : ''}`, 'hero');
       r.skillCds[skillId] = getSkillCooldown(skillId);
       if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
       finishHeroSkill();
     }, 800);
     return;
   }
-  // 지연 폭발 스킬 (불의 지배 등)
+  // 지연 폭발 스킬 (불의 지배) — 각 대상에 도미니언 부여
   if (s.delay) {
     setTimeout(() => {
-      const dmg = Math.round(effectiveStat('mag') * s.delayMul * skillMulti * knightMul);
-      b.enemy.dominion = { delay: s.delay, dmg, name: s.name };
-      log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg})${knightCombo ? ' [마법기사]' : ''}`, 'hero');
+      const dmg = Math.round(effectiveStat('mag') * s.delayMul * lvScale * skillMulti * knightMul);
+      for (const en of targets) {
+        en.dominion = { delay: s.delay, dmg, name: s.name };
+      }
+      log(`${s.name} 각인 — ${s.delay}턴 후 폭발 (${dmg} × ${targets.length}대상)${knightCombo ? ' [마법기사]' : ''}`, 'hero');
       r.skillCds[skillId] = getSkillCooldown(skillId);
       if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
       finishHeroSkill();
@@ -1759,37 +2057,35 @@ function castSkill(skillId) {
     const bmBoon = hasBoonMod('burnMul');
     const burnMul = bmBoon ? bmBoon.mod.burnMul * (bmBoon.level || 1) : 1;
     const burnBonus = getBoonModSum('burnTurnsBonus');
-    const burnDmg = Math.round(s.burnDmg * burnMul);
-    const burnTurns = s.burnTurns + burnBonus;
+    const burnDmg = Math.round(s.burnDmg * lvScale * burnMul);
+    const burnTurns = s.burnTurns + (getSkillLevel(skillId) - 1) + burnBonus;
     const critBase = getBoonModSum('critChance');
     const ls = getBoonModSum('magLifesteal');
     let totalDmg = 0;
     let totalHits = 0;
-    for (let cast = 0; cast < skillMulti; cast++) {
-      if (b.enemy.hp <= 0) break;
-      for (let i = 0; i < s.hits; i++) {
-        if (b.enemy.hp <= 0) break;
-        let dmg = Math.round(effectiveStat('mag') * s.mul * knightMul);
-        // 과열 — HP 50% 이하 시 마법 부스트
-        const lowMag = getBoonModSum('lowHpMagBonus');
-        if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
-        let crit = false;
-        const critChance = critBase + (s.critBonus || 0);
-        if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
-        dealDamageToEnemy(dmg, crit ? 'crit' : '', 'skill');
-        totalDmg += dmg;
-        totalHits++;
-        // 마법 흡혈
-        if (ls > 0) healHero(Math.round(dmg * ls));
+    for (const en of targets) {
+      if (en.hp <= 0) continue;
+      for (let cast = 0; cast < skillMulti; cast++) {
+        if (en.hp <= 0) break;
+        for (let i = 0; i < s.hits; i++) {
+          if (en.hp <= 0) break;
+          let dmg = Math.round(effectiveStat('mag') * s.mul * lvScale * knightMul);
+          const lowMag = getBoonModSum('lowHpMagBonus');
+          if (lowMag > 0 && r.hp / r.maxHp < 0.5) dmg = Math.round(dmg * (1 + lowMag));
+          let crit = false;
+          const critChance = critBase + (s.critBonus || 0);
+          if (Math.random() < critChance) { dmg = Math.round(dmg * 1.5); crit = true; }
+          dealDamageToTarget(en, dmg, crit ? 'crit' : '', 'skill');
+          totalDmg += dmg;
+          totalHits++;
+          if (ls > 0) healHero(Math.round(dmg * ls));
+        }
+      }
+      if (burnTurns > 0 && burnDmg > 0 && en.hp > 0) {
+        for (let cast = 0; cast < skillMulti; cast++) applyBurn(en, burnDmg, burnTurns);
       }
     }
-    // 화상 적용 (있으면) — 시전 횟수만큼 스택 추가
-    if (burnTurns > 0 && burnDmg > 0 && b.enemy.hp > 0) {
-      for (let cast = 0; cast < skillMulti; cast++) applyBurn(b.enemy, burnDmg, burnTurns);
-      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타) + 화상 ${skillMulti}중첩${knightCombo ? ' [마법기사]' : ''}`, 'hero');
-    } else {
-      log(`${s.name}! → 총 ${totalDmg} (${totalHits}타)${knightCombo ? ' [마법기사]' : ''}`, 'hero');
-    }
+    log(`${s.name}! → 총 ${totalDmg} (${totalHits}타, ${targets.length}대상)${knightCombo ? ' [마법기사]' : ''}`, 'hero');
     r.skillCds[skillId] = getSkillCooldown(skillId);
     if (hasBoonMod('magicKnight')) b.lastAction = 'magic';
     finishHeroSkill();
@@ -1824,7 +2120,7 @@ function doDefend() {
 
 function doFlee() {
   const b = game.run.battle;
-  if (b.enemy.def.boss || b.enemy.kind === 'elite') {
+  if (b.enemies.some(e => e.def.boss) || b.enemies.some(e => e.kind === 'elite')) {
     log('이 적에게서는 도망칠 수 없다!', 'system');
     if (window.AUDIO) AUDIO.sfx('cancel');
     return;
@@ -1844,24 +2140,32 @@ function doFlee() {
 
 function dealDamageToEnemy(dmg, kind, src) {
   const b = game.run.battle;
+  return dealDamageToTarget(currentTarget(b), dmg, kind, src);
+}
+
+function dealDamageToTarget(target, dmg, kind, src) {
+  const b = game.run.battle;
+  if (!target || target.hp <= 0) return;
   if (b.toolDmgBoost) dmg = Math.round(dmg * (1 + b.toolDmgBoost));
   // 저주 등 — 이그니아의 데미지 디버프
   if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) dmg = Math.round(dmg * b.heroDmgDebuff.mul);
-  // 악의 — 마법(스킬) 데미지 흡수
-  if (b.lichMalice && b.lichMalice.phase === 'absorbing' && src === 'skill' && dmg > 0) {
+  // 악의 — 마법(스킬) 데미지 흡수 (보스 lich 한정)
+  if (b.lichMalice && b.lichMalice.phase === 'absorbing' && src === 'skill' && dmg > 0 && target.id === 'lich') {
     b.lichMalice.collected = (b.lichMalice.collected || 0) + dmg;
     showDmgNum('enemy', dmg, 'magic');
     log(`💜 마녀가 마법을 흡수… (누적 ${b.lichMalice.collected})`, 'enemy');
     refreshBattleUI();
     return;
   }
-  b.enemy.hp = Math.max(0, b.enemy.hp - dmg);
+  target.hp = Math.max(0, target.hp - dmg);
   showDmgNum('enemy', dmg, kind);
   hitFlash('enemy');
   shake();
+  // 죽은 적이 현재 타겟이었으면 다음 살아있는 적으로 자동 전환
+  advanceTargetIfDead(b);
   refreshBattleUI();
   // 보스 가시 카운터 — 한 hero 턴 1회
-  if (b.bossThorns && b.bossThorns.turns > 0 && !b.bossThornsFiredThisTurn && b.enemy.hp > 0 && kind !== 'counter' && kind !== 'burn') {
+  if (b.bossThorns && b.bossThorns.turns > 0 && !b.bossThornsFiredThisTurn && target.hp > 0 && kind !== 'counter' && kind !== 'burn') {
     b.bossThornsFiredThisTurn = true;
     const counter = Math.round(dmg * 2);
     setTimeout(() => {
@@ -1971,17 +2275,22 @@ function dealDamageToHero(dmg, kind) {
 
 function endTurnHero(skipDefense) {
   const b = game.run.battle;
-  // 화상 도트 (스택별 합산)
-  if (b.enemy.hp > 0) {
-    const burnTotal = tickBurns(b.enemy);
+  // 화상 도트 — 모든 적
+  let totalBurn = 0;
+  for (const en of aliveEnemies(b)) {
+    const burnTotal = tickBurns(en);
     if (burnTotal > 0) {
-      b.enemy.hp = Math.max(0, b.enemy.hp - burnTotal);
-      showDmgNum('enemy', burnTotal, 'burn');
-      log(`화상 도트 → ${burnTotal}`, 'system');
-      refreshBattleUI();
+      en.hp = Math.max(0, en.hp - burnTotal);
+      totalBurn += burnTotal;
     }
   }
-  if (b.enemy.hp <= 0) {
+  if (totalBurn > 0) {
+    showDmgNum('enemy', totalBurn, 'burn');
+    log(`화상 도트 → ${totalBurn} (총합)`, 'system');
+    advanceTargetIfDead(b);
+    refreshBattleUI();
+  }
+  if (aliveEnemies(b).length === 0) {
     setTimeout(() => onEnemyDefeat(), 500);
     return;
   }
@@ -2020,7 +2329,7 @@ function tryFireBossSkill(b) {
 
 function enemyTurn() {
   const b = game.run.battle;
-  if (b.enemy.hp <= 0) return;
+  if (aliveEnemies(b).length === 0) return;
   // 사형선고 — 5턴 후 즉사 (시작 시 카운트다운)
   if (typeof b.deathSentence === 'number') {
     if (b.deathSentence === 0) {
@@ -2059,10 +2368,10 @@ function enemyTurn() {
     dealDamageToHero(dmg);
     if (game.run.hp <= 0) { setTimeout(() => onHeroDefeat(), 600); return; }
   }
-  // 거부할 수 없는 매혹 — 적 행동 불가
+  // 거부할 수 없는 매혹 — 모든 적 행동 불가
   if (b.enemyStunTurns && b.enemyStunTurns > 0) {
     b.enemyStunTurns--;
-    log(`${b.enemy.name} — 매혹 상태! 행동 불가 (남은 ${b.enemyStunTurns}턴)`, 'enemy');
+    log(`적들 — 매혹 상태! 행동 불가 (남은 ${b.enemyStunTurns}턴)`, 'enemy');
     if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) b.enemyAtkDebuff.turns--;
     if (b.skillExtraAttackTurns && b.skillExtraAttackTurns > 0) b.skillExtraAttackTurns--;
     if (b.heroDmgDebuff && b.heroDmgDebuff.turns > 0) b.heroDmgDebuff.turns--;
@@ -2078,40 +2387,44 @@ function enemyTurn() {
   // 가시 카운터 — 한 hero 턴 한 번 발동 플래그 리셋
   b.bossThornsFiredThisTurn = false;
   let actionTaken = false;
-  // 악의 — 흡수 페이즈 종료, 카운터 발동
-  if (b.lichMalice && b.lichMalice.phase === 'absorbing') {
+  const bossEnemy = b.enemies.find(e => e.def.boss && e.hp > 0);
+  // 악의 — 흡수 페이즈 종료, 카운터 발동 (보스 한정)
+  if (bossEnemy && b.lichMalice && b.lichMalice.phase === 'absorbing') {
     const collected = b.lichMalice.collected || 0;
     const counter = collected * 3;
     b.lichMalice = null;
     if (collected > 0) {
-      playCutin('악의 — 반환', '"네 마법이 — 너를 찢는다!"', b.enemy.def.sprite);
+      playCutin('악의 — 반환', '"네 마법이 — 너를 찢는다!"', bossEnemy.def.sprite);
       log(`💜 악의 — 흡수 ${collected} × 3 → ${counter}`, 'enemy');
       dealDamageToHero(counter);
     } else {
-      playCutin('악의 — 빈 손', '"…아무것도 없군."', b.enemy.def.sprite);
+      playCutin('악의 — 빈 손', '"…아무것도 없군."', bossEnemy.def.sprite);
       log('💜 악의 — 흡수한 마법이 없다', 'enemy');
     }
     actionTaken = true;
   }
-  // 차지된 보스 스킬 — 우선 발동 (다른 스킬/일반 공격 대체)
-  if (!actionTaken && b.bossCharge) {
+  // 차지된 보스 스킬
+  if (!actionTaken && bossEnemy && b.bossCharge) {
     const c = b.bossCharge;
     b.bossCharge = null;
     c.attack();
     actionTaken = true;
   }
-  // 보스 특수 기술 시도 (차지/카운터 없을 때만)
-  if (!actionTaken) {
+  // 보스 특수 기술
+  if (!actionTaken && bossEnemy) {
     actionTaken = tryFireBossSkill(b);
   }
+  // 일반 공격 — 모든 살아있는 적이 차례로 공격 (보스 액션 발동 안 했을 때)
   if (!actionTaken) {
-    let dmg = b.enemy.atk;
-    // 맹렬한 상처 — 적 공격력 디버프
-    if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) {
-      dmg = Math.round(dmg * b.enemyAtkDebuff.mul);
+    for (const en of aliveEnemies(b)) {
+      if (game.run.hp <= 0) break;
+      let dmg = en.atk;
+      if (b.enemyAtkDebuff && b.enemyAtkDebuff.turns > 0) {
+        dmg = Math.round(dmg * b.enemyAtkDebuff.mul);
+      }
+      log(`${en.name}의 공격 → ${dmg}`, 'enemy');
+      dealDamageToHero(dmg);
     }
-    log(`${b.enemy.name}의 공격 → ${dmg}`, 'enemy');
-    dealDamageToHero(dmg);
   }
   if (game.run.hp <= 0) {
     setTimeout(() => onHeroDefeat(), 600);
@@ -2140,61 +2453,71 @@ function enemyTurn() {
     game.run.hp = Math.max(1, game.run.hp - recoil);
     log(`광기의 대가 — HP -${recoil}`, 'system');
   }
-  // 불의 지배 등 지연 폭발 처리
-  if (b.enemy.dominion && b.enemy.hp > 0) {
-    b.enemy.dominion.delay--;
-    if (b.enemy.dominion.delay <= 0) {
-      const ddmg = b.enemy.dominion.dmg;
-      const name = b.enemy.dominion.name;
-      b.enemy.dominion = null;
-      setTimeout(() => {
-        log(`🔥 ${name} 폭발! → ${ddmg}`, 'system');
-        dealDamageToEnemy(ddmg, 'crit', 'skill');
-        if (b.enemy.hp <= 0) {
-          setTimeout(() => onEnemyDefeat(), 500);
-        } else {
-          refreshBattleUI();
-        }
-      }, 400);
-      return;
+  // 불의 지배 등 지연 폭발 처리 — 모든 적 각자 처리
+  let dominionExploded = false;
+  for (const en of aliveEnemies(b)) {
+    if (en.dominion) {
+      en.dominion.delay--;
+      if (en.dominion.delay <= 0) {
+        const ddmg = en.dominion.dmg;
+        const name = en.dominion.name;
+        en.dominion = null;
+        const target = en;
+        setTimeout(() => {
+          log(`🔥 ${name} 폭발! → ${ddmg} (${target.name})`, 'system');
+          dealDamageToTarget(target, ddmg, 'crit', 'skill');
+          if (aliveEnemies(b).length === 0) setTimeout(() => onEnemyDefeat(), 500);
+          else refreshBattleUI();
+        }, 400);
+        dominionExploded = true;
+      }
     }
   }
+  if (dominionExploded) return;
   setTimeout(() => refreshBattleUI(), 100);
 }
 
 function onEnemyDefeat() {
   const b = game.run.battle;
+  if (aliveEnemies(b).length > 0) return;  // 아직 남은 적 있음 — 무시
   b.over = true;
-  log(`${b.enemy.name} 처치!`, 'system');
-  game.run.enemiesDefeated++;
+  const wasBoss = b.enemies.some(e => e.def.boss);
+  const wasElite = b.enemies.some(e => e.kind === 'elite');
+  const groupCount = b.enemies.length;
+  const mainName = b.enemies[0].name;
+  log(`${groupCount > 1 ? `${mainName} 외 ${groupCount - 1}` : mainName} 처치!`, 'system');
+  game.run.enemiesDefeated += groupCount;
   if (window.AUDIO) {
-    AUDIO.sfx(b.enemy.def.boss ? 'fanfare' : 'death');
-    if (b.enemy.def.boss) setTimeout(() => AUDIO.sfx('coin'), 300);
+    AUDIO.sfx(wasBoss ? 'fanfare' : 'death');
+    if (wasBoss) setTimeout(() => AUDIO.sfx('coin'), 300);
   }
-  // 보상 골드
-  let gold = 10 + game.run.floor * 5 + (b.enemy.kind === 'elite' ? 25 : 0) + (b.enemy.def.boss ? 60 : 0);
+  // 보상 골드 — 적 수에 비례
+  let gold = (10 + game.run.floor * 5) * groupCount + (wasElite ? 25 : 0) + (wasBoss ? 60 : 0);
   const goldMul = getBoonModSum('goldMul');
   if (goldMul > 0) gold = Math.round(gold * (1 + goldMul));
   game.run.gold += gold;
   if (window.AUDIO) AUDIO.sfx('coin');
   log(`+${gold} 골드`, 'system');
   // 도구 마스터 — 엘리트/보스 처치 시 무작위 도구 1개
-  if (hasBoonMod('toolOnElite') && (b.enemy.kind === 'elite' || b.enemy.def.boss)) {
+  if (hasBoonMod('toolOnElite') && (wasElite || wasBoss)) {
     const tid = randomToolId();
     addTool(game.run, tid);
     log(`도구 획득! ${TOOLS[tid].icon} ${TOOLS[tid].name}`, 'system');
   }
-  // 영혼 흡수
+  // 영혼 흡수 — 처치 인원당
   if (hasBoonMod('soulSteal')) {
-    game.run.maxHp += 5;
+    game.run.maxHp += 5 * groupCount;
     game.run.hp = game.run.maxHp;
-    log('영혼 흡수! 최대 HP +5, 완전 회복', 'system');
+    log(`영혼 흡수! 최대 HP +${5 * groupCount}, 완전 회복`, 'system');
   }
-  // 보스 처치 시 정수 +
-  if (b.enemy.def.boss) {
+  // 보스 처치 시 정수 + SP
+  if (wasBoss) {
     game.run.bossesDefeated++;
     game.meta.essence += 5;
+    grantSkillPoints(game.run, 2);  // 보스 처치 보너스 SP
     saveMeta();
+  } else if (wasElite) {
+    grantSkillPoints(game.run, 1);  // 엘리트 처치 보너스 SP
   }
   setTimeout(() => {
     const node = game.run.currentNode || {};
@@ -3007,6 +3330,9 @@ function boot() {
   window.refreshAudioToggles = refreshAudioToggles;
   $('audio-music').addEventListener('click', () => { AUDIO.init(); AUDIO.toggleMusic(); refreshAudioToggles(); AUDIO.sfx('click'); });
   $('audio-sfx').addEventListener('click', () => { AUDIO.init(); AUDIO.toggleSfx(); refreshAudioToggles(); AUDIO.sfx('click'); });
+  $('open-skill-tree').addEventListener('click', openSkillTree);
+  $('st-close').addEventListener('click', closeSkillTree);
+  $('st-backdrop').addEventListener('click', closeSkillTree);
   refreshAudioToggles();
   // 타이틀
   $('title-start').addEventListener('click', () => {

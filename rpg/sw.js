@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v54-soul-trade-event';
+const CACHE = 'ignia-v55-skill-tree-multi';
 const ASSETS = [
   './',
   './index.html',
