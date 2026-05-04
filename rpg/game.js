@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v53-low-hp-react';
+const VERSION = 'v54-soul-trade-event';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -2429,7 +2429,14 @@ function openBoonConfirm(boon) {
     applyBoon(boon);
     yes.removeEventListener('click', onYes);
     no.removeEventListener('click', onNo);
-    setTimeout(() => nextStep(), 800);
+    // 영혼 거래 발동 시 — 어떤 가호가 사라지고 어떤 가호가 강화됐는지 컷씬
+    if (game.run._soulTradeResult) {
+      const result = game.run._soulTradeResult;
+      game.run._soulTradeResult = null;
+      setTimeout(() => playSoulTradeEvent(result), 600);
+    } else {
+      setTimeout(() => nextStep(), 800);
+    }
   };
   const onNo = () => {
     close();
@@ -2488,17 +2495,53 @@ function applyUnstableSoulTrade(g) {
     );
     if (candidates.length > 0) break;
   }
-  if (candidates.length === 0) return;
-  const replacement = candidates[Math.floor(Math.random() * candidates.length)];
+  if (candidates.length === 0) {
+    g._soulTradeResult = { sacrificed, replacement: null };
+    return;
+  }
+  const baseRepl = candidates[Math.floor(Math.random() * candidates.length)];
+  const replacement = Object.assign({}, baseRepl, { level: 1 });
   g.boons.push(replacement);
-  if (replacement.apply) replacement.apply(g);
-  if (replacement.mod && replacement.mod.grantSkill) {
-    const sid = replacement.mod.grantSkill;
+  if (baseRepl.apply) baseRepl.apply(g);
+  if (baseRepl.mod && baseRepl.mod.grantSkill) {
+    const sid = baseRepl.mod.grantSkill;
     if (!g.skills.includes(sid)) {
       g.skills.push(sid);
       g.skillCds[sid] = 0;
     }
   }
+  // 결과 — openBoonConfirm 에서 컷씬으로 보여줌
+  g._soulTradeResult = { sacrificed, replacement };
+}
+
+function playSoulTradeEvent(result) {
+  const { sacrificed, replacement } = result;
+  const rarLbl = (r) => ({common:'일반',rare:'희귀',epic:'영웅',legendary:'전설',unstable:'불안정'})[r] || '';
+  const cat = (c) => (CATEGORIES && CATEGORIES[c]) ? `${CATEGORIES[c].icon} ${CATEGORIES[c].name}` : '';
+  if (window.AUDIO) AUDIO.sfx('cancel');
+  const scenes = [
+    { img: '../assets/story/prologue-1-darkness.png',
+      text: '💀 영혼 거래 — 발동\n\n어둠 속에서 두 영혼이 흐릿하게 교차한다.' },
+    { img: '../assets/story/prologue-1-darkness.png',
+      text: `— 잃은 가호 —\n\n「${sacrificed.name}」 (${rarLbl(sacrificed.rarity)} · ${cat(sacrificed.cat)})\n${sacrificed.desc || ''}\n\n— 사라진다.` },
+  ];
+  if (replacement) {
+    scenes.push({
+      img: '../assets/story/prologue-1-darkness.png',
+      text: `✦ 얻은 가호 ✦\n\n「${replacement.name}」 (${rarLbl(replacement.rarity)} · ${cat(replacement.cat)})\n${replacement.desc || ''}\n\n— 영혼이 강해졌다.`
+    });
+  } else {
+    scenes.push({
+      img: '../assets/story/prologue-1-darkness.png',
+      text: `…그러나 — 그 카테고리에는 더 이상 강화될 영혼이 없다.\n\n어둠은 — 빈 손으로 떠난다.`
+    });
+  }
+  // 두 번째 씬에선 sfx cancel, 세 번째에선 legendary
+  let played = 0;
+  const orig = $('pr-next');
+  // 간단하게 시작 시 cancel 한 번 / 마지막 씬 직전에 legendary
+  setTimeout(() => { if (window.AUDIO && replacement) AUDIO.sfx('legendary'); }, 1200);
+  playStorySequence(scenes, () => nextStep(), { finalLabel: '계속 ▶' });
 }
 
 function boonFlash(rarity) {

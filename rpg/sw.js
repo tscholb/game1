@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v53-low-hp-react';
+const CACHE = 'ignia-v54-soul-trade-event';
 const ASSETS = [
   './',
   './index.html',
