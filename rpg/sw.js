@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v52-reaper-skills';
+const CACHE = 'ignia-v53-low-hp-react';
 const ASSETS = [
   './',
   './index.html',

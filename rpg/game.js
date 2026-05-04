@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v52-reaper-skills';
+const VERSION = 'v53-low-hp-react';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -1111,6 +1111,7 @@ function startBattle(kind, node) {
     heroSkillBlock: 0,
     chainOfFate: null,
     deathSentence: undefined,
+    heroLowHpReacted: false,
     bossSkillTurn: 0,
     bossSkillTriggered: {},
   };
@@ -1922,6 +1923,19 @@ function dealDamageToHero(dmg, kind) {
   showDmgNum('hero', dmg);
   hitFlash('hero');
   refreshBattleUI();
+  // HP 50% 이하 첫 진입 — 으윽 컷인 (전투 1회)
+  if (!b.heroLowHpReacted && r.hp > 0 && r.hp / r.maxHp <= 0.5) {
+    b.heroLowHpReacted = true;
+    const lines = [
+      '이그니아 — "…으윽!"',
+      '이그니아 — "…큭, 아직이다."',
+      '이그니아 — "이 정도로… 멈춰서야 — 안 돼."',
+      '이그니아 — "…후우, 아슬아슬했군."',
+    ];
+    const quote = lines[Math.floor(Math.random() * lines.length)];
+    if (window.AUDIO) AUDIO.sfx('hit');
+    playCutin('으윽…', quote, HERO.spriteWounded || HERO.portrait);
+  }
   // 가시
   const thorns = getBoonModSum('thorns');
   if (thorns > 0) {
