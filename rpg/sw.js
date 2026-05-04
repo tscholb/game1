@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v57-floor5-darkorigin';
+const CACHE = 'ignia-v58-sequel-hook';
 const ASSETS = [
   './',
   './index.html',

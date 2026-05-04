@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v57-floor5-darkorigin';
+const VERSION = 'v58-sequel-hook';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -871,12 +871,18 @@ const BOSS_STORIES = {
     ],
     phase2: {
       enemyId: 'dragon-true',
-      // 페이즈 2 처치 후 진짜 엔딩 outro
+      // 페이즈 2 처치 후 — 더 깊은 어둠 떡밥 (5층으로 이어짐)
       finalOutro: [
         { img: '../assets/bosses/dragon-true.png',
-          text: '거대한 어둠의 비룡이 마지막 비명을 토하며 잿더미가 된다.\n\n동굴이 — 처음으로, 조용해졌다.' },
+          text: '거대한 어둠의 비룡이 마지막 숨을 토한다.\n잿더미 속에서 — 묘하게 짙은 빛이 새어 나온다.' },
         { speaker: 'ignia',
-          text: '이그니아 — "이게 끝이다.\n\n정말로 — 끝이다."' },
+          text: '이그니아 — "…드래곤조차, 결국엔 도구였구나.\n누군가의."' },
+        { img: '../assets/story/prologue-3-cave.png',
+          text: '잿더미 너머 — 동굴은, 아직 끝나지 않았다.\n한층 더 깊은 곳에서, 한층 더 짙은 어둠이 입김을 토한다.' },
+        { img: '../assets/story/prologue-1-darkness.png',
+          text: '"…잘 했다, 작은 불꽃아.\n네가 쫓아온 그 끝에 — 내가 있다.\n\n이리 — 오렴."' },
+        { speaker: 'ignia',
+          text: '이그니아의 손끝 불꽃이 — 한 번, 흔들린다.\n그러나, 다시 거세게 일어선다.\n\n이그니아 — "…그래.\n끝까지 — 가주마."' },
       ],
     },
   },
@@ -908,15 +914,23 @@ const BOSS_STORIES = {
     ],
     outro: [
       { img: '../assets/bosses/dark-origin.png',
-        text: '태초의 어둠이 무너져 내린다.\n그 거대한 그림자가 — 마침내, 빛 속으로 흩어진다.' },
+        text: '태초의 어둠이 무릎을 꿇는다.\n후드가 흘러내리고 — 처음으로, 그녀의 얼굴이 드러난다.' },
       { speaker: 'darkOrigin',
-        text: '태초의 어둠 — "잘… 했다, 작은 불꽃아…\n나는 — 너의 끝이자 — 너의 시작이었으니…"' },
-      { speaker: 'ignia',
-        text: '이그니아 — "어머니라는 말 — 다시는 듣지 않을 거다.\n\n나는, 나로서 — 이 세계를 살아갈 거야."' },
+        text: '태초의 어둠 — "…훌륭해, 정말로.\n나의 작은 불씨야 — 너는, 정말로 — 자라났구나."' },
+      { img: '../assets/bosses/dark-origin.png',
+        text: '그러나 — 그녀는 죽지 않는다.\n발 밑의 바닥이 입을 벌리고, 검은 균열 속으로 그녀를 천천히 삼킨다.' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "이건 시작에 불과하단다, 작은 불꽃.\n진짜 어둠은 — 아직, 네 안에 있어."' },
       { img: '../assets/story/prologue-1-darkness.png',
-        text: '어둠이 마침내 — 완전히 사라졌다.\n\n동굴 끝 너머, 새벽빛이 새어든다.' },
+        text: '균열이 닫히고 — 그녀는 사라진다.\n어디에도, 그러나 — 어디서나.' },
       { speaker: 'ignia',
-        text: '이그니아 — "이제, 진짜로 — 끝이다."' },
+        text: '이그니아 — "…뭐?"' },
+      { speaker: 'ignia',
+        text: '자신의 손끝 불꽃이 — 미세하게, 검게 흔들린다.\n\n이그니아 — "…내, 안에…?"' },
+      { img: '../assets/story/prologue-3-cave.png',
+        text: '동굴 끝 너머로 새벽빛이 새어든다.\n그러나 — 그녀의 그림자에는, 작은 어둠이 남아있다.' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…따라가야 한다.\n끝까지 — 내 안의, 그것까지."' },
     ],
   },
 };
@@ -3343,18 +3357,18 @@ function endRun(victory) {
   saveMeta();
 
   // 4층까지 클리어한 경우 — 「계속」 엔딩 (숨겨진 진실을 암시)
-  // 5층까지 모두 클리어 — TRUE ENDING
+  // 5층 클리어 — 보스가 도망간 후의 코다 + 시퀄 떡밥
   const isTrueVictory = victory && r.floor > 5;
   if (isTrueVictory) {
     playStorySequence(TRUE_ENDING, () => {
-      $('result-title').textContent = 'TRUE ENDING';
+      $('result-title').textContent = 'TO BE CONTINUED';
       $('result-title').className = 'victory';
-      $('result-text').innerHTML = '진정한 어둠마저 — 이그니아의 불꽃이 태웠다. 새벽이 밝았다.';
+      $('result-text').innerHTML = '태초의 어둠은 사라졌다. — 그러나 진정한 어둠은, <em>이그니아의 안에</em> 있었다.';
       $('result-stats').innerHTML = `
         <div class="stat"><span class="k">처치</span><span class="v">${r.enemiesDefeated}</span></div>
         <div class="stat"><span class="k">보스</span><span class="v">${r.bossesDefeated}</span></div>
         <div class="stat"><span class="k">획득 정수</span><span class="v">+${earned}</span></div>
-        <div class="stat"><span class="k">도달 층</span><span class="v">5 / 5</span></div>`;
+        <div class="stat"><span class="k">도달 층</span><span class="v">5 — 그녀를 따라서</span></div>`;
       showScreen('result');
     }, { finalLabel: '계속 ▶' });
     return;
@@ -3373,20 +3387,20 @@ function endRun(victory) {
   showScreen('result');
 }
 
-// 5층 클리어 후 — TRUE ENDING 컷씬
+// 5층 클리어 후 — 시퀄 떡밥 코다
 const TRUE_ENDING = [
-  { img: '../assets/bosses/dark-origin.png',
-    text: '태초의 어둠이 — 마지막 잔재마저 흩어진다.\n검은 후드 안의 미소가, 마침내 꺼진다.' },
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '동굴 끝, 새벽빛이 새어든다.\n그러나 이그니아의 그림자에는 — 검은 잔재가 남아있다.' },
   { speaker: 'ignia',
-    text: '이그니아 — "어머니라는 말은 — 다시는 듣지 않겠다.\n나는, 나로서, 살아갈 거야."' },
-  { img: '../assets/story/prologue-3-cave.png',
-    text: '동굴 끝의 균열 너머로 — 처음으로 새벽빛이 새어든다.' },
-  { img: '../assets/story/prologue-3-cave.png',
-    text: '발걸음을 옮긴다.\n불꽃은 — 손끝에서 작게, 그러나 흔들림 없이 타오른다.' },
+    text: '이그니아 — "그녀가 말한 — \'네 안의 어둠\' 은…\n정말로 있는 것인가."' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '손끝 불꽃이 한 번 — 검게 일렁인다.\n그리고, 다시 붉어진다.' },
   { speaker: 'ignia',
-    text: '이그니아 — "이번에는 — 정말로 끝이다."' },
+    text: '이그니아 — "…따라가야 한다.\n끝까지 — 그녀가 도망간 그곳, 그리고 — 내 안까지."' },
+  { img: '../assets/story/prologue-1-darkness.png',
+    text: '먼 어둠 속, 어디선가 — 작은 웃음이 메아리친다.\n\n"…기다리고 있을게, 작은 불꽃아."' },
   { img: '../assets/story/prologue-3-cave.png',
-    text: '— 그리고, 새벽.\n\nTRUE ENDING' },
+    text: 'TO BE CONTINUED…' },
 ];
 
 // ============================================================
