@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v56-skill-tree-visual';
+const VERSION = 'v57-floor5-darkorigin';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -85,6 +85,8 @@ const ENEMIES = {
   dragon:   { name: '심연의 드래곤',   hp: 380, atk: 30, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-human.png' },
   // 4층 보스 페이즈 2 — 진정한 드래곤 모습
   'dragon-true': { name: '심연의 드래곤', hp: 460, atk: 36, emoji: '🐉', boss: true, sprite: '../assets/bosses/dragon-true.png' },
+  // 5층 보스 — 「태초의 어둠」 (진짜 어둠 — 4층 엔딩의 속삭임)
+  darkOrigin: { name: '태초의 어둠', hp: 520, atk: 36, emoji: '🌑', boss: true, sprite: '../assets/bosses/dark-origin.png' },
 };
 
 // 층별 등장 풀 — 새 몬스터가 누적되며 점차 강력해짐
@@ -94,12 +96,14 @@ const ENEMY_POOLS = {
     2: ['orc', 'rogue', 'shield', 'drone', 'wraith', 'assassin', 'cultist'],
     3: ['rogue', 'drone', 'wraith', 'assassin', 'cultist', 'imp', 'reaperMinion', 'demon', 'charmedSoul'],
     4: ['imp', 'reaperMinion', 'demon', 'charmedSoul', 'drake', 'abyssWalker', 'shadowBeast', 'voidPriest'],
+    5: ['demon', 'drake', 'abyssWalker', 'shadowBeast', 'voidPriest'],
   },
   elite: {
     1: ['knight', 'shield', 'drone'],
     2: ['knight', 'darkKnight', 'shield', 'drone'],
     3: ['knight', 'darkKnight', 'lichApprentice'],
     4: ['darkKnight', 'lichApprentice', 'wyvern'],
+    5: ['darkKnight', 'lichApprentice', 'wyvern'],
   },
 };
 
@@ -469,6 +473,7 @@ const SPEAKERS = {
   reyna:  '../assets/heroes/merchant.png',
   luna:   '../assets/heroes/luna.png',
   reaper: '../assets/bosses/reaper.png',
+  darkOrigin: '../assets/bosses/dark-origin.png',
 };
 
 // ===== 인연각성 (필살기) =====
@@ -698,6 +703,41 @@ const BOSS_SKILLS = {
         log('☠ 사형선고 — 5턴 후 사형 집행 (보스를 처치하면 해제)', 'enemy');
       } },
   ],
+  darkOrigin: [
+    // 태초의 속삭임 — 마법 봉인 + 출혈 동시
+    { name: '태초의 속삭임', interval: 3,
+      quote: '"…잠들어. 모든 것은 — 끝이야."',
+      apply(b, r) {
+        b.heroSkillBlock = 2;
+        const dmg = Math.max(8, Math.floor(r.maxHp * 0.07));
+        b.heroBleed = { dmg, turns: 3 };
+        log(`🌑 태초의 속삭임 — 2턴 마법 봉인 + 매 턴 ${dmg} 출혈`, 'enemy');
+      } },
+    // 어둠의 손길 — 현재 HP 25% 데미지 + 그만큼 보스 회복
+    { name: '어둠의 손길', interval: 5,
+      quote: '"네 불꽃 — 내가 — 다시 거두어 가지."',
+      apply(b, r) {
+        const dmg = Math.max(1, Math.floor(r.hp * 0.25));
+        log(`🖤 어둠의 손길 → ${dmg} (불꽃 회수)`, 'enemy');
+        dealDamageToHero(dmg);
+        const me = b.enemies.find(e => e.id === 'darkOrigin');
+        if (me && me.hp > 0) {
+          me.hp = Math.min(me.maxHp, me.hp + dmg);
+          showDmgNum('enemy', dmg, 'heal');
+          log(`태초의 어둠 회복 → +${dmg}`, 'enemy');
+          refreshBattleUI();
+        }
+      } },
+    // 종말의 의식 — HP 40% 1회. 큰 광역 데미지 + 사형선고 즉시 부여
+    { name: '종말의 의식', hpThreshold: 0.4, oneShot: true,
+      quote: '"이 세계는 — 너와 함께 — 사라진다."',
+      apply(b, r) {
+        const dmg = Math.round(b.enemies.find(e => e.id === 'darkOrigin').atk * 2.0);
+        log(`🌑 종말의 의식 → ${dmg} + 사형선고 발동`, 'enemy');
+        dealDamageToHero(dmg);
+        if (game.run.hp > 0) b.deathSentence = 5;
+      } },
+  ],
   'dragon-true': [
     { name: '심연의 숨결', interval: 3,
       quote: '"어둠 속으로 — 가라앉아라."',
@@ -840,10 +880,49 @@ const BOSS_STORIES = {
       ],
     },
   },
+  // 5층 — 태초의 어둠 (진짜 어둠)
+  darkOrigin: {
+    intro: [
+      { img: '../assets/story/prologue-1-darkness.png',
+        text: '드래곤이 사라진 자리 — 그러나 동굴은 아직 끝나지 않았다.\n\n바닥의 균열이 입을 벌리고, 더 깊은 어둠이 입김을 토한다.' },
+      { img: '../assets/bosses/dark-origin.png',
+        text: '그 안에서 — 후드를 깊이 눌러쓴 한 여인이 천천히 걸어 나온다.\n그녀의 뒤로, 거대한 해골이 음영처럼 떠올라 그녀를 굽어본다.' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "어서 오렴, 작은 불꽃아."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…너는, 그자인가."' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "후훗, 「그자」… 라고 — 다들 그렇게 부르더구나.\n나는 — 너의 어머니."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…뭐?"' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "네 손끝의 그 불꽃 — 내가 너에게 쥐여준 것이지.\n어둠을 태우라고 보낸 — 가장 작고, 가장 뜨거운 잔재."' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "…그러나, 나의 작은 불씨야.\n어둠을 다 태우고 나면, 너는 — 너 자신마저 태워버릴 거다."' },
+      { speaker: 'ignia',
+        text: '이그니아 — "…!\n어머니라고… 나에게 거짓을…"' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "거짓이 아니란다. — 자, 이리 오렴.\n네가 내 품으로 돌아와야, 이 세계가 — 다시 잠들 수 있어."' },
+      { speaker: 'ignia',
+        text: '이그니아의 손끝 불꽃이 떨린다. — 그러나, 다시 거세게 일어선다.\n\n이그니아 — "…너부터 — 내가 태워주마."' },
+    ],
+    outro: [
+      { img: '../assets/bosses/dark-origin.png',
+        text: '태초의 어둠이 무너져 내린다.\n그 거대한 그림자가 — 마침내, 빛 속으로 흩어진다.' },
+      { speaker: 'darkOrigin',
+        text: '태초의 어둠 — "잘… 했다, 작은 불꽃아…\n나는 — 너의 끝이자 — 너의 시작이었으니…"' },
+      { speaker: 'ignia',
+        text: '이그니아 — "어머니라는 말 — 다시는 듣지 않을 거다.\n\n나는, 나로서 — 이 세계를 살아갈 거야."' },
+      { img: '../assets/story/prologue-1-darkness.png',
+        text: '어둠이 마침내 — 완전히 사라졌다.\n\n동굴 끝 너머, 새벽빛이 새어든다.' },
+      { speaker: 'ignia',
+        text: '이그니아 — "이제, 진짜로 — 끝이다."' },
+    ],
+  },
 };
 
 function getBossStoryByFloor(floor) {
-  const id = ['giant', 'lich', 'reaper', 'dragon'][floor - 1] || 'dragon';
+  const id = ['giant', 'lich', 'reaper', 'dragon', 'darkOrigin'][floor - 1] || 'darkOrigin';
   return BOSS_STORIES[id];
 }
 
@@ -1016,7 +1095,7 @@ function nextStep() {
   // 직전 노드가 보스였으면 → 다음 층
   if (r.currentNode && r.currentNode.kind === 'boss') {
     r.floor++;
-    if (r.floor > 4) { endRun(true); return; }
+    if (r.floor > 5) { endRun(true); return; }
     r.roomNum = 1;
     r.shopsOfferedThisFloor = 0;
     r.bondUsedThisFloor = false;
@@ -1106,7 +1185,7 @@ function startBattle(kind, node) {
   let ePool;
   if (kind === 'normal') ePool = (ENEMY_POOLS.normal[f] || ENEMY_POOLS.normal[4]);
   else if (kind === 'elite') ePool = (ENEMY_POOLS.elite[f] || ENEMY_POOLS.elite[4]);
-  else if (kind === 'boss') ePool = [['giant', 'lich', 'reaper', 'dragon'][f - 1] || 'dragon'];
+  else if (kind === 'boss') ePool = [['giant', 'lich', 'reaper', 'dragon', 'darkOrigin'][f - 1] || 'darkOrigin'];
   else if (kind === 'mimic') ePool = ['mimic'];
   game.run.currentNode = node || { kind, rewardCat: null, rewardRarity: null };
   // 층/엘리트 스케일링 — 층마다 +50%, 엘리트는 추가 +50%
@@ -3264,17 +3343,18 @@ function endRun(victory) {
   saveMeta();
 
   // 4층까지 클리어한 경우 — 「계속」 엔딩 (숨겨진 진실을 암시)
-  const isFinalVictory = victory && r.floor > 4;
-  if (isFinalVictory) {
-    playStorySequence(FINAL_ENDING, () => {
-      $('result-title').textContent = 'TO BE CONTINUED';
+  // 5층까지 모두 클리어 — TRUE ENDING
+  const isTrueVictory = victory && r.floor > 5;
+  if (isTrueVictory) {
+    playStorySequence(TRUE_ENDING, () => {
+      $('result-title').textContent = 'TRUE ENDING';
       $('result-title').className = 'victory';
-      $('result-text').innerHTML = '4층까지의 여정은 끝났다… 그러나 진정한 어둠은, 아직 — <em>잠들어있다</em>.';
+      $('result-text').innerHTML = '진정한 어둠마저 — 이그니아의 불꽃이 태웠다. 새벽이 밝았다.';
       $('result-stats').innerHTML = `
         <div class="stat"><span class="k">처치</span><span class="v">${r.enemiesDefeated}</span></div>
         <div class="stat"><span class="k">보스</span><span class="v">${r.bossesDefeated}</span></div>
         <div class="stat"><span class="k">획득 정수</span><span class="v">+${earned}</span></div>
-        <div class="stat"><span class="k">도달 층</span><span class="v">4 / ?</span></div>`;
+        <div class="stat"><span class="k">도달 층</span><span class="v">5 / 5</span></div>`;
       showScreen('result');
     }, { finalLabel: '계속 ▶' });
     return;
@@ -3293,24 +3373,20 @@ function endRun(victory) {
   showScreen('result');
 }
 
-// 4층 클리어 후 — 「계속」 엔딩 컷씬
-const FINAL_ENDING = [
-  { img: '../assets/bosses/dragon-true.png',
-    text: '거대한 어둠의 비룡이 잿더미가 되어 무너진다.\n동굴은 — 처음으로, 완전한 침묵에 잠긴다.' },
+// 5층 클리어 후 — TRUE ENDING 컷씬
+const TRUE_ENDING = [
+  { img: '../assets/bosses/dark-origin.png',
+    text: '태초의 어둠이 — 마지막 잔재마저 흩어진다.\n검은 후드 안의 미소가, 마침내 꺼진다.' },
   { speaker: 'ignia',
-    text: '이그니아 — "이게… 끝인가."' },
+    text: '이그니아 — "어머니라는 말은 — 다시는 듣지 않겠다.\n나는, 나로서, 살아갈 거야."' },
   { img: '../assets/story/prologue-3-cave.png',
-    text: '— 그러나.\n잿더미 사이로, 작은 속삭임이 새어나온다.' },
-  { img: '../assets/story/prologue-1-darkness.png',
-    text: '"…잘 했어, 작은 불꽃아."' },
-  { img: '../assets/story/prologue-1-darkness.png',
-    text: '"이제 — 진짜 어둠을 보러, 와다오."' },
+    text: '동굴 끝의 균열 너머로 — 처음으로 새벽빛이 새어든다.' },
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '발걸음을 옮긴다.\n불꽃은 — 손끝에서 작게, 그러나 흔들림 없이 타오른다.' },
   { speaker: 'ignia',
-    text: '이그니아의 손끝 불꽃이 — 처음으로, 흔들린다.\n\n이그니아 — "…누구냐."' },
-  { img: '../assets/story/prologue-1-darkness.png',
-    text: '대답은 — 들려오지 않는다.\n오직, 끝없는 어둠이 — 미소 짓고 있을 뿐.' },
-  { img: '../assets/story/prologue-1-darkness.png',
-    text: '— 진정한 어둠은, 아직 — 잠들어있다.\n\n계속…' },
+    text: '이그니아 — "이번에는 — 정말로 끝이다."' },
+  { img: '../assets/story/prologue-3-cave.png',
+    text: '— 그리고, 새벽.\n\nTRUE ENDING' },
 ];
 
 // ============================================================

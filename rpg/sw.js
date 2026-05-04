@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v56-skill-tree-visual';
+const CACHE = 'ignia-v57-floor5-darkorigin';
 const ASSETS = [
   './',
   './index.html',
@@ -22,6 +22,7 @@ const ASSETS = [
   '../assets/bosses/dryad.png',
   '../assets/bosses/witch.png',
   '../assets/bosses/reaper.png',
+  '../assets/bosses/dark-origin.png',
   '../assets/bosses/dragon-human.png',
   '../assets/bosses/dragon-true.png',
   '../assets/scenes/spring.png',
