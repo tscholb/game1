@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v55-skill-tree-multi';
+const CACHE = 'ignia-v56-skill-tree-visual';
 const ASSETS = [
   './',
   './index.html',

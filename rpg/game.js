@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v55-skill-tree-multi';
+const VERSION = 'v56-skill-tree-visual';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -337,6 +337,13 @@ function showScreen(name) {
   for (const id of ['title', 'prologue', 'menu', 'fork', 'battle', 'boon-screen', 'rest-screen', 'chest-screen', 'shop-screen', 'result', 'fountain']) {
     const el = $(id);
     if (el) el.classList.toggle('hidden', id !== name);
+  }
+  // 마법 트리 버튼 — 런 진행 중일 때만 노출
+  const stBtn = $('open-skill-tree');
+  if (stBtn) {
+    const inRun = name === 'battle' || name === 'fork' || name === 'boon-screen' ||
+                  name === 'rest-screen' || name === 'chest-screen' || name === 'shop-screen';
+    stBtn.style.display = inRun ? '' : 'none';
   }
   // BGM 트랙 매핑 (battle 은 startBattle 에서 별도 설정)
   if (window.AUDIO) {
@@ -1656,11 +1663,26 @@ function getSkillStatsAtLevel(s, level) {
   return stats;
 }
 
+// 트리 노드 정렬 — 왼쪽=단일, 오른쪽=광역으로 컬럼 분리
+const SKILL_TREE_LAYOUT = {
+  1: ['fireball', 'flame-finger'],   // T1: 단일·단일
+  2: ['flamethrower', 'firestorm'],  // T2: 단일·광역
+  3: ['inferno', 'ignite'],          // T3: 단일·광역
+  4: ['meteor', 'firedom'],          // T4: 단일·광역
+};
+let _selectedSkillId = null;
+
 function openSkillTree() {
   if (!game.run) { return; }
+  if (!_selectedSkillId) {
+    // 처음 열 때 — 보유 마법 중 첫 번째를 자동 선택
+    _selectedSkillId = (game.run.skills && game.run.skills[0]) || 'fireball';
+  }
   renderSkillTree();
   $('skill-tree-modal').classList.add('active');
   if (window.AUDIO) AUDIO.sfx('open');
+  // 다음 프레임에 라인 그리기 (레이아웃 확정 후)
+  requestAnimationFrame(() => requestAnimationFrame(drawSkillTreeLines));
 }
 function closeSkillTree() {
   $('skill-tree-modal').classList.remove('active');
@@ -1669,76 +1691,154 @@ function closeSkillTree() {
 function renderSkillTree() {
   const r = game.run;
   $('st-sp').textContent = r.skillPoints || 0;
-  const wrap = $('st-body');
-  wrap.innerHTML = '';
-  const tiers = [1, 2, 3, 4];
-  for (const tier of tiers) {
-    const tierSpells = Object.values(SKILLS).filter(s => (s.tier || 1) === tier);
-    if (tierSpells.length === 0) continue;
-    const sec = document.createElement('div');
-    sec.className = 'st-tier';
-    const learnCost = SKILL_LEARN_COST[tier];
-    sec.innerHTML = `<div class="st-tier-head">티어 ${tier} <span class="st-tier-cost">학습 비용 ${learnCost} SP</span></div>`;
-    const grid = document.createElement('div');
-    grid.className = 'st-grid';
-    for (const s of tierSpells) {
-      const owned = r.skills.includes(s.id);
-      const lv = getSkillLevel(s.id);
-      const upgradeAvail = canUpgradeSkill(s.id);
-      const learnAvail = canLearnSkill(s.id);
-      const card = document.createElement('div');
-      card.className = `st-card${owned ? ' owned' : ''}${lv >= SKILL_MAX_LEVEL ? ' maxed' : ''}`;
-      const stats = getSkillStatsAtLevel(s, lv || 1);
-      const statsRows = stats.map(st => `<div class="st-stat"><span class="st-stat-l">${st.label}</span><span class="st-stat-v">${st.value}</span></div>`).join('');
-      let nextStatsBlock = '';
-      if (owned && lv < SKILL_MAX_LEVEL) {
-        const next = getSkillStatsAtLevel(s, lv + 1);
-        const nextRows = next.map((st, i) => {
-          const cur = stats[i];
-          const changed = cur && cur.value !== st.value;
-          return `<div class="st-stat next${changed ? ' diff' : ''}"><span class="st-stat-l">${st.label}</span><span class="st-stat-v">${st.value}</span></div>`;
-        }).join('');
-        nextStatsBlock = `<div class="st-next-head">⬆ Lv.${lv + 1} 효과</div><div class="st-stats next">${nextRows}</div>`;
-      }
-      let actionBtn = '';
-      if (owned) {
-        if (lv >= SKILL_MAX_LEVEL) {
-          actionBtn = `<button class="st-btn maxed" disabled>최대 Lv.${SKILL_MAX_LEVEL}</button>`;
-        } else {
-          const cost = SKILL_UPGRADE_COST[lv];
-          actionBtn = `<button class="st-btn upgrade" data-act="upgrade" data-sid="${s.id}"${upgradeAvail ? '' : ' disabled'}>⬆ 강화 (${cost} SP)</button>`;
-        }
-      } else {
-        actionBtn = `<button class="st-btn learn" data-act="learn" data-sid="${s.id}"${learnAvail ? '' : ' disabled'}>✦ 학습 (${learnCost} SP)</button>`;
-      }
-      card.innerHTML = `
-        <div class="st-card-head">
-          <span class="st-icon">${s.icon}</span>
-          <span class="st-name">${s.name}</span>
-          ${owned ? `<span class="st-lv">Lv.${lv}/${SKILL_MAX_LEVEL}</span>` : `<span class="st-lv unowned">미보유</span>`}
-        </div>
-        <div class="st-tag ${s.target}">${s.target === 'aoe' ? '광역' : '단일'}</div>
-        <div class="st-desc">${s.desc}</div>
-        <div class="st-stats">${statsRows}</div>
-        ${nextStatsBlock}
-        ${actionBtn}`;
-      grid.appendChild(card);
+  const tree = $('st-tree');
+  if (!tree) return;
+  // SVG 보존 — 노드 갱신만
+  const svg = $('st-lines');
+  tree.querySelectorAll('.st-tier-row').forEach(el => el.remove());
+  for (const tier of [1, 2, 3, 4]) {
+    const ids = SKILL_TREE_LAYOUT[tier] || [];
+    const row = document.createElement('div');
+    row.className = 'st-tier-row';
+    row.dataset.tier = tier;
+    row.innerHTML = `<div class="st-tier-tag">T${tier}<span class="st-tier-cost">${SKILL_LEARN_COST[tier]} SP</span></div>`;
+    for (const sid of ids) {
+      const s = SKILLS[sid];
+      if (!s) continue;
+      const owned = r.skills.includes(sid);
+      const lv = getSkillLevel(sid);
+      const learnAvail = canLearnSkill(sid);
+      const upgradeAvail = canUpgradeSkill(sid);
+      const node = document.createElement('button');
+      node.className = `st-node ${s.target}` +
+        (owned ? ' owned' : '') +
+        (lv >= SKILL_MAX_LEVEL ? ' maxed' : '') +
+        (learnAvail ? ' avail-learn' : '') +
+        (upgradeAvail ? ' avail-upgrade' : '') +
+        (sid === _selectedSkillId ? ' selected' : '');
+      node.dataset.sid = sid;
+      node.innerHTML = `
+        <span class="st-node-icon">${s.icon}</span>
+        <span class="st-node-name">${s.name}</span>
+        <span class="st-node-lv">${owned ? `Lv.${lv}` : '미보유'}</span>`;
+      node.addEventListener('click', () => {
+        _selectedSkillId = sid;
+        if (window.AUDIO) AUDIO.sfx('click');
+        renderSkillTree();
+      });
+      row.appendChild(node);
     }
-    sec.appendChild(grid);
-    wrap.appendChild(sec);
+    tree.appendChild(row);
   }
-  // 버튼 핸들러
-  wrap.querySelectorAll('.st-btn[data-act]').forEach(btn => {
+  // 라인 다시 그리기
+  requestAnimationFrame(drawSkillTreeLines);
+  // 상세 패널
+  renderSkillDetail();
+}
+
+function drawSkillTreeLines() {
+  const svg = $('st-lines');
+  const tree = $('st-tree');
+  if (!svg || !tree) return;
+  const treeRect = tree.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${treeRect.width} ${treeRect.height}`);
+  svg.setAttribute('width', treeRect.width);
+  svg.setAttribute('height', treeRect.height);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  for (let t = 1; t <= 3; t++) {
+    const topRow = tree.querySelector(`[data-tier="${t}"]`);
+    const botRow = tree.querySelector(`[data-tier="${t + 1}"]`);
+    if (!topRow || !botRow) continue;
+    const topNodes = topRow.querySelectorAll('.st-node');
+    const botNodes = botRow.querySelectorAll('.st-node');
+    for (const tn of topNodes) {
+      for (const bn of botNodes) {
+        const tr = tn.getBoundingClientRect();
+        const br = bn.getBoundingClientRect();
+        const x1 = tr.left + tr.width / 2 - treeRect.left;
+        const y1 = tr.bottom - treeRect.top;
+        const x2 = br.left + br.width / 2 - treeRect.left;
+        const y2 = br.top - treeRect.top;
+        const line = document.createElementNS(SVGNS, 'line');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        const tnOwned = tn.classList.contains('owned');
+        const bnOwned = bn.classList.contains('owned');
+        line.setAttribute('class', 'st-line' + (tnOwned && bnOwned ? ' active' : ''));
+        svg.appendChild(line);
+      }
+    }
+  }
+}
+
+function renderSkillDetail() {
+  const wrap = $('st-detail');
+  if (!wrap) return;
+  const sid = _selectedSkillId;
+  const s = sid ? SKILLS[sid] : null;
+  if (!s) {
+    wrap.innerHTML = `<div class="st-empty">← 좌측 마법을 선택하면 상세 정보가 표시됩니다.</div>`;
+    return;
+  }
+  const r = game.run;
+  const owned = r.skills.includes(sid);
+  const lv = getSkillLevel(sid);
+  const learnCost = SKILL_LEARN_COST[s.tier || 1];
+  const learnAvail = canLearnSkill(sid);
+  const upgradeAvail = canUpgradeSkill(sid);
+  const stats = getSkillStatsAtLevel(s, owned ? lv : 1);
+  const statRows = stats.map(st => `<div class="st-stat"><span class="st-stat-l">${st.label}</span><span class="st-stat-v">${st.value}</span></div>`).join('');
+  let nextBlock = '';
+  if (owned && lv < SKILL_MAX_LEVEL) {
+    const next = getSkillStatsAtLevel(s, lv + 1);
+    const nextRows = next.map((nx, i) => {
+      const cur = stats[i];
+      const changed = cur && cur.value !== nx.value;
+      return `<div class="st-stat next${changed ? ' diff' : ''}"><span class="st-stat-l">${nx.label}</span><span class="st-stat-v">${nx.value}</span></div>`;
+    }).join('');
+    nextBlock = `<div class="st-detail-section"><div class="st-detail-section-head">⬆ Lv.${lv + 1} 강화 시</div>${nextRows}</div>`;
+  }
+  let action = '';
+  if (owned) {
+    if (lv >= SKILL_MAX_LEVEL) {
+      action = `<button class="st-btn maxed" disabled>최대 Lv.${SKILL_MAX_LEVEL} 도달</button>`;
+    } else {
+      const cost = SKILL_UPGRADE_COST[lv];
+      action = `<button class="st-btn upgrade" id="st-act"${upgradeAvail ? '' : ' disabled'}>⬆ 강화 (${cost} SP)</button>`;
+    }
+  } else {
+    action = `<button class="st-btn learn" id="st-act"${learnAvail ? '' : ' disabled'}>✦ 학습 (${learnCost} SP)</button>`;
+  }
+  wrap.innerHTML = `
+    <div class="st-detail-head">
+      <span class="st-detail-icon">${s.icon}</span>
+      <div class="st-detail-meta">
+        <div class="st-detail-name">${s.name}</div>
+        <div class="st-detail-tags">
+          <span class="st-tag ${s.target}">${s.target === 'aoe' ? '광역' : '단일'}</span>
+          <span class="st-tag tier">티어 ${s.tier}</span>
+          ${owned ? `<span class="st-tag lv">Lv.${lv}/${SKILL_MAX_LEVEL}</span>` : `<span class="st-tag unowned">미보유</span>`}
+        </div>
+      </div>
+    </div>
+    <div class="st-detail-quote">"${s.quote || ''}"</div>
+    <div class="st-detail-desc">${s.desc}</div>
+    <div class="st-detail-section">
+      <div class="st-detail-section-head">${owned ? `현재 Lv.${lv} 효과` : 'Lv.1 효과 (학습 시)'}</div>
+      ${statRows}
+    </div>
+    ${nextBlock}
+    ${action}`;
+  const btn = $('st-act');
+  if (btn) {
     btn.addEventListener('click', () => {
-      const sid = btn.dataset.sid;
-      const act = btn.dataset.act;
-      if (act === 'learn') learnSkill(sid);
-      else if (act === 'upgrade') upgradeSkill(sid);
+      if (!owned) learnSkill(sid);
+      else upgradeSkill(sid);
       renderSkillTree();
-      // 전투 중이면 스킬 버튼도 갱신
       if (game.run.battle) refreshBattleUI();
     });
-  });
+  }
 }
 
 function getSkillCooldown(skillId) {

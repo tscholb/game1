@@ -15,7 +15,7 @@
     <div id="audio-toggles">
       <button id="audio-music" class="audio-btn" title="배경 음악">🎵</button>
       <button id="audio-sfx" class="audio-btn" title="효과음">🔊</button>
-      <button id="open-skill-tree" class="audio-btn skill-tree-btn" title="마법 트리">🔥</button>
+      <button id="open-skill-tree" class="audio-btn skill-tree-btn" title="마법 트리" style="display:none">🔥</button>
     </div>
 
     <!-- 마법 트리 모달 -->
@@ -27,7 +27,14 @@
           <span class="st-sp">✦ <span id="st-sp">0</span> SP</span>
           <button class="sp-close" id="st-close">✕</button>
         </div>
-        <div class="st-body" id="st-body"></div>
+        <div class="st-layout">
+          <div class="st-tree" id="st-tree">
+            <svg class="st-lines" id="st-lines" preserveAspectRatio="none"></svg>
+          </div>
+          <div class="st-detail" id="st-detail">
+            <div class="st-empty">← 좌측 마법을 선택하면 상세 정보가 표시됩니다.</div>
+          </div>
+        </div>
       </div>
     </div>
 
