@@ -5,7 +5,7 @@
 const $ = id => document.getElementById(id);
 
 // 빌드 버전 — sw.js의 캐시 키와 같이 올려준다
-const VERSION = 'v58-sequel-hook';
+const VERSION = 'v59-tree-prereq-multi-art';
 
 // ===== 영웅 데이터 =====
 const HEROES = [
@@ -1106,6 +1106,13 @@ function bumpRarity(r) {
 
 function nextStep() {
   const r = game.run;
+  // SP 획득이 보류된 상태면 — 마법 트리 자동 열기, 닫으면 다시 nextStep 진행
+  if (r._spPending) {
+    r._spPending = false;
+    r._afterSkillTreeClose = () => nextStep();
+    openSkillTree();
+    return;
+  }
   // 직전 노드가 보스였으면 → 다음 층
   if (r.currentNode && r.currentNode.kind === 'boss') {
     r.floor++;
@@ -1253,22 +1260,11 @@ function startBattle(kind, node) {
     bossSkillTurn: 0,
     bossSkillTriggered: {},
   };
-  // 첫 적의 일러를 메인 표시로 사용
-  const main = enemies[0];
-  const mainDef = main.def;
+  // 적 일러 — 1명: 단일 큰 일러 / 2명+: 가로로 나란히
   const titleSuffix = kind === 'elite' ? ' (엘리트)' : kind === 'boss' ? ' (보스)' : '';
+  const main = enemies[0];
   $('enemy-name').textContent = (count > 1 ? `${main.name} 외 ${count - 1}` : main.name) + titleSuffix;
-  const art = $('enemy-art');
-  if (mainDef.sprite) {
-    art.classList.add('with-sprite');
-    art.innerHTML = `<img class="enemy-sprite" src="${mainDef.sprite}" alt="${main.name}">`;
-    art.style.fontSize = '';
-  } else {
-    art.classList.remove('with-sprite');
-    art.innerHTML = '';
-    art.textContent = mainDef.emoji;
-    art.style.fontSize = mainDef.boss ? '90px' : '70px';
-  }
+  renderEnemyPortraits();
   $('hero-img').src = HERO.sprite;
   game.run._heroSpriteWounded = false;
   // 점화 가호 — 전투 시작 시 모든 적에 자동 화상 (AoE)
@@ -1284,6 +1280,66 @@ function startBattle(kind, node) {
   showScreen('battle');
   // 전투 BGM
   if (window.AUDIO) AUDIO.music(kind === 'boss' ? 'boss' : 'battle');
+}
+
+// 적 초상화 그리기 — 1명: 큰 일러 / 2-3명: 가로로 나란히
+function renderEnemyPortraits() {
+  const b = game.run.battle;
+  if (!b || !b.enemies) return;
+  const art = $('enemy-art');
+  if (!art) return;
+  const enemies = b.enemies;
+  const count = enemies.length;
+  art.classList.toggle('multi', count > 1);
+  art.classList.toggle('count-2', count === 2);
+  art.classList.toggle('count-3', count === 3);
+  // 단일 일러 호환 — 단일이면 기존처럼 with-sprite + 큰 sprite 표시
+  if (count === 1) {
+    const en = enemies[0];
+    const def = en.def;
+    art.innerHTML = '';
+    if (def.sprite) {
+      art.classList.add('with-sprite');
+      art.innerHTML = `<img class="enemy-sprite" src="${def.sprite}" alt="${en.name}">`;
+      art.style.fontSize = '';
+    } else {
+      art.classList.remove('with-sprite');
+      art.textContent = def.emoji;
+      art.style.fontSize = def.boss ? '90px' : '70px';
+    }
+    return;
+  }
+  // 다중 — 초상화 N개
+  art.classList.add('with-sprite');
+  art.style.fontSize = '';
+  art.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const en = enemies[i];
+    const def = en.def;
+    const port = document.createElement('div');
+    port.className = 'enemy-portrait';
+    port.dataset.idx = i;
+    if (en.hp <= 0) port.classList.add('dead');
+    if (i === b.targetIdx && en.hp > 0) port.classList.add('target');
+    const inner = def.sprite
+      ? `<img class="ep-sprite" src="${def.sprite}" alt="${en.name}">`
+      : `<div class="ep-emoji">${def.emoji}</div>`;
+    port.innerHTML = `
+      ${inner}
+      <div class="ep-name">${en.name}</div>
+      <div class="ep-hp"><div class="ep-hp-fill" style="width:${Math.max(0, en.hp/en.maxHp*100)}%"></div></div>`;
+    port.addEventListener('click', () => {
+      if (b.enemies[i] && b.enemies[i].hp > 0) {
+        b.targetIdx = i;
+        // 타겟 변경 — 메인 이름/HP 즉시 갱신
+        const t = b.enemies[i];
+        $('enemy-name').textContent = t.name + (t.def.boss ? ' (보스)' : t.kind === 'elite' ? ' (엘리트)' : '');
+        renderEnemyPortraits();
+        refreshBattleUI();
+      }
+    });
+    art.appendChild(port);
+  }
 }
 
 // ===== 다중 적 헬퍼 =====
@@ -1316,8 +1372,29 @@ function refreshBattleUI() {
     $('enemy-hp').textContent = tgt.hp;
     $('enemy-max-hp').textContent = tgt.maxHp;
     $('enemy-hp-fill').style.width = (tgt.hp / tgt.maxHp * 100) + '%';
+    // 다중 전투에서 타겟 명 갱신
+    const nameEl = $('enemy-name');
+    if (nameEl && b.enemies.length > 1) {
+      const suffix = tgt.def.boss ? ' (보스)' : tgt.kind === 'elite' ? ' (엘리트)' : '';
+      nameEl.textContent = `${tgt.name} 외 ${b.enemies.length - 1}` + suffix;
+    }
   }
   $('hero-hp-fill').style.width = (r.hp / r.maxHp * 100) + '%';
+  // 다중 적 초상화 — HP 바 / 죽음 / 타겟 하이라이트 갱신
+  if (b.enemies && b.enemies.length > 1) {
+    const art = $('enemy-art');
+    if (art) {
+      art.querySelectorAll('.enemy-portrait').forEach(p => {
+        const i = parseInt(p.dataset.idx);
+        const en = b.enemies[i];
+        if (!en) return;
+        p.classList.toggle('dead', en.hp <= 0);
+        p.classList.toggle('target', i === b.targetIdx && en.hp > 0);
+        const fill = p.querySelector('.ep-hp-fill');
+        if (fill) fill.style.width = Math.max(0, en.hp / en.maxHp * 100) + '%';
+      });
+    }
+  }
   $('hero-hp-fill').classList.remove('low', 'critical');
   if (r.hp / r.maxHp < 0.25) $('hero-hp-fill').classList.add('critical');
   else if (r.hp / r.maxHp < 0.5) $('hero-hp-fill').classList.add('low');
@@ -1674,6 +1751,7 @@ function grantSkillPoints(g, n) {
   g = g || game.run;
   if (!g) return;
   g.skillPoints = (g.skillPoints || 0) + n;
+  g._spPending = true;  // 다음 흐름 지연 시 자동으로 트리 모달 열기
   log(`✦ 스킬 포인트 +${n} (보유: ${g.skillPoints})`, 'system');
 }
 
@@ -1694,7 +1772,29 @@ function canLearnSkill(id) {
   if (r.skills.includes(id)) return false;
   const tier = SKILLS[id].tier || 1;
   const cost = SKILL_LEARN_COST[tier] || 99;
-  return r.skillPoints >= cost;
+  if (r.skillPoints < cost) return false;
+  // 선행 요구 — 티어 2 이상은 직전 티어 마법을 1개 이상 보유해야 함
+  if (tier > 1) {
+    const hasPrereq = r.skills.some(sid => (SKILLS[sid].tier || 1) === tier - 1);
+    if (!hasPrereq) return false;
+  }
+  return true;
+}
+
+// 선행 미충족 사유 (UI 표시용)
+function getSkillLockReason(id) {
+  const s = SKILLS[id];
+  if (!s) return '';
+  const r = game.run;
+  if (r.skills.includes(id)) return '';
+  const tier = s.tier || 1;
+  if (tier > 1) {
+    const hasPrereq = r.skills.some(sid => (SKILLS[sid].tier || 1) === tier - 1);
+    if (!hasPrereq) return `🔒 티어 ${tier - 1} 마법 1개 학습 필요`;
+  }
+  const cost = SKILL_LEARN_COST[tier] || 99;
+  if (r.skillPoints < cost) return `SP 부족 (필요 ${cost})`;
+  return '';
 }
 
 function canUpgradeSkill(id) {
@@ -1779,6 +1879,12 @@ function openSkillTree() {
 }
 function closeSkillTree() {
   $('skill-tree-modal').classList.remove('active');
+  // 자동 열기였다면 — 닫은 후 후속 콜백 실행
+  if (game.run && game.run._afterSkillTreeClose) {
+    const cb = game.run._afterSkillTreeClose;
+    game.run._afterSkillTreeClose = null;
+    setTimeout(cb, 200);
+  }
 }
 
 function renderSkillTree() {
@@ -1802,18 +1908,21 @@ function renderSkillTree() {
       const lv = getSkillLevel(sid);
       const learnAvail = canLearnSkill(sid);
       const upgradeAvail = canUpgradeSkill(sid);
+      const lockReason = !owned ? getSkillLockReason(sid) : '';
+      const locked = lockReason && lockReason.startsWith('🔒');
       const node = document.createElement('button');
       node.className = `st-node ${s.target}` +
         (owned ? ' owned' : '') +
         (lv >= SKILL_MAX_LEVEL ? ' maxed' : '') +
         (learnAvail ? ' avail-learn' : '') +
         (upgradeAvail ? ' avail-upgrade' : '') +
+        (locked ? ' locked' : '') +
         (sid === _selectedSkillId ? ' selected' : '');
       node.dataset.sid = sid;
       node.innerHTML = `
         <span class="st-node-icon">${s.icon}</span>
         <span class="st-node-name">${s.name}</span>
-        <span class="st-node-lv">${owned ? `Lv.${lv}` : '미보유'}</span>`;
+        <span class="st-node-lv">${owned ? `Lv.${lv}` : (locked ? '🔒 잠김' : '미보유')}</span>`;
       node.addEventListener('click', () => {
         _selectedSkillId = sid;
         if (window.AUDIO) AUDIO.sfx('click');
@@ -1901,7 +2010,13 @@ function renderSkillDetail() {
       action = `<button class="st-btn upgrade" id="st-act"${upgradeAvail ? '' : ' disabled'}>⬆ 강화 (${cost} SP)</button>`;
     }
   } else {
-    action = `<button class="st-btn learn" id="st-act"${learnAvail ? '' : ' disabled'}>✦ 학습 (${learnCost} SP)</button>`;
+    const lock = getSkillLockReason(sid);
+    const locked = lock && lock.startsWith('🔒');
+    if (locked) {
+      action = `<button class="st-btn maxed" disabled>${lock}</button>`;
+    } else {
+      action = `<button class="st-btn learn" id="st-act"${learnAvail ? '' : ' disabled'}>✦ 학습 (${learnCost} SP)</button>`;
+    }
   }
   wrap.innerHTML = `
     <div class="st-detail-head">
@@ -1990,14 +2105,28 @@ function openSkillPicker() {
     const s = SKILLS[id];
     const cd = getSkillCdNow(id);
     const cdMax = getSkillCooldown(id);
+    const lv = getSkillLevel(id);
+    const stats = getSkillStatsAtLevel(s, lv);
+    const statRows = stats.map(st =>
+      `<div class="sc-stat"><span class="sc-stat-l">${st.label}</span><span class="sc-stat-v">${st.value}</span></div>`
+    ).join('');
     const card = document.createElement('button');
     card.className = 'skill-card' + (cd > 0 ? ' on-cd' : '');
     card.disabled = cd > 0;
     card.innerHTML = `
-      <div class="sc-ico">${s.icon}</div>
-      <div class="sc-name">${s.name}</div>
+      <div class="sc-head">
+        <div class="sc-ico">${s.icon}</div>
+        <div class="sc-name-wrap">
+          <div class="sc-name">${s.name}</div>
+          <div class="sc-tags">
+            <span class="sc-tag ${s.target}">${s.target === 'aoe' ? '광역' : '단일'}</span>
+            <span class="sc-tag lv">Lv.${lv}</span>
+          </div>
+        </div>
+      </div>
       <div class="sc-desc">${s.desc}</div>
-      <div class="sc-cd">${cd > 0 ? `${cd}턴 후` : `쿨 ${cdMax}턴`}</div>`;
+      <div class="sc-stats">${statRows}</div>
+      <div class="sc-cd">${cd > 0 ? `${cd}턴 후 사용 가능` : `시전 (쿨 ${cdMax}턴)`}</div>`;
     if (cd === 0) {
       card.addEventListener('click', () => {
         modal.classList.remove('active');

@@ -1,4 +1,4 @@
-const CACHE = 'ignia-v58-sequel-hook';
+const CACHE = 'ignia-v59-tree-prereq-multi-art';
 const ASSETS = [
   './',
   './index.html',
